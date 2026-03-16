@@ -1,0 +1,8 @@
+# CMake generation dependency list for this directory.
+F:/C++/Vulkan2DRenderer/Engine/CMakeLists.txt
+F:/C++/Vulkan2DRenderer/Engine/Core/Application.cpp
+F:/C++/Vulkan2DRenderer/Engine/Core/Application.h
+F:/C++/Vulkan2DRenderer/Engine/Platform/Window.cpp
+F:/C++/Vulkan2DRenderer/Engine/Platform/Window.h
+F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanContext.cpp
+F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanContext.h
