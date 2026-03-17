@@ -6,3 +6,9 @@ F:/C++/Vulkan2DRenderer/Engine/Platform/Window.cpp
 F:/C++/Vulkan2DRenderer/Engine/Platform/Window.h
 F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanContext.cpp
 F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanContext.h
+F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanDevice.cpp
+F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanDevice.h
+F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanRenderPass.cpp
+F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanRenderPass.h
+F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanSwapChain.cpp
+F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanSwapChain.h
