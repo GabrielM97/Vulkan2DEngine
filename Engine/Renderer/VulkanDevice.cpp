@@ -129,7 +129,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
  */
 void VulkanDevice::CreateLogicalDevice()
 {
-  std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     float queuePriority = 1.0f;
 
     // Graphics queue
@@ -161,7 +161,7 @@ void VulkanDevice::CreateLogicalDevice()
     createInfo.pEnabledFeatures = &deviceFeatures;
 
 #ifndef NDEBUG
-    const char* validationLayers[] = { "VK_LAYER_KHRONOS_validation" };
+    const char* validationLayers[] = {"VK_LAYER_KHRONOS_validation"};
     createInfo.enabledLayerCount = 1;
     createInfo.ppEnabledLayerNames = validationLayers;
 #else
@@ -169,7 +169,7 @@ void VulkanDevice::CreateLogicalDevice()
 #endif
 
     // Extensions (for swapchain)
-    const char* deviceExtensions[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+    const char* deviceExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     createInfo.enabledExtensionCount = 1;
     createInfo.ppEnabledExtensionNames = deviceExtensions;
 

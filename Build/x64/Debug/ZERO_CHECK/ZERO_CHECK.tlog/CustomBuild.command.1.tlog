@@ -1,10 +1,10 @@
 ^F:\C++\VULKAN2DRENDERER\BUILD\CMAKEFILES\359BAF68886A957AC69891CC7649429A\GENERATE.STAMP.RULE
 setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SF:/C++/Vulkan2DRenderer -BF:/C++/Vulkan2DRenderer/Build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file F:/C++/Vulkan2DRenderer/Build/Vulkan2DEngine.slnx
-if %errorlevel% neq 0 goto :cmEnd
-:cmEnd
-endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
-:cmErrorLevel
-exit /b %1
-:cmDone
-if %errorlevel% neq 0 goto :VCEnd
+                "C:\Program Files\CMake\bin\cmake.exe" -SF:/C++/Vulkan2DRenderer -BF:/C++/Vulkan2DRenderer/Build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file F:/C++/Vulkan2DRenderer/Build/Vulkan2DEngine.slnx
+                if %errorlevel% neq 0 goto :cmEnd
+                :cmEnd
+                endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+                :cmErrorLevel
+                exit /b %1
+                :cmDone
+                if %errorlevel% neq 0 goto :VCEnd

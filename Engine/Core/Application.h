@@ -1,14 +1,11 @@
 ﻿#pragma once
 #include <memory>
-
-#include "Renderer/VulkanContext.h"
-#include "Renderer/VulkanDevice.h"
-#include "Renderer/VulkanRenderPass.h"
-#include "Renderer/VulkanSwapChain.h"
+#include "Renderer/VulkanRenderer.h"
 
 class Window;
 
-class Application {
+class Application
+{
 public:
     Application();
     ~Application();
@@ -18,8 +15,5 @@ public:
 
 private:
     std::unique_ptr<Window> window = nullptr;
-    VulkanContext context;
-    VulkanDevice device;
-    VulkanSwapChain swapchain;
-    VulkanRenderPass renderPass;
+    VulkanRenderer vulkanRenderer;
 };

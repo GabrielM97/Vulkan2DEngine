@@ -10,31 +10,26 @@ Application::Application()
     window = std::make_unique<Window>(800, 600, "Vulkan Engine Window");
 }
 
-Application::~Application() {
-    renderPass.Cleanup(device.GetDevice());
-    swapchain.Cleanup(device.GetDevice());
-    device.Cleanup();
-    context.Cleanup();
+Application::~Application()
+{
+    vulkanRenderer.Cleanup();
 }
 
-bool Application::Init() {
-    
-    if(!window->Init())
+bool Application::Init()
+{
+    if (!window->Init())
         return false;
 
-    context.Init(window->GetNativeWindow());
-    device.Init(context);
-    
-    swapchain.Init(device, context.GetSurface(), 1280, 700);
+    vulkanRenderer.Init(window->GetNativeWindow(), 1250, 700);
 
-    renderPass.Init(device.GetDevice(), swapchain.GetFormat());
-   
     return true;
 }
 
-void Application::Run() {
-    while(!window->ShouldClose()) {
+void Application::Run()
+{
+    while (!window->ShouldClose())
+    {
         window->PollEvents();
-        //context->DrawFrame();
+        vulkanRenderer.DrawFrame();
     }
 }

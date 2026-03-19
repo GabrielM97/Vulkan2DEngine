@@ -7,14 +7,14 @@ class VulkanContext
 public:
     void Init(GLFWwindow* window);
     void Cleanup();
-    
-    VkInstance GetInstance() const {return instance; }
-    VkSurfaceKHR GetSurface() const {return surface;}
-    
+
+    VkInstance GetInstance() const { return instance; }
+    VkSurfaceKHR GetSurface() const { return surface; }
+
 private:
-    VkInstance CreateInstance();
-    VkSurfaceKHR CreateSurface(GLFWwindow* window);
-    
+    void CreateInstance();
+    void CreateSurface(GLFWwindow* window);
+
     VkInstance instance = VK_NULL_HANDLE;
     VkSurfaceKHR surface = VK_NULL_HANDLE;
 };

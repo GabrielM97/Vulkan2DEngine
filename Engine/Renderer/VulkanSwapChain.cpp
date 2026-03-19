@@ -20,7 +20,7 @@ void VulkanSwapChain::Cleanup(VkDevice device)
 
 void VulkanSwapChain::CreateSwapchain(VulkanDevice& device, VkSurfaceKHR surface, int width, int height)
 {
-   VkPhysicalDevice physicalDevice = device.GetPhysicalDevice();
+    VkPhysicalDevice physicalDevice = device.GetPhysicalDevice();
     VkDevice logicalDevice = device.GetDevice();
 
     // --- Query support ---
@@ -67,7 +67,7 @@ void VulkanSwapChain::CreateSwapchain(VulkanDevice& device, VkSurfaceKHR surface
     }
     else
     {
-        extent = { (uint32_t)width, (uint32_t)height };
+        extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
     }
 
     // --- Image count ---
@@ -120,7 +120,6 @@ void VulkanSwapChain::CreateSwapchain(VulkanDevice& device, VkSurfaceKHR surface
     vkGetSwapchainImagesKHR(logicalDevice, swapchain, &imageCount, images.data());
 
     imageFormat = surfaceFormat.format;
-    
 }
 
 void VulkanSwapChain::CreateImageViews(VkDevice device)

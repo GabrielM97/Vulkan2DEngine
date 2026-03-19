@@ -15,64 +15,7 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d969209e-10d2-4adf-8d7e-9dcafd1e36f6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/.idea.Vulkan2DEngine/.idea/.name" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/.idea.Vulkan2DEngine/.idea/indexLayout.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/.idea.Vulkan2DEngine/.idea/projectSettingsUpdater.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/.idea.Vulkan2DEngine/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/.idea.Vulkan2DEngine/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../Engine/Renderer/VulkanDevice.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../Engine/Renderer/VulkanDevice.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../Engine/Renderer/VulkanRenderPass.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../Engine/Renderer/VulkanRenderPass.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../Engine/Renderer/VulkanSwapChain.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../Engine/Renderer/VulkanSwapChain.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Debug/Sandbox.exe" beforeDir="false" afterPath="$PROJECT_DIR$/Debug/Sandbox.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Debug/Sandbox.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/Debug/Sandbox.pdb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/CMakeFiles/generate.stamp.depend" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/CMakeFiles/generate.stamp.depend" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Core.dir/Debug/Application.obj" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Core.dir/Debug/Application.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Core.dir/Debug/Core.tlog/CL.read.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Core.dir/Debug/Core.tlog/CL.read.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Core.dir/Debug/Core.tlog/Core.lastbuildstate" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Core.dir/Debug/Core.tlog/Core.lastbuildstate" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Core.dir/Debug/Core.tlog/CustomBuild.read.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Core.dir/Debug/Core.tlog/CustomBuild.read.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Core.vcxproj" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Core.vcxproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Debug/Core.lib" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Debug/Core.lib" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Debug/Core.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Debug/Core.pdb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Debug/Platform.lib" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Debug/Platform.lib" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Debug/Platform.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Debug/Platform.pdb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Debug/Renderer.lib" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Debug/Renderer.lib" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Debug/Renderer.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Debug/Renderer.pdb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Platform.dir/Debug/Platform.tlog/CustomBuild.read.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Platform.dir/Debug/Platform.tlog/CustomBuild.read.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Platform.dir/Debug/Platform.tlog/Platform.lastbuildstate" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Platform.dir/Debug/Platform.tlog/Platform.lastbuildstate" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Platform.dir/Debug/Window.obj" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Platform.dir/Debug/Window.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Platform.vcxproj" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Platform.vcxproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/CL.command.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/CL.command.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/CL.read.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/CL.read.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/CL.write.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/CL.write.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/Cl.items.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/Cl.items.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/CustomBuild.read.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/CustomBuild.read.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/Lib-link.read.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/Lib-link.read.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/Lib-link.write.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/Lib-link.write.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/Lib.command.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/Lib.command.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/Renderer.lastbuildstate" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/Renderer.tlog/Renderer.lastbuildstate" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/VulkanContext.obj" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.dir/Debug/VulkanContext.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Renderer.vcxproj" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.vcxproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Engine/Renderer.vcxproj.filters" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.vcxproj.filters" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sandbox.dir/Debug/Sandbox.ilk" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.dir/Debug/Sandbox.ilk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sandbox.dir/Debug/Sandbox.tlog/CL.read.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.dir/Debug/Sandbox.tlog/CL.read.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sandbox.dir/Debug/Sandbox.tlog/Sandbox.lastbuildstate" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.dir/Debug/Sandbox.tlog/Sandbox.lastbuildstate" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sandbox.dir/Debug/Sandbox.tlog/link.read.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.dir/Debug/Sandbox.tlog/link.read.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sandbox.dir/Debug/main.obj" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.dir/Debug/main.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sandbox.dir/Debug/vc145.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.dir/Debug/vc145.pdb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Vulkan2DEngine.sln.DotSettings.user" beforeDir="false" afterPath="$PROJECT_DIR$/Vulkan2DEngine.sln.DotSettings.user" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZERO_CHECK.vcxproj" beforeDir="false" afterPath="$PROJECT_DIR$/ZERO_CHECK.vcxproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/x64/Debug/ZERO_CHECK/ZERO_CHECK.tlog/CustomBuild.read.1.tlog" beforeDir="false" afterPath="$PROJECT_DIR$/x64/Debug/ZERO_CHECK/ZERO_CHECK.tlog/CustomBuild.read.1.tlog" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/x64/Debug/ZERO_CHECK/ZERO_CHECK.tlog/ZERO_CHECK.lastbuildstate" beforeDir="false" afterPath="$PROJECT_DIR$/x64/Debug/ZERO_CHECK/ZERO_CHECK.tlog/ZERO_CHECK.lastbuildstate" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Engine/Core/Application.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Engine/Core/Application.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Engine/Core/Application.h" beforeDir="false" afterPath="$PROJECT_DIR$/../Engine/Core/Application.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Engine/Renderer/VulkanContext.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Engine/Renderer/VulkanContext.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Engine/Renderer/VulkanContext.h" beforeDir="false" afterPath="$PROJECT_DIR$/../Engine/Renderer/VulkanContext.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Sandbox/Main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Sandbox/Main.cpp" afterDir="false" />
-    </list>
+    <list default="true" id="d969209e-10d2-4adf-8d7e-9dcafd1e36f6" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -82,7 +25,6 @@
     <option name="firstShow" value="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="1" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -110,15 +52,26 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/GabrielM97/Vulkan2DEngine&quot;,
-    &quot;accountId&quot;: &quot;970caed2-6c98-41c7-8548-968eddda685c&quot;
+    &quot;accountId&quot;: &quot;515e4fac-4db6-4ed1-9001-2bdee9b104a3&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="cidr-memory-view://82" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://C:/VulkanSDK/1.4.341.1/Include/vulkan/vulkan_core.h" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanCommandBuffer.cpp" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanCommandBuffer.h" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanDevice.cpp" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanDevice.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanFramebuffer.cpp" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanFramebuffer.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanPipeline.cpp" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanPipeline.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanRenderer.cpp" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanRenderer.h" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanSwapChain.cpp" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanSwapChain.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanSync.cpp" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../Engine/Renderer/VulkanSync.h" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="McpProjectServerCommands">
     <commands />
@@ -136,34 +89,35 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;C/C++ Project.Sandbox.executor&quot;: &quot;Debug&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;SolutionBuilderPresentationOptionsPageId&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "C/C++ Project.Sandbox.executor": "Debug",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "cidr.known.project.marker": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "vcs.Git",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecapSpentCounter">
     <option name="endsOfQuotaMs" value="1776024027340" />
     <option name="spentUsd" value="0.002386" />
@@ -212,8 +166,35 @@
       <workItem from="1773691363994" duration="737000" />
       <workItem from="1773694882868" duration="95000" />
       <workItem from="1773699927350" duration="302000" />
-      <workItem from="1773774309826" duration="2099000" />
+      <workItem from="1773774309826" duration="3873000" />
+      <workItem from="1773780580878" duration="6681000" />
+      <workItem from="1773860176302" duration="16069000" />
     </task>
+    <task id="LOCAL-00001" summary="Add VulkanDevice implementation&#10;&#10;- Implement VulkanDevice class with functionality for initializing and cleaning up Vulkan devices.&#10;- Add methods for physical device selection and logical device creation.&#10;- Update project files to include VulkanDevice.">
+      <option name="closed" value="true" />
+      <created>1773776800116</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1773776800116</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Add VulkanRenderer implementation&#10;&#10;- Implement VulkanRenderer class with initialization, cleanup, and frame rendering functionality.&#10;- Integrate VulkanPipeline, VulkanCommandBuffer, VulkanFramebuffer, VulkanSync, and VulkanRenderPass into VulkanRenderer.&#10;- Add vertex and fragment shaders for basic triangle rendering.&#10;- Update project files and CMakeLists.txt to include VulkanRenderer and associated modules.">
+      <option name="closed" value="true" />
+      <created>1773924880094</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1773924880094</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Add VulkanRenderer implementation&#10;&#10;- Implement VulkanRenderer class with initialization, cleanup, and frame rendering functionality.&#10;- Integrate VulkanPipeline, VulkanCommandBuffer, VulkanFramebuffer, VulkanSync, and VulkanRenderPass into VulkanRenderer.&#10;- Add vertex and fragment shaders for basic triangle rendering.&#10;- Update project files and CMakeLists.txt to include VulkanRenderer and associated modules.">
+      <option name="closed" value="true" />
+      <created>1773924909455</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1773924909455</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -246,6 +227,12 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+    <MESSAGE value="Add VulkanDevice implementation&#10;&#10;- Implement VulkanDevice class with functionality for initializing and cleaning up Vulkan devices.&#10;- Add methods for physical device selection and logical device creation.&#10;- Update project files to include VulkanDevice." />
+    <MESSAGE value="Add VulkanRenderer implementation&#10;&#10;- Implement VulkanRenderer class with initialization, cleanup, and frame rendering functionality.&#10;- Integrate VulkanPipeline, VulkanCommandBuffer, VulkanFramebuffer, VulkanSync, and VulkanRenderPass into VulkanRenderer.&#10;- Add vertex and fragment shaders for basic triangle rendering.&#10;- Update project files and CMakeLists.txt to include VulkanRenderer and associated modules." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add VulkanRenderer implementation&#10;&#10;- Implement VulkanRenderer class with initialization, cleanup, and frame rendering functionality.&#10;- Integrate VulkanPipeline, VulkanCommandBuffer, VulkanFramebuffer, VulkanSync, and VulkanRenderPass into VulkanRenderer.&#10;- Add vertex and fragment shaders for basic triangle rendering.&#10;- Update project files and CMakeLists.txt to include VulkanRenderer and associated modules." />
+    <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
+    <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
+    <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
