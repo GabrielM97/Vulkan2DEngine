@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"F:/C++/Vulkan2DRenderer/Build/cmake_install.cmake",
-		"F:/C++/Vulkan2DRenderer/Build/Engine/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
