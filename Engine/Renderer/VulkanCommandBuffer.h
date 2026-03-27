@@ -15,6 +15,7 @@ public:
         VkPipeline pipeline);
 
     const std::vector<VkCommandBuffer>& Get() const { return m_CommandBuffers; }
+    VkCommandPool GetCommandPool() const { return m_CommandPool; }
 
 private:
     VkDevice m_Device = VK_NULL_HANDLE;

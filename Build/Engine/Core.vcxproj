@@ -79,8 +79,8 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;F:\C++\Vulkan2DRenderer\Engine\Core;\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/VulkanSDK/1.4.341.1/include" /external:I "C:/vcpkg/installed/x64-windows/include"</AdditionalOptions>
+        <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;C:\VulkanSDK\1.4.341.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <AdditionalOptions>%(AdditionalOptions) /external:I "C:/vcpkg/installed/x64-windows/include" /external:I "C:/VulkanSDK/1.4.341.1/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck></BufferSecurityCheck>
@@ -106,10 +106,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;GLFW_DLL;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;F:\C++\Vulkan2DRenderer\Engine\Core;\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\Include;C:\VulkanSDK\1.4.341.1\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;C:\VulkanSDK\1.4.341.1\Include;C:\vcpkg\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;F:\C++\Vulkan2DRenderer\Engine\Core;\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\Include;C:\VulkanSDK\1.4.341.1\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;C:\VulkanSDK\1.4.341.1\Include;C:\vcpkg\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -122,8 +122,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;F:\C++\Vulkan2DRenderer\Engine\Core;\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/VulkanSDK/1.4.341.1/include" /external:I "C:/vcpkg/installed/x64-windows/include"</AdditionalOptions>
+        <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;C:\VulkanSDK\1.4.341.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <AdditionalOptions>%(AdditionalOptions) /external:I "C:/vcpkg/installed/x64-windows/include" /external:I "C:/VulkanSDK/1.4.341.1/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck></BufferSecurityCheck>
@@ -150,10 +150,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;GLFW_DLL;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;F:\C++\Vulkan2DRenderer\Engine\Core;\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\Include;C:\VulkanSDK\1.4.341.1\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;C:\VulkanSDK\1.4.341.1\Include;C:\vcpkg\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;F:\C++\Vulkan2DRenderer\Engine\Core;\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\Include;C:\VulkanSDK\1.4.341.1\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;C:\VulkanSDK\1.4.341.1\Include;C:\vcpkg\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -166,8 +166,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;F:\C++\Vulkan2DRenderer\Engine\Core;\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/VulkanSDK/1.4.341.1/include" /external:I "C:/vcpkg/installed/x64-windows/include"</AdditionalOptions>
+        <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;C:\VulkanSDK\1.4.341.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <AdditionalOptions>%(AdditionalOptions) /external:I "C:/vcpkg/installed/x64-windows/include" /external:I "C:/VulkanSDK/1.4.341.1/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck></BufferSecurityCheck>
@@ -194,10 +194,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;GLFW_DLL;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;F:\C++\Vulkan2DRenderer\Engine\Core;\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\Include;C:\VulkanSDK\1.4.341.1\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;C:\VulkanSDK\1.4.341.1\Include;C:\vcpkg\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;F:\C++\Vulkan2DRenderer\Engine\Core;\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\Include;C:\VulkanSDK\1.4.341.1\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;C:\VulkanSDK\1.4.341.1\Include;C:\vcpkg\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -210,8 +210,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;F:\C++\Vulkan2DRenderer\Engine\Core;\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/VulkanSDK/1.4.341.1/include" /external:I "C:/vcpkg/installed/x64-windows/include"</AdditionalOptions>
+        <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;C:\VulkanSDK\1.4.341.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <AdditionalOptions>%(AdditionalOptions) /external:I "C:/vcpkg/installed/x64-windows/include" /external:I "C:/VulkanSDK/1.4.341.1/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck></BufferSecurityCheck>
@@ -237,10 +237,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;GLFW_DLL;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;F:\C++\Vulkan2DRenderer\Engine\Core;\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\Include;C:\VulkanSDK\1.4.341.1\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;C:\VulkanSDK\1.4.341.1\Include;C:\vcpkg\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;F:\C++\Vulkan2DRenderer\Engine\Core;\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\Include;C:\VulkanSDK\1.4.341.1\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <AdditionalIncludeDirectories>F:\C++\Vulkan2DRenderer\Engine;C:\VulkanSDK\1.4.341.1\Include;C:\vcpkg\installed\x64-windows\include;C:\VulkanSDK\1.4.341.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -264,7 +264,7 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\C++\Vulkan2DRenderer\Engine\Core\Application.cpp;F:\C++\Vulkan2DRenderer\Engine\Core\Application.h;F:\C++\Vulkan2DRenderer\Engine\Platform\Window.cpp;F:\C++\Vulkan2DRenderer\Engine\Platform\Window.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanCommandBuffer.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanCommandBuffer.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanContext.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanContext.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanDevice.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanDevice.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanFramebuffer.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanFramebuffer.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanPipeline.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanPipeline.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderPass.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderPass.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderer.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderer.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSwapChain.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSwapChain.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSync.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSync.h;%(AdditionalInputs)</AdditionalInputs>
+        <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\C++\Vulkan2DRenderer\Build\CMakeFiles\cmake.verify_globs;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\C++\Vulkan2DRenderer\Build\Engine\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule F:/C++/Vulkan2DRenderer/Engine/CMakeLists.txt</Message>
@@ -277,7 +277,7 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">F:\C++\Vulkan2DRenderer\Engine\Core\Application.cpp;F:\C++\Vulkan2DRenderer\Engine\Core\Application.h;F:\C++\Vulkan2DRenderer\Engine\Platform\Window.cpp;F:\C++\Vulkan2DRenderer\Engine\Platform\Window.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanCommandBuffer.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanCommandBuffer.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanContext.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanContext.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanDevice.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanDevice.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanFramebuffer.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanFramebuffer.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanPipeline.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanPipeline.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderPass.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderPass.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderer.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderer.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSwapChain.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSwapChain.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSync.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSync.h;%(AdditionalInputs)</AdditionalInputs>
+        <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">F:\C++\Vulkan2DRenderer\Build\CMakeFiles\cmake.verify_globs;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">F:\C++\Vulkan2DRenderer\Build\Engine\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule F:/C++/Vulkan2DRenderer/Engine/CMakeLists.txt</Message>
@@ -290,7 +290,7 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">F:\C++\Vulkan2DRenderer\Engine\Core\Application.cpp;F:\C++\Vulkan2DRenderer\Engine\Core\Application.h;F:\C++\Vulkan2DRenderer\Engine\Platform\Window.cpp;F:\C++\Vulkan2DRenderer\Engine\Platform\Window.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanCommandBuffer.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanCommandBuffer.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanContext.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanContext.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanDevice.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanDevice.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanFramebuffer.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanFramebuffer.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanPipeline.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanPipeline.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderPass.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderPass.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderer.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderer.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSwapChain.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSwapChain.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSync.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSync.h;%(AdditionalInputs)</AdditionalInputs>
+        <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">F:\C++\Vulkan2DRenderer\Build\CMakeFiles\cmake.verify_globs;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">F:\C++\Vulkan2DRenderer\Build\Engine\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule F:/C++/Vulkan2DRenderer/Engine/CMakeLists.txt</Message>
@@ -303,7 +303,7 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">F:\C++\Vulkan2DRenderer\Engine\Core\Application.cpp;F:\C++\Vulkan2DRenderer\Engine\Core\Application.h;F:\C++\Vulkan2DRenderer\Engine\Platform\Window.cpp;F:\C++\Vulkan2DRenderer\Engine\Platform\Window.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanCommandBuffer.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanCommandBuffer.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanContext.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanContext.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanDevice.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanDevice.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanFramebuffer.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanFramebuffer.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanPipeline.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanPipeline.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderPass.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderPass.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderer.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanRenderer.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSwapChain.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSwapChain.h;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSync.cpp;F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSync.h;%(AdditionalInputs)</AdditionalInputs>
+        <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">F:\C++\Vulkan2DRenderer\Build\CMakeFiles\cmake.verify_globs;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">F:\C++\Vulkan2DRenderer\Build\Engine\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
     </CustomBuild>

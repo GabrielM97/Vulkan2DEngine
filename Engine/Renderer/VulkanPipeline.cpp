@@ -5,6 +5,8 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "VulkanVertexBuffer.h"
+
 
 void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass renderPass)
 {
@@ -31,9 +33,16 @@ void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass rende
 
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertStage, fragStage};
 
-    //Vertex input (none for now)
+    //Vertex input
+    auto bindingDescription = Vertex::GetVertexInputBindingDescription();
+    auto attributeDescriptions = Vertex::GetVertexInputAttributeDescription();
+
     VkPipelineVertexInputStateCreateInfo vertexInput{};
     vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInput.vertexBindingDescriptionCount = 1;
+    vertexInput.pVertexBindingDescriptions = &bindingDescription;
+    vertexInput.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInput.pVertexAttributeDescriptions = attributeDescriptions.data();
 
     //Input assembly
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};

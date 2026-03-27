@@ -1,6 +1,9 @@
 #include "VulkanRenderer.h"
 
+#include <cassert>
 #include <stdexcept>
+
+#include "VulkanVertexBuffer.h"
 
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -22,13 +25,6 @@ void VulkanRenderer::Init(GLFWwindow* window, int width, int height)
 
     m_CommandBuffer.Init(device.GetDevice(), device.GetGraphicsQueueFamily(), swapchain.GetImageViews().size());
 
-    m_CommandBuffer.Record(
-        renderPass.Get(),
-        m_Framebuffer.Get(),
-        swapchain.GetExtent(),
-        m_Pipeline.Get()
-    );
-
     m_Sync.Init(device.GetDevice(), MAX_FRAMES_IN_FLIGHT);
 
     // Init per-image render finished semaphores
@@ -42,12 +38,25 @@ void VulkanRenderer::Init(GLFWwindow* window, int width, int height)
 
     // Track which images are currently in flight
     m_ImagesInFlight.resize(swapchain.GetImageViews().size(), VK_NULL_HANDLE);
+
+    std::vector<Vertex> triangleVertices = {
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+        {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+        {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}
+    };
+
+    m_VertexBuffer.Init(device, m_CommandBuffer.GetCommandPool(), device.GetGraphicsQueue(), triangleVertices);
 }
 
 void VulkanRenderer::Cleanup()
 {
     //wait for GPU to finish all work
     vkDeviceWaitIdle(device.GetDevice());
+
+    m_VertexBuffer.Cleanup(device.GetDevice());
 
     for (auto sem : m_RenderFinishedPerImage)
         vkDestroySemaphore(device.GetDevice(), sem, nullptr);
@@ -70,6 +79,59 @@ void VulkanRenderer::Cleanup()
     device.Cleanup();
 
     context.Cleanup();
+}
+
+void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+{
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = 0;
+
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to begin recording command buffer");
+    }
+
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+
+    // Your render pass
+    renderPassInfo.renderPass = renderPass.Get();
+
+    // Framebuffer for THIS swapchain image
+    renderPassInfo.framebuffer = m_Framebuffer.Get()[imageIndex];
+
+    // Area to render to
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = swapchain.GetExtent();
+
+    // Clear color (background)
+    VkClearValue clearColor = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
+    //Begin render pass
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    // Bind pipeline
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.Get());
+
+    //Bind vertex buffer
+    VkBuffer vertexBuffers[] = {m_VertexBuffer.GetBuffer()};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+    assert(m_VertexBuffer.GetBuffer() != VK_NULL_HANDLE);
+    //Draw
+    vkCmdDraw(commandBuffer, m_VertexBuffer.GetVertexCount(), 1, 0, 0);
+
+    // End render pass
+    vkCmdEndRenderPass(commandBuffer);
+
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to record command buffer");
+    }
 }
 
 void VulkanRenderer::DrawFrame()
@@ -100,6 +162,10 @@ void VulkanRenderer::DrawFrame()
     VkPipelineStageFlags waitStages[] = {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
     };
+
+    vkResetCommandBuffer(m_CommandBuffer.Get()[imageIndex], 0);
+
+    RecordCommandBuffer(m_CommandBuffer.Get()[imageIndex], imageIndex);
 
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;

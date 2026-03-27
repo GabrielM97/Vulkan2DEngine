@@ -1,4 +1,6 @@
 F:/C++/Vulkan2DRenderer/Build/CMakeFiles/Sandbox.dir
+F:/C++/Vulkan2DRenderer/Build/CMakeFiles/Shaders.dir
+F:/C++/Vulkan2DRenderer/Build/CMakeFiles/ShadersFiles.dir
 F:/C++/Vulkan2DRenderer/Build/CMakeFiles/ALL_BUILD.dir
 F:/C++/Vulkan2DRenderer/Build/CMakeFiles/ZERO_CHECK.dir
 F:/C++/Vulkan2DRenderer/Build/Engine/CMakeFiles/Core.dir

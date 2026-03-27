@@ -2,8 +2,6 @@
 #include <iostream>
 
 #include "Platform/Window.h"
-#include "Renderer/VulkanContext.h"
-#include "Renderer/VulkanDevice.h"
 
 Application::Application()
 {

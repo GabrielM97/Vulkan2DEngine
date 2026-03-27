@@ -28,6 +28,9 @@
     <ClCompile Include="F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSync.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanVertexBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanCommandBuffer.h">
@@ -55,6 +58,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanSync.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="F:\C++\Vulkan2DRenderer\Engine\Renderer\VulkanVertexBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

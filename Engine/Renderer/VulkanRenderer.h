@@ -8,12 +8,14 @@
 #include "VulkanSwapchain.h"
 #include "VulkanRenderPass.h"
 #include "VulkanSync.h"
+#include "VulkanVertexBuffer.h"
 
 class VulkanRenderer
 {
 public:
     void Init(GLFWwindow* window, int width, int height);
     void Cleanup();
+    void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void DrawFrame();
 
 private:
@@ -31,4 +33,5 @@ private:
 
     std::vector<VkFence> m_ImagesInFlight;
     std::vector<VkSemaphore> m_RenderFinishedPerImage;
+    VulkanVertexBuffer m_VertexBuffer;
 };

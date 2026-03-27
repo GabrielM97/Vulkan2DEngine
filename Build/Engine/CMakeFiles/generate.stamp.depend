@@ -1,24 +1,3 @@
 # CMake generation dependency list for this directory.
+F:/C++/Vulkan2DRenderer/Build/CMakeFiles/cmake.verify_globs
 F:/C++/Vulkan2DRenderer/Engine/CMakeLists.txt
-F:/C++/Vulkan2DRenderer/Engine/Core/Application.cpp
-F:/C++/Vulkan2DRenderer/Engine/Core/Application.h
-F:/C++/Vulkan2DRenderer/Engine/Platform/Window.cpp
-F:/C++/Vulkan2DRenderer/Engine/Platform/Window.h
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanCommandBuffer.cpp
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanCommandBuffer.h
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanContext.cpp
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanContext.h
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanDevice.cpp
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanDevice.h
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanFramebuffer.cpp
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanFramebuffer.h
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanPipeline.cpp
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanPipeline.h
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanRenderPass.cpp
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanRenderPass.h
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanRenderer.cpp
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanRenderer.h
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanSwapChain.cpp
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanSwapChain.h
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanSync.cpp
-F:/C++/Vulkan2DRenderer/Engine/Renderer/VulkanSync.h

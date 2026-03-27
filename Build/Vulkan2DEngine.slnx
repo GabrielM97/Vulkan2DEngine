@@ -12,6 +12,8 @@
 		<BuildDependency Project="Engine/Platform.vcxproj"/>
 		<BuildDependency Project="Engine/Renderer.vcxproj"/>
 		<BuildDependency Project="Sandbox.vcxproj"/>
+        <BuildDependency Project="Shaders.vcxproj"/>
+        <BuildDependency Project="ShadersFiles.vcxproj"/>
 		<BuildDependency Project="ZERO_CHECK.vcxproj"/>
 		<Build Solution="Debug|*" Project="false"/>
 		<Build Solution="Release|*" Project="false"/>
@@ -22,15 +24,27 @@
 		<BuildDependency Project="ZERO_CHECK.vcxproj"/>
 	</Project>
 	<Project Path="Engine/Platform.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="b610e384-7ca1-3079-8ad0-414c609d4b72">
+        <BuildDependency Project="Engine/Core.vcxproj"/>
 		<BuildDependency Project="ZERO_CHECK.vcxproj"/>
 	</Project>
 	<Project Path="Engine/Renderer.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="93f174d4-9cf7-3d9b-98dd-e7def268265a">
+        <BuildDependency Project="Engine/Core.vcxproj"/>
+        <BuildDependency Project="Engine/Platform.vcxproj"/>
 		<BuildDependency Project="ZERO_CHECK.vcxproj"/>
 	</Project>
 	<Project Path="Sandbox.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="1d98a1d8-52ce-37e0-a48b-69fc6819b4ee">
 		<BuildDependency Project="Engine/Core.vcxproj"/>
 		<BuildDependency Project="Engine/Platform.vcxproj"/>
 		<BuildDependency Project="Engine/Renderer.vcxproj"/>
+        <BuildDependency Project="Shaders.vcxproj"/>
+        <BuildDependency Project="ZERO_CHECK.vcxproj"/>
+    </Project>
+    <Project Path="Shaders.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942"
+             Id="56e51c0d-4d37-35bf-8378-340b42e9eef4">
+        <BuildDependency Project="ZERO_CHECK.vcxproj"/>
+    </Project>
+    <Project Path="ShadersFiles.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942"
+             Id="2ffc3292-751d-355a-9523-552912483b2f">
 		<BuildDependency Project="ZERO_CHECK.vcxproj"/>
 	</Project>
 	<Project Path="ZERO_CHECK.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="686fd6ae-a14c-3fff-8efa-50d660e4bbf9"/>
