@@ -11,8 +11,8 @@
 void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass renderPass)
 {
     //Load shaders
-    auto vertShaderCode = ReadFile("Debug/Assets/Shaders/Triangle.vert.spv");
-    auto fragShaderCode = ReadFile("Debug/Assets/Shaders/Triangle.frag.spv");
+    auto vertShaderCode = ReadFile("Assets/Shaders/Triangle.vert.spv");
+    auto fragShaderCode = ReadFile("Assets/Shaders/Triangle.frag.spv");
 
     //Create shader modules
     VkShaderModule vertModule = CreateShaderModule(device, vertShaderCode);
@@ -154,7 +154,7 @@ VkShaderModule VulkanPipeline::CreateShaderModule(VkDevice device, const std::ve
 
 std::vector<char> VulkanPipeline::ReadFile(const std::string& filename)
 {
-    std::cout << std::filesystem::current_path() << std::endl;
+    std::cout << "current file path"  << std::filesystem::current_path() << std::endl;
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if (!file.is_open())

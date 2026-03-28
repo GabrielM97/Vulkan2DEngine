@@ -29,6 +29,9 @@ bool Window::Init()
         return false;
     }
 
+    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, FramebufferResizeCallback);
+    
     return true;
 }
 
@@ -45,4 +48,28 @@ void Window::PollEvents() const
 GLFWwindow* Window::GetNativeWindow() const
 {
     return window;
+}
+
+std::pair<int, int> Window::GetFramebufferSize() const
+{
+    int framebufferWidth = 0;
+    int framebufferHeight = 0;
+    glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+    return {framebufferWidth, framebufferHeight};
+}
+
+bool Window::WasResized() const
+{
+    return framebufferResized;
+}
+
+void Window::ResetResizeFlag()
+{
+    framebufferResized = false;
+}
+
+void Window::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+    if (auto* windowInstance = static_cast<Window*>(glfwGetWindowUserPointer(window)))
+        windowInstance->framebufferResized = true;
 }

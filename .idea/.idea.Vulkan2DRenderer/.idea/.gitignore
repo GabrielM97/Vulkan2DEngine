@@ -2,10 +2,10 @@
 /shelf/
 /workspace.xml
 # Rider ignored files
+/contentModel.xml
+/.idea.Vulkan2DRenderer.iml
 /projectSettingsUpdater.xml
 /modules.xml
-/contentModel.xml
-/.idea.Vulkan2DEngine.iml
 # Editor-based HTTP Client requests
 /httpRequests/
 # Ignored default folder with query files

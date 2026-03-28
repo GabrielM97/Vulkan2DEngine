@@ -68,5 +68,10 @@ void VulkanCommandBuffer::Record(
 void VulkanCommandBuffer::Cleanup(VkDevice device)
 {
     m_CommandBuffers.clear();
-    vkDestroyCommandPool(device, m_CommandPool, nullptr);
+
+    if (m_CommandPool != VK_NULL_HANDLE)
+    {
+        vkDestroyCommandPool(device, m_CommandPool, nullptr);
+        m_CommandPool = VK_NULL_HANDLE;
+    }
 }

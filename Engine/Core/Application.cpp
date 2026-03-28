@@ -18,7 +18,8 @@ bool Application::Init()
     if (!window->Init())
         return false;
 
-    vulkanRenderer.Init(window->GetNativeWindow(), 1250, 700);
+    auto [framebufferWidth, framebufferHeight] = window->GetFramebufferSize();
+    vulkanRenderer.Init(window->GetNativeWindow(), framebufferWidth, framebufferHeight);
 
     return true;
 }
@@ -28,6 +29,13 @@ void Application::Run()
     while (!window->ShouldClose())
     {
         window->PollEvents();
+        if (window->WasResized())
+        {
+            auto [framebufferWidth, framebufferHeight] = window->GetFramebufferSize();
+            vulkanRenderer.OnFramebufferResized(framebufferWidth, framebufferHeight);
+            window->ResetResizeFlag();
+            continue;
+        }
         vulkanRenderer.DrawFrame();
     }
 }

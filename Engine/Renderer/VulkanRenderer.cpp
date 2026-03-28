@@ -9,46 +9,23 @@ constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
 void VulkanRenderer::Init(GLFWwindow* window, int width, int height)
 {
-    context.Init(window);
+    m_Window = window;
 
-    device.Init(context);
+    CreatePersistentResources(window);
+    CreateSwapchainResources(width, height);
 
-    swapchain.Init(device, context.GetSurface(), width, height);
-
-    m_ImagesInFlight.resize(swapchain.GetImageViews().size(), VK_NULL_HANDLE);
-
-    renderPass.Init(device.GetDevice(), swapchain.GetFormat());
-
-    m_Pipeline.Init(device.GetDevice(), swapchain.GetExtent(), renderPass.Get());
-
-    m_Framebuffer.Init(device.GetDevice(), renderPass.Get(), swapchain.GetImageViews(), swapchain.GetExtent());
-
-    m_CommandBuffer.Init(device.GetDevice(), device.GetGraphicsQueueFamily(), swapchain.GetImageViews().size());
-
-    m_Sync.Init(device.GetDevice(), MAX_FRAMES_IN_FLIGHT);
-
-    // Init per-image render finished semaphores
-    m_RenderFinishedPerImage.resize(swapchain.GetImageViews().size());
-    for (auto& sem : m_RenderFinishedPerImage)
-    {
-        VkSemaphoreCreateInfo semInfo{};
-        semInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        vkCreateSemaphore(device.GetDevice(), &semInfo, nullptr, &sem);
-    }
-
-    // Track which images are currently in flight
-    m_ImagesInFlight.resize(swapchain.GetImageViews().size(), VK_NULL_HANDLE);
-
-    std::vector<Vertex> triangleVertices = {
+    // Hardcoded geometry for now.
+    // Later this will move behind a higher-level 2D API.
+    std::vector<Vertex> quadVertices = {
         {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+        {{ 0.5f,  0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+        {{ 0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+        {{ 0.5f,  0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
         {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}
     };
 
-    m_VertexBuffer.Init(device, m_CommandBuffer.GetCommandPool(), device.GetGraphicsQueue(), triangleVertices);
+    m_VertexBuffer.Init(device, m_CommandBuffer.GetCommandPool(), device.GetGraphicsQueue(), quadVertices);
 }
 
 void VulkanRenderer::Cleanup()
@@ -58,27 +35,8 @@ void VulkanRenderer::Cleanup()
 
     m_VertexBuffer.Cleanup(device.GetDevice());
 
-    for (auto sem : m_RenderFinishedPerImage)
-        vkDestroySemaphore(device.GetDevice(), sem, nullptr);
-
-    m_RenderFinishedPerImage.clear();
-    m_ImagesInFlight.clear();
-
-    m_Sync.Cleanup(device.GetDevice());
-
-    m_CommandBuffer.Cleanup(device.GetDevice());
-
-    m_Framebuffer.Cleanup(device.GetDevice());
-
-    m_Pipeline.Cleanup(device.GetDevice());
-
-    renderPass.Cleanup(device.GetDevice());
-
-    swapchain.Cleanup(device.GetDevice());
-
-    device.Cleanup();
-
-    context.Cleanup();
+    DestroySwapchainResources();
+    DestroyPersistentResources();
 }
 
 void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -134,14 +92,131 @@ void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
     }
 }
 
+void VulkanRenderer::CreatePersistentResources(GLFWwindow* window)
+{
+    context.Init(window);
+    device.Init(context);
+
+    // Frame-level sync objects survive swapchain recreation.
+    m_Sync.Init(device.GetDevice(), MAX_FRAMES_IN_FLIGHT);
+}
+
+void VulkanRenderer::DestroyPersistentResources()
+{
+    m_Sync.Cleanup(device.GetDevice());
+    device.Cleanup();
+    context.Cleanup();
+}
+
+void VulkanRenderer::CreateSwapchainResources(int width, int height)
+{
+    swapchain.Init(device, context.GetSurface(), width, height);
+
+    renderPass.Init(device.GetDevice(), swapchain.GetFormat());
+    m_Pipeline.Init(device.GetDevice(), swapchain.GetExtent(), renderPass.Get());
+
+    m_Framebuffer.Init(
+        device.GetDevice(),
+        renderPass.Get(),
+        swapchain.GetImageViews(),
+        swapchain.GetExtent()
+    );
+
+    m_CommandBuffer.Init(
+        device.GetDevice(),
+        device.GetGraphicsQueueFamily(),
+        static_cast<uint32_t>(swapchain.GetImageViews().size())
+    );
+
+    CreatePerImageSyncObjects();
+
+    m_CurrentFrame = 0;
+}
+
+void VulkanRenderer::DestroySwapchainResources()
+{
+    DestroyPerImageSyncObjects();
+    m_CommandBuffer.Cleanup(device.GetDevice());
+    m_Framebuffer.Cleanup(device.GetDevice());
+    m_Pipeline.Cleanup(device.GetDevice());
+    renderPass.Cleanup(device.GetDevice());
+    swapchain.Cleanup(device.GetDevice());
+ 
+}
+
+void VulkanRenderer::CreatePerImageSyncObjects()
+{
+    // One tracking slot and one render-finished semaphore per swapchain image.
+    m_ImagesInFlight.assign(swapchain.GetImageViews().size(), VK_NULL_HANDLE);
+
+    // Start from a known-clean state in case this is called after recreation.
+    m_RenderFinishedPerImage.clear();
+    m_RenderFinishedPerImage.resize(swapchain.GetImageViews().size(), VK_NULL_HANDLE);
+
+    for (auto& semaphore : m_RenderFinishedPerImage)
+    {
+        VkSemaphoreCreateInfo semaphoreInfo{};
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        if (vkCreateSemaphore(device.GetDevice(), &semaphoreInfo, nullptr, &semaphore) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create render-finished semaphore");
+    }
+}
+
+void VulkanRenderer::DestroyPerImageSyncObjects()
+{
+    for (VkSemaphore semaphore : m_RenderFinishedPerImage)
+    {
+        if (semaphore != VK_NULL_HANDLE)
+            vkDestroySemaphore(device.GetDevice(), semaphore, nullptr);
+    }
+
+    m_RenderFinishedPerImage.clear();
+    m_ImagesInFlight.clear();
+}
+
+void VulkanRenderer::RecreateSwapchain()
+{
+    int width = 0;
+    int height = 0;
+    glfwGetFramebufferSize(m_Window, &width, &height);
+
+    // A minimized window can report 0x0 framebuffer size.
+    // Wait until the window is visible again before recreating.
+    while (width == 0 || height == 0)
+    {
+        glfwWaitEvents();
+        glfwGetFramebufferSize(m_Window, &width, &height);
+    }
+    
+    RecreateSwapchain(width, height);
+}
+
+void VulkanRenderer::RecreateSwapchain(int width, int height)
+{
+    vkDeviceWaitIdle(device.GetDevice());
+
+    DestroySwapchainResources();
+    CreateSwapchainResources(width, height);
+}
+
 void VulkanRenderer::DrawFrame()
 {
     vkWaitForFences(device.GetDevice(), 1, &m_Sync.GetInFlightFence(m_CurrentFrame), VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(device.GetDevice(), swapchain.Get(), UINT64_MAX,
+    VkResult acquireResult  = vkAcquireNextImageKHR(device.GetDevice(), swapchain.Get(), UINT64_MAX,
                           m_Sync.GetImageAvailable(m_CurrentFrame), VK_NULL_HANDLE, &imageIndex);
 
+    if (acquireResult == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        RecreateSwapchain();
+        return;
+    }
+
+    if (acquireResult != VK_SUCCESS && acquireResult != VK_SUBOPTIMAL_KHR)
+        throw std::runtime_error("Failed to acquire swapchain image");
+    
     // If this image is already being used, wait for it
     if (m_ImagesInFlight[imageIndex] != VK_NULL_HANDLE)
     {
@@ -154,19 +229,18 @@ void VulkanRenderer::DrawFrame()
     m_ImagesInFlight[imageIndex] = m_Sync.GetInFlightFence(m_CurrentFrame);
 
     vkResetFences(device.GetDevice(), 1, &m_Sync.GetInFlightFence(m_CurrentFrame));
+    vkResetCommandBuffer(m_CommandBuffer.Get()[imageIndex], 0);
 
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    RecordCommandBuffer(m_CommandBuffer.Get()[imageIndex], imageIndex);
 
     VkSemaphore waitSemaphores[] = {m_Sync.GetImageAvailable(m_CurrentFrame)};
     VkPipelineStageFlags waitStages[] = {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
     };
-
-    vkResetCommandBuffer(m_CommandBuffer.Get()[imageIndex], 0);
-
-    RecordCommandBuffer(m_CommandBuffer.Get()[imageIndex], imageIndex);
-
+    
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
@@ -188,6 +262,23 @@ void VulkanRenderer::DrawFrame()
     presentInfo.pSwapchains = &swapchain.Get();
     presentInfo.pImageIndices = &imageIndex;
 
-    vkQueuePresentKHR(device.GetPresentQueue(), &presentInfo);
+    VkResult presentResult = vkQueuePresentKHR(device.GetPresentQueue(), &presentInfo);
+
+    if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR)
+    {
+        RecreateSwapchain();
+        return;
+    }
+
     m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void VulkanRenderer::OnFramebufferResized(int width, int height)
+{
+    // Ignore invalid framebuffer sizes.
+    // This can happen while minimized.
+    if (width == 0 || height == 0)
+        return;
+
+    RecreateSwapchain(width, height);
 }
