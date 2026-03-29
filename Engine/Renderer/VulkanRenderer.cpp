@@ -14,18 +14,21 @@ void VulkanRenderer::Init(GLFWwindow* window, int width, int height)
     CreatePersistentResources(window);
     CreateSwapchainResources(width, height);
 
-    // Hardcoded geometry for now.
-    // Later this will move behind a higher-level 2D API.
     std::vector<Vertex> quadVertices = {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-        {{ 0.5f,  0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-        {{ 0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-        {{ 0.5f,  0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}
+        {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+      {{1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+      {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+      {{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}
+    };
+    
+    std::vector<uint32_t> quadIndices = {
+        0, 1, 2,
+        0, 2, 3
     };
 
     m_VertexBuffer.Init(device, m_CommandBuffer.GetCommandPool(), device.GetGraphicsQueue(), quadVertices);
+    
+    m_IndexBuffer.Init(device, m_CommandBuffer.GetCommandPool(), device.GetGraphicsQueue(), quadIndices);
 }
 
 void VulkanRenderer::Cleanup()
@@ -33,10 +36,36 @@ void VulkanRenderer::Cleanup()
     //wait for GPU to finish all work
     vkDeviceWaitIdle(device.GetDevice());
 
+    m_IndexBuffer.Cleanup(device.GetDevice());
     m_VertexBuffer.Cleanup(device.GetDevice());
 
     DestroySwapchainResources();
     DestroyPersistentResources();
+}
+
+void VulkanRenderer::BeginFrame()
+{
+    m_QuadCommands.clear();
+}
+
+void VulkanRenderer::DrawQuad(float x, float y, float width, float height, float r, float g, float b, float a)
+{
+    QuadCommand command{};
+    command.offset[0] = x;
+    command.offset[1] = y;
+    command.scale[0] = width;
+    command.scale[1] = height;
+    command.tint[0] = r;
+    command.tint[1] = g;
+    command.tint[2] = b;
+    command.tint[3] = a;
+
+    m_QuadCommands.push_back(command);
+}
+
+void VulkanRenderer::EndFrame()
+{
+    DrawFrame();
 }
 
 void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -54,14 +83,14 @@ void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 
     // Your render pass
-    renderPassInfo.renderPass = renderPass.Get();
+    renderPassInfo.renderPass = m_renderPass.Get();
 
     // Framebuffer for THIS swapchain image
     renderPassInfo.framebuffer = m_Framebuffer.Get()[imageIndex];
 
     // Area to render to
     renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = swapchain.GetExtent();
+    renderPassInfo.renderArea.extent = m_swapchain.GetExtent();
 
     // Clear color (background)
     VkClearValue clearColor = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
@@ -78,10 +107,36 @@ void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
     VkBuffer vertexBuffers[] = {m_VertexBuffer.GetBuffer()};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    
+    vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
     assert(m_VertexBuffer.GetBuffer() != VK_NULL_HANDLE);
+    assert(m_IndexBuffer.GetBuffer() != VK_NULL_HANDLE);
+    
     //Draw
-    vkCmdDraw(commandBuffer, m_VertexBuffer.GetVertexCount(), 1, 0, 0);
+    for (const QuadCommand& quad : m_QuadCommands)
+    {
+        PushConstantData pushData{};
+        pushData.offset[0] = quad.offset[0];
+        pushData.offset[1] = quad.offset[1];
+        pushData.scale[0] = quad.scale[0];
+        pushData.scale[1] = quad.scale[1];
+        pushData.tint[0] = quad.tint[0];
+        pushData.tint[1] = quad.tint[1];
+        pushData.tint[2] = quad.tint[2];
+        pushData.tint[3] = quad.tint[3];
+
+        vkCmdPushConstants(
+            commandBuffer,
+            m_Pipeline.GetLayout(),
+            VK_SHADER_STAGE_VERTEX_BIT,
+            0,
+            sizeof(PushConstantData),
+            &pushData
+        );
+
+        vkCmdDrawIndexed(commandBuffer, m_IndexBuffer.GetIndexCount(), 1, 0, 0, 0);
+    }
 
     // End render pass
     vkCmdEndRenderPass(commandBuffer);
@@ -110,22 +165,22 @@ void VulkanRenderer::DestroyPersistentResources()
 
 void VulkanRenderer::CreateSwapchainResources(int width, int height)
 {
-    swapchain.Init(device, context.GetSurface(), width, height);
+    m_swapchain.Init(device, context.GetSurface(), width, height);
 
-    renderPass.Init(device.GetDevice(), swapchain.GetFormat());
-    m_Pipeline.Init(device.GetDevice(), swapchain.GetExtent(), renderPass.Get());
+    m_renderPass.Init(device.GetDevice(), m_swapchain.GetFormat());
+    m_Pipeline.Init(device.GetDevice(), m_swapchain.GetExtent(), m_renderPass.Get());
 
     m_Framebuffer.Init(
         device.GetDevice(),
-        renderPass.Get(),
-        swapchain.GetImageViews(),
-        swapchain.GetExtent()
+        m_renderPass.Get(),
+        m_swapchain.GetImageViews(),
+        m_swapchain.GetExtent()
     );
 
     m_CommandBuffer.Init(
         device.GetDevice(),
         device.GetGraphicsQueueFamily(),
-        static_cast<uint32_t>(swapchain.GetImageViews().size())
+        static_cast<uint32_t>(m_swapchain.GetImageViews().size())
     );
 
     CreatePerImageSyncObjects();
@@ -139,19 +194,19 @@ void VulkanRenderer::DestroySwapchainResources()
     m_CommandBuffer.Cleanup(device.GetDevice());
     m_Framebuffer.Cleanup(device.GetDevice());
     m_Pipeline.Cleanup(device.GetDevice());
-    renderPass.Cleanup(device.GetDevice());
-    swapchain.Cleanup(device.GetDevice());
+    m_renderPass.Cleanup(device.GetDevice());
+    m_swapchain.Cleanup(device.GetDevice());
  
 }
 
 void VulkanRenderer::CreatePerImageSyncObjects()
 {
     // One tracking slot and one render-finished semaphore per swapchain image.
-    m_ImagesInFlight.assign(swapchain.GetImageViews().size(), VK_NULL_HANDLE);
+    m_ImagesInFlight.assign(m_swapchain.GetImageViews().size(), VK_NULL_HANDLE);
 
     // Start from a known-clean state in case this is called after recreation.
     m_RenderFinishedPerImage.clear();
-    m_RenderFinishedPerImage.resize(swapchain.GetImageViews().size(), VK_NULL_HANDLE);
+    m_RenderFinishedPerImage.resize(m_swapchain.GetImageViews().size(), VK_NULL_HANDLE);
 
     for (auto& semaphore : m_RenderFinishedPerImage)
     {
@@ -205,7 +260,7 @@ void VulkanRenderer::DrawFrame()
     vkWaitForFences(device.GetDevice(), 1, &m_Sync.GetInFlightFence(m_CurrentFrame), VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
-    VkResult acquireResult  = vkAcquireNextImageKHR(device.GetDevice(), swapchain.Get(), UINT64_MAX,
+    VkResult acquireResult  = vkAcquireNextImageKHR(device.GetDevice(), m_swapchain.Get(), UINT64_MAX,
                           m_Sync.GetImageAvailable(m_CurrentFrame), VK_NULL_HANDLE, &imageIndex);
 
     if (acquireResult == VK_ERROR_OUT_OF_DATE_KHR)
@@ -259,7 +314,7 @@ void VulkanRenderer::DrawFrame()
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
     presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = &swapchain.Get();
+    presentInfo.pSwapchains = &m_swapchain.Get();
     presentInfo.pImageIndices = &imageIndex;
 
     VkResult presentResult = vkQueuePresentKHR(device.GetPresentQueue(), &presentInfo);
