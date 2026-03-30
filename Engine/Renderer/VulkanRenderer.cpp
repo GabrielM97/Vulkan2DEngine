@@ -2,6 +2,8 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "VulkanVertexBuffer.h"
 
@@ -12,6 +14,7 @@ void VulkanRenderer::Init(GLFWwindow* window, int width, int height)
     m_Window = window;
 
     CreatePersistentResources(window);
+    CreateGlobalResources(width, height);
     CreateSwapchainResources(width, height);
 
     std::vector<Vertex> quadVertices = {
@@ -33,13 +36,13 @@ void VulkanRenderer::Init(GLFWwindow* window, int width, int height)
 
 void VulkanRenderer::Cleanup()
 {
-    //wait for GPU to finish all work
     vkDeviceWaitIdle(device.GetDevice());
 
     m_IndexBuffer.Cleanup(device.GetDevice());
     m_VertexBuffer.Cleanup(device.GetDevice());
 
     DestroySwapchainResources();
+    DestroyGlobalResources();
     DestroyPersistentResources();
 }
 
@@ -102,6 +105,8 @@ void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 
     // Bind pipeline
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.Get());
+    
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetLayout(),0,1, &m_DescriptorSet,0,nullptr);
 
     //Bind vertex buffer
     VkBuffer vertexBuffers[] = {m_VertexBuffer.GetBuffer()};
@@ -163,12 +168,121 @@ void VulkanRenderer::DestroyPersistentResources()
     context.Cleanup();
 }
 
+void VulkanRenderer::CreateGlobalResources(int width, int height)
+{
+    CreateDescriptorSetLayout();
+    m_GlobalUniformBuffer.Init(device, sizeof(GlobalUBO));
+    CreateDescriptorPool();
+    CreateDescriptorSet();
+    UpdateProjectionMatrix(width, height);
+}
+
+void VulkanRenderer::DestroyGlobalResources()
+{
+    if (m_DescriptorPool != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorPool(device.GetDevice(), m_DescriptorPool, nullptr);
+        m_DescriptorPool = VK_NULL_HANDLE;
+    }
+
+    m_GlobalUniformBuffer.Cleanup(device.GetDevice());
+
+    if (m_DescriptorSetLayout != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorSetLayout(device.GetDevice(), m_DescriptorSetLayout, nullptr);
+        m_DescriptorSetLayout = VK_NULL_HANDLE;
+    }
+}
+
+void VulkanRenderer::CreateDescriptorSetLayout()
+{
+    VkDescriptorSetLayoutBinding uboBinding{};
+    uboBinding.binding = 0;
+    uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboBinding.descriptorCount = 1;
+    uboBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    uboBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboBinding;
+
+    if (vkCreateDescriptorSetLayout(device.GetDevice(), &layoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
+        throw std::runtime_error("Failed to create descriptor set layout");
+}
+
+void VulkanRenderer::CreateDescriptorPool()
+{
+    VkDescriptorPoolSize poolSize{};
+    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.descriptorCount = 1;
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.maxSets = 1;
+
+    if (vkCreateDescriptorPool(device.GetDevice(), &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
+        throw std::runtime_error("Failed to create descriptor pool");
+}
+
+void VulkanRenderer::CreateDescriptorSet()
+{
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = m_DescriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &m_DescriptorSetLayout;
+
+    if (vkAllocateDescriptorSets(device.GetDevice(), &allocInfo, &m_DescriptorSet) != VK_SUCCESS)
+        throw std::runtime_error("Failed to allocate descriptor set");
+
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = m_GlobalUniformBuffer.GetBuffer();
+    bufferInfo.offset = 0;
+    bufferInfo.range = sizeof(GlobalUBO);
+
+    VkWriteDescriptorSet descriptorWrite{};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = m_DescriptorSet;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pBufferInfo = &bufferInfo;
+
+    vkUpdateDescriptorSets(device.GetDevice(), 1, &descriptorWrite, 0, nullptr);
+}
+
+void VulkanRenderer::UpdateProjectionMatrix(int width, int height)
+{
+    GlobalUBO ubo{};
+
+    // Top-left origin, x right, y downward.
+    // Vulkan clip space is still [-1,1], but glm::ortho builds the transform for us.
+    ubo.projection = glm::ortho(
+        0.0f,
+        static_cast<float>(width),
+        static_cast<float>(height),
+        0.0f,
+        -1.0f,
+        1.0f
+    );
+    
+    ubo.projection[1][1] *= -1.0f;
+    ubo.projection[3][1] *= -1.0f;
+
+    m_GlobalUniformBuffer.Update(device.GetDevice(), &ubo, sizeof(GlobalUBO));
+}
+
 void VulkanRenderer::CreateSwapchainResources(int width, int height)
 {
     m_swapchain.Init(device, context.GetSurface(), width, height);
 
     m_renderPass.Init(device.GetDevice(), m_swapchain.GetFormat());
-    m_Pipeline.Init(device.GetDevice(), m_swapchain.GetExtent(), m_renderPass.Get());
+    m_Pipeline.Init(device.GetDevice(), m_swapchain.GetExtent(), m_renderPass.Get(), m_DescriptorSetLayout);
 
     m_Framebuffer.Init(
         device.GetDevice(),
@@ -252,6 +366,7 @@ void VulkanRenderer::RecreateSwapchain(int width, int height)
     vkDeviceWaitIdle(device.GetDevice());
 
     DestroySwapchainResources();
+    UpdateProjectionMatrix(width, height);
     CreateSwapchainResources(width, height);
 }
 

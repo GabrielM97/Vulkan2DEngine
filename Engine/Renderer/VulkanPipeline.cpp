@@ -8,7 +8,7 @@
 #include "VulkanVertexBuffer.h"
 
 
-void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass renderPass)
+void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout)
 {
     //Load shaders
     auto vertShaderCode = ReadFile("Assets/Shaders/Triangle.vert.spv");
@@ -100,20 +100,22 @@ void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass rende
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
-    // 🔹 Pipeline layout (no uniforms yet)
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(float) * 8; // 2 offset + 2 scale + 4 tint
+    pushConstantRange.size = sizeof(float) * 8; // vec2 offset + vec2 scale + vec4 tint
 
     VkPipelineLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layoutInfo.setLayoutCount = 1;
+    layoutInfo.pSetLayouts = &descriptorSetLayout;
     layoutInfo.pushConstantRangeCount = 1;
     layoutInfo.pPushConstantRanges = &pushConstantRange;
 
     if (vkCreatePipelineLayout(device, &layoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)
         throw std::runtime_error("Failed to create pipeline layout");
-
+    
+    
     // 🔹 Pipeline creation
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

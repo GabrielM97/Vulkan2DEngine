@@ -6,7 +6,7 @@
 class VulkanPipeline
 {
 public:
-    void Init(VkDevice device, VkExtent2D extent, VkRenderPass renderPass);
+    void Init(VkDevice device, VkExtent2D extent, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
     void Cleanup(VkDevice device);
 
     VkPipeline Get() const { return m_pipeline; }

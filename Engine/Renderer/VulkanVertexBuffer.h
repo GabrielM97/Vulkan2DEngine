@@ -50,10 +50,10 @@ public:
     uint32_t GetVertexCount() const { return static_cast<uint32_t>(m_VertexCount); }
 
 private:
+    void CreateVertexBuffer(VulkanDevice device, VkCommandPool commandPool, VkQueue graphicsQueue,
+                        const std::vector<Vertex>& vertices);
+    
     VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
     VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
     size_t m_VertexCount = 0;
-
-    void CreateVertexBuffer(VulkanDevice device, VkCommandPool commandPool, VkQueue graphicsQueue,
-                            const std::vector<Vertex>& vertices);
 };

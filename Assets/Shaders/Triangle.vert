@@ -1,20 +1,25 @@
 #version 450
-layout (location = 0) in vec3 inPosition;
-layout (location = 1) in vec3 inColor;
 
-layout (location = 0) out vec4 fragColor;
+layout(location = 0) in vec3 inPosition;
+layout(location = 1) in vec3 inColor;
 
-layout (push_constant) uniform PushConstants
+layout(location = 0) out vec4 fragColor;
+
+layout(set = 0, binding = 0) uniform GlobalUBO
+{
+    mat4 projection;
+} ubo;
+
+layout(push_constant) uniform PushConstants
 {
     vec2 offset;
     vec2 scale;
     vec4 tint;
 } pc;
 
-void main() {
-
-    vec2 scaledPosition = inPosition.xy * pc.scale;
-    vec2 transformedPosition = scaledPosition + pc.offset;
-    gl_Position = vec4(transformedPosition, inPosition.z, 1.0);
-    fragColor = vec4(inColor, 1) * pc.tint;
+void main()
+{
+    vec2 localPosition = inPosition.xy * pc.scale + pc.offset;
+    gl_Position = ubo.projection * vec4(localPosition, inPosition.z, 1.0);
+    fragColor = vec4(inColor, 1.0) * pc.tint;
 }
