@@ -40,7 +40,7 @@ void Application::Run()
         // Temporary test quads in clip-space coordinates.
         vulkanRenderer.BeginFrame();
 
-        vulkanRenderer.DrawQuad(1000.f, 0.0f, 10.0f, 10.0f, 1.0f, 0.0f, 0.0f, 1.0f);
+        vulkanRenderer.DrawQuad(50.f, 0.0f, 100.0f, 100.0f, 1.0f, 1.0f, 1.0f, 1.0f);
         vulkanRenderer.DrawQuad(240.0f, 80.0f, 180.0f, 100.0f, 0.0f, 1.0f, 0.0f, 1.0f);
         vulkanRenderer.DrawQuad(120.0f, 240.0f, 220.0f, 140.0f, 0.0f, 0.5f, 1.0f, 1.0f);
 
