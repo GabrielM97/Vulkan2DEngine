@@ -6,7 +6,7 @@
 #include "VulkanFramebuffer.h"
 #include "VulkanIndexBuffer.h"
 #include "VulkanPipeline.h"
-#include "VulkanSwapchain.h"
+#include "VulkanSwapChain.h"
 #include "VulkanRenderPass.h"
 #include "VulkanSync.h"
 #include "VulkanVertexBuffer.h"

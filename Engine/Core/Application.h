@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include <memory>
-#include "Renderer/VulkanRenderer.h"
 
-class Window;
+#include "Platform/Window.h"
+#include "Renderer/VulkanRenderer.h"
 
 class Application
 {

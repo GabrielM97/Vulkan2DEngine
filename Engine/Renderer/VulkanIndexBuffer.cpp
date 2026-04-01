@@ -1,6 +1,6 @@
 ﻿#include "VulkanIndexBuffer.h"
-
 #include "VulkanDevice.h"
+#include <cstring>
 
 void VulkanIndexBuffer::Init(VulkanDevice device, VkCommandPool commandPool, VkQueue graphicsQueue,
                              const std::vector<uint32_t>& indices)
