@@ -82,6 +82,7 @@ private:
     VulkanPipeline m_Pipeline;
     VulkanFramebuffer m_Framebuffer;
     VulkanCommandBuffer m_CommandBuffer;
+    //VulkanTexture m_Texture;
 
     VulkanSync m_Sync;
     VulkanVertexBuffer m_VertexBuffer;

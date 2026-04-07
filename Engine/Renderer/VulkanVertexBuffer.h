@@ -9,6 +9,7 @@ struct Vertex
 {
     float pos[3];
     float colour[3];
+    float uv[2];
 
     static VkVertexInputBindingDescription GetVertexInputBindingDescription()
     {
@@ -34,6 +35,11 @@ struct Vertex
         attributes[1].location = 1;
         attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributes[1].offset = offsetof(Vertex, colour);
+        
+        attributes[2].binding = 0;
+        attributes[2].location = 1;
+        attributes[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributes[2].offset = offsetof(Vertex, uv);
 
         return attributes;
     }

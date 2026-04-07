@@ -18,10 +18,10 @@ void VulkanRenderer::Init(GLFWwindow* window, int width, int height)
     CreateSwapchainResources(width, height);
 
     std::vector<Vertex> quadVertices = {
-        {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-      {{1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-      {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-      {{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}
+        {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
+        {{1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
+        {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+        {{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
     };
     
     std::vector<uint32_t> quadIndices = {
@@ -202,11 +202,23 @@ void VulkanRenderer::CreateDescriptorSetLayout()
     uboBinding.descriptorCount = 1;
     uboBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     uboBinding.pImmutableSamplers = nullptr;
+    
+    VkDescriptorSetLayoutBinding samplerBinding{};
+    samplerBinding.binding = 1;
+    samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerBinding.descriptorCount = 1;
+    samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    samplerBinding.pImmutableSamplers = nullptr;
+
+    std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
+        uboBinding,
+        samplerBinding
+    };
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &uboBinding;
+    layoutInfo.pBindings = bindings.data();
 
     if (vkCreateDescriptorSetLayout(device.GetDevice(), &layoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("Failed to create descriptor set layout");
@@ -214,14 +226,17 @@ void VulkanRenderer::CreateDescriptorSetLayout()
 
 void VulkanRenderer::CreateDescriptorPool()
 {
-    VkDescriptorPoolSize poolSize{};
-    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSize.descriptorCount = 1;
+    std::array<VkDescriptorPoolSize, 2> poolSize{};
+    poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize[0].descriptorCount = 1;
+    
+    poolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSize[1].descriptorCount = 1;
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
+    poolInfo.pPoolSizes = &poolSize.data;
     poolInfo.maxSets = 1;
 
     if (vkCreateDescriptorPool(device.GetDevice(), &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
@@ -244,16 +259,36 @@ void VulkanRenderer::CreateDescriptorSet()
     bufferInfo.offset = 0;
     bufferInfo.range = sizeof(GlobalUBO);
 
-    VkWriteDescriptorSet descriptorWrite{};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = m_DescriptorSet;
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.dstArrayElement = 0;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pBufferInfo = &bufferInfo;
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    //imageInfo.imageView = m_Texture.GetImageView();
+    //imageInfo.sampler = m_Texture.GetSampler();
 
-    vkUpdateDescriptorSets(device.GetDevice(), 1, &descriptorWrite, 0, nullptr);
+    std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+    descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[0].dstSet = m_DescriptorSet;
+    descriptorWrites[0].dstBinding = 0;
+    descriptorWrites[0].dstArrayElement = 0;
+    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrites[0].descriptorCount = 1;
+    descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[1].dstSet = m_DescriptorSet;
+    descriptorWrites[1].dstBinding = 1;
+    descriptorWrites[1].dstArrayElement = 0;
+    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrites[1].descriptorCount = 1;
+    descriptorWrites[1].pImageInfo = &imageInfo;
+
+    vkUpdateDescriptorSets(
+        device.GetDevice(),
+        static_cast<uint32_t>(descriptorWrites.size()),
+        descriptorWrites.data(),
+        0,
+        nullptr
+    );
 }
 
 void VulkanRenderer::UpdateProjectionMatrix(int width, int height)
