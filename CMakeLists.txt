@@ -23,11 +23,13 @@ if(WIN32)
     target_include_directories(EngineDeps INTERFACE
         $ENV{VCPKG_ROOT}/installed/x64-windows/include
         $ENV{VULKAN_SDK}/Include
+        ${CMAKE_SOURCE_DIR}/External/stb
     )
 elseif(UNIX)
     target_include_directories(EngineDeps INTERFACE
         $ENV{VCPKG_ROOT}/installed/x64-linux/include
         /usr/include
+         ${CMAKE_SOURCE_DIR}/External/stb
     )
 endif()
 target_link_libraries(EngineDeps INTERFACE
@@ -50,6 +52,10 @@ target_link_libraries(Sandbox
     EngineDeps
 )
 target_include_directories(Sandbox PUBLIC Engine)
+
+target_sources(Renderer PUBLIC
+    ${CMAKE_SOURCE_DIR}/External/stb/stb_image.cpp
+)
 
 # --- Shader compilation ---
 find_program(GLSLANG_VALIDATOR glslangValidator REQUIRED)
@@ -84,8 +90,14 @@ add_dependencies(Sandbox Shaders)
 # --- Copy compiled shaders to executable folder ---
 add_custom_command(TARGET Sandbox POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:Sandbox>/Assets/Shaders
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SHADER_OUT_DIR} $<TARGET_FILE_DIR:Sandbox>/Assets/Shaders
-    COMMENT "Copying compiled shaders to executable folder"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${SHADER_OUT_DIR}
+            $<TARGET_FILE_DIR:Sandbox>/Assets/Shaders
+    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:Sandbox>/Assets/Textures
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/Assets/Textures
+            $<TARGET_FILE_DIR:Sandbox>/Assets/Textures
+    COMMENT "Copying shaders and textures to executable folder"
 )
 
 # --- Organize shaders in IDE ---

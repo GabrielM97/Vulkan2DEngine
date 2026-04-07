@@ -20,9 +20,9 @@ struct Vertex
         return binding;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 2> GetVertexInputAttributeDescription()
+    static std::array<VkVertexInputAttributeDescription, 3> GetVertexInputAttributeDescription()
     {
-        std::array<VkVertexInputAttributeDescription, 2> attributes{};
+        std::array<VkVertexInputAttributeDescription, 3> attributes{};
 
         // Position
         attributes[0].binding = 0;
@@ -37,8 +37,8 @@ struct Vertex
         attributes[1].offset = offsetof(Vertex, colour);
         
         attributes[2].binding = 0;
-        attributes[2].location = 1;
-        attributes[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributes[2].location = 2;
+        attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
         attributes[2].offset = offsetof(Vertex, uv);
 
         return attributes;

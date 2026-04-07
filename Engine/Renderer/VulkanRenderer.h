@@ -12,6 +12,7 @@
 #include "VulkanVertexBuffer.h"
 #include "VulkanUniformBuffer.h"
 #include <glm/mat4x4.hpp>
+#include "VulkanTexture.h"
 
 struct QuadCommand
 {
@@ -82,7 +83,8 @@ private:
     VulkanPipeline m_Pipeline;
     VulkanFramebuffer m_Framebuffer;
     VulkanCommandBuffer m_CommandBuffer;
-    //VulkanTexture m_Texture;
+    VkCommandPool m_UploadCommandPool = VK_NULL_HANDLE;
+    VulkanTexture m_Texture;
 
     VulkanSync m_Sync;
     VulkanVertexBuffer m_VertexBuffer;
@@ -100,4 +102,5 @@ private:
     // One render-finished semaphore per swapchain image.
     std::vector<VkSemaphore> m_RenderFinishedPerImage;
     std::vector<QuadCommand> m_QuadCommands;
+
 };

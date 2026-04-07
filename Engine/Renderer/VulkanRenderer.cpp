@@ -157,6 +157,14 @@ void VulkanRenderer::CreatePersistentResources(GLFWwindow* window)
     context.Init(window);
     device.Init(context);
 
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    poolInfo.queueFamilyIndex = device.GetGraphicsQueueFamily();
+
+    if (vkCreateCommandPool(device.GetDevice(), &poolInfo, nullptr, &m_UploadCommandPool) != VK_SUCCESS)
+        throw std::runtime_error("Failed to create upload command pool");
+
     // Frame-level sync objects survive swapchain recreation.
     m_Sync.Init(device.GetDevice(), MAX_FRAMES_IN_FLIGHT);
 }
@@ -164,6 +172,13 @@ void VulkanRenderer::CreatePersistentResources(GLFWwindow* window)
 void VulkanRenderer::DestroyPersistentResources()
 {
     m_Sync.Cleanup(device.GetDevice());
+
+    if (m_UploadCommandPool != VK_NULL_HANDLE)
+    {
+        vkDestroyCommandPool(device.GetDevice(), m_UploadCommandPool, nullptr);
+        m_UploadCommandPool = VK_NULL_HANDLE;
+    }
+
     device.Cleanup();
     context.Cleanup();
 }
@@ -172,6 +187,14 @@ void VulkanRenderer::CreateGlobalResources(int width, int height)
 {
     CreateDescriptorSetLayout();
     m_GlobalUniformBuffer.Init(device, sizeof(GlobalUBO));
+
+    m_Texture.Init(
+        device,
+        m_UploadCommandPool,
+        device.GetGraphicsQueue(),
+        "Assets/Textures/texture.jpg"
+    );
+
     CreateDescriptorPool();
     CreateDescriptorSet();
     UpdateProjectionMatrix(width, height);
@@ -186,6 +209,7 @@ void VulkanRenderer::DestroyGlobalResources()
     }
 
     m_GlobalUniformBuffer.Cleanup(device.GetDevice());
+    m_Texture.Cleanup(device.GetDevice());
 
     if (m_DescriptorSetLayout != VK_NULL_HANDLE)
     {
@@ -217,7 +241,7 @@ void VulkanRenderer::CreateDescriptorSetLayout()
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
+    layoutInfo.bindingCount = 2;
     layoutInfo.pBindings = bindings.data();
 
     if (vkCreateDescriptorSetLayout(device.GetDevice(), &layoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
@@ -236,7 +260,7 @@ void VulkanRenderer::CreateDescriptorPool()
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
-    poolInfo.pPoolSizes = &poolSize.data;
+    poolInfo.pPoolSizes = poolSize.data();
     poolInfo.maxSets = 1;
 
     if (vkCreateDescriptorPool(device.GetDevice(), &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
@@ -261,8 +285,8 @@ void VulkanRenderer::CreateDescriptorSet()
 
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    //imageInfo.imageView = m_Texture.GetImageView();
-    //imageInfo.sampler = m_Texture.GetSampler();
+    imageInfo.imageView = m_Texture.GetImageView();
+    imageInfo.sampler = m_Texture.GetSampler();
 
     std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 

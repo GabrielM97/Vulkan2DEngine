@@ -24,5 +24,5 @@ void main()
     vec2 localPosition = inPosition.xy * pc.scale + pc.offset;
     gl_Position = ubo.projection * vec4(localPosition, inPosition.z, 1.0);
     fragColor = vec4(inColor, 1.0) * pc.tint;
-    fraguv = inUV;
+    fragUV = inUV;
 }
