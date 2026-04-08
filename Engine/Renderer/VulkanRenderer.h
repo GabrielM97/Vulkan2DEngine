@@ -16,16 +16,18 @@
 
 struct QuadCommand
 {
-    float offset[2];
-    float scale[2];
-    float tint[4];
+    glm::vec2 position{0.0f};
+    glm::vec2 size{1.0f};
+    float rotation = 0.0f;
+    glm::vec4 tint{1.0f};
+    uint32_t textureIndex = 0;
 };
 
 struct PushConstantData
 {
-    float offset[2];
-    float scale[2];
-    float tint[4];
+    glm::vec2 offset{0.0f};
+    glm::vec2 scale{1.0f};
+    glm::vec4 tint{1.0f};
 };
 
 struct GlobalUBO
@@ -40,7 +42,7 @@ public:
     void Cleanup();
 
     void BeginFrame();
-    void DrawQuad(float x, float y, float width, float height, float r, float g, float b, float a);
+    void DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationRadians, const glm::vec4 tint = glm::vec4(1.0f), uint32_t textureIndex = 0);
     void EndFrame();
     void DrawFrame();
     

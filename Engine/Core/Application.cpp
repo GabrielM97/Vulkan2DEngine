@@ -40,10 +40,10 @@ void Application::Run()
         // Temporary test quads in clip-space coordinates.
         vulkanRenderer.BeginFrame();
 
-        vulkanRenderer.DrawQuad(50.f, 0.0f, 100.0f, 100.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-        vulkanRenderer.DrawQuad(240.0f, 80.0f, 180.0f, 100.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-        vulkanRenderer.DrawQuad(120.0f, 240.0f, 220.0f, 140.0f, 0.0f, 0.5f, 1.0f, 1.0f);
-
+        vulkanRenderer.DrawQuad(glm::vec2(50, 100), glm::vec2(100.0f, 100.0f) , 90.f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        vulkanRenderer.DrawQuad(glm::vec2(400, 100), glm::vec2(200.0f, 150.0f) , 90.f, glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+        vulkanRenderer.DrawQuad(glm::vec2(70, 300), glm::vec2(200.0f, 200.0f) , 90.f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+        
         vulkanRenderer.EndFrame();
     }
 }

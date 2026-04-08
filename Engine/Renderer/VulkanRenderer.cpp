@@ -51,17 +51,14 @@ void VulkanRenderer::BeginFrame()
     m_QuadCommands.clear();
 }
 
-void VulkanRenderer::DrawQuad(float x, float y, float width, float height, float r, float g, float b, float a)
+void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationRadians, const glm::vec4 tint, uint32_t textureIndex)
 {
     QuadCommand command{};
-    command.offset[0] = x;
-    command.offset[1] = y;
-    command.scale[0] = width;
-    command.scale[1] = height;
-    command.tint[0] = r;
-    command.tint[1] = g;
-    command.tint[2] = b;
-    command.tint[3] = a;
+    command.position = position;
+    command.size = size;
+    command.rotation = rotationRadians;
+    command.tint = tint;
+    command.textureIndex = textureIndex;
 
     m_QuadCommands.push_back(command);
 }
@@ -122,14 +119,9 @@ void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
     for (const QuadCommand& quad : m_QuadCommands)
     {
         PushConstantData pushData{};
-        pushData.offset[0] = quad.offset[0];
-        pushData.offset[1] = quad.offset[1];
-        pushData.scale[0] = quad.scale[0];
-        pushData.scale[1] = quad.scale[1];
-        pushData.tint[0] = quad.tint[0];
-        pushData.tint[1] = quad.tint[1];
-        pushData.tint[2] = quad.tint[2];
-        pushData.tint[3] = quad.tint[3];
+        pushData.offset = quad.position;
+        pushData.scale = quad.size;
+        pushData.tint = quad.tint;
 
         vkCmdPushConstants(
             commandBuffer,
