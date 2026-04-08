@@ -5,14 +5,15 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "VulkanRenderer.h"
 #include "VulkanVertexBuffer.h"
 
 
 void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout)
 {
     //Load shaders
-    auto vertShaderCode = ReadFile("Assets/Shaders/Triangle.vert.spv");
-    auto fragShaderCode = ReadFile("Assets/Shaders/Triangle.frag.spv");
+    auto vertShaderCode = ReadFile("Assets/Shaders/Vertex.vert.spv");
+    auto fragShaderCode = ReadFile("Assets/Shaders/Fragment.frag.spv");
 
     //Create shader modules
     VkShaderModule vertModule = CreateShaderModule(device, vertShaderCode);
@@ -103,7 +104,7 @@ void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass rende
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(float) * 12; // vec2 offset + vec2 scale + vec4 tint
+    pushConstantRange.size = sizeof(PushConstantData);
 
     VkPipelineLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
