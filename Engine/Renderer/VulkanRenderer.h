@@ -25,8 +25,11 @@ struct QuadCommand
 
 struct PushConstantData
 {
-    glm::vec2 offset{0.0f};
-    glm::vec2 scale{1.0f};
+    glm::vec2 position{0.0f};
+    glm::vec2 size{1.0f};
+    glm::vec2 origin{0.5f, 0.5f};
+    float rotation = 0.0f;
+    float padding = 0.0f;
     glm::vec4 tint{1.0f};
 };
 
@@ -42,7 +45,7 @@ public:
     void Cleanup();
 
     void BeginFrame();
-    void DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationRadians, const glm::vec4 tint = glm::vec4(1.0f), uint32_t textureIndex = 0);
+    void DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec4 tint = glm::vec4(1.0f), uint32_t textureIndex = 0);
     void EndFrame();
     void DrawFrame();
     
