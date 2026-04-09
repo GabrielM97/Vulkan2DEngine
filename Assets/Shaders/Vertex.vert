@@ -1,42 +1,42 @@
 #version 450
 
 layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec3 inColor;
-layout(location = 2) in vec2 inUV;
+layout(location = 1) in vec2 inUV;
 
-layout(location = 0) out vec4 fragColor;
-layout(location = 1) out vec2 fragUV;
+layout(location = 2) in vec2 inInstancePosition;
+layout(location = 3) in vec2 inInstanceSize;
+layout(location = 4) in float inInstanceRotation;
+layout(location = 5) in float inTextureIndex;
+layout(location = 6) in vec4 inTint;
+
+layout(location = 0) out vec2 fragUV;
+layout(location = 1) out vec4 fragColor;
+layout(location = 2) out float fragTextureIndex;
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
     mat4 projection;
 } ubo;
 
-layout(push_constant) uniform PushConstants
-{
-    vec2 position;
-    vec2 size;
-    vec2 origin;
-    float rotation;
-    float padding;
-    vec4 tint;
-} pc;
-
 void main()
 {
-    vec2 local = inPosition.xy - pc.origin;
-    local *= pc.size;
+    vec2 origin = vec2(0.5, 0.5);
 
-    float c = cos(pc.rotation);
-    float s = sin(pc.rotation);
+    vec2 local = inPosition.xy - origin;
+    local *= inInstanceSize;
+
+    float c = cos(inInstanceRotation);
+    float s = sin(inInstanceRotation);
 
     vec2 rotated;
     rotated.x = local.x * c - local.y * s;
     rotated.y = local.x * s + local.y * c;
 
-    vec2 worldPosition = rotated + pc.position + pc.origin * pc.size;
+    vec2 worldPosition = rotated + inInstancePosition + origin * inInstanceSize;
 
     gl_Position = ubo.projection * vec4(worldPosition, inPosition.z, 1.0);
-    fragColor = vec4(inColor, 1.0) * pc.tint;
+
     fragUV = inUV;
+    fragColor = inTint;
+    fragTextureIndex = inTextureIndex;
 }

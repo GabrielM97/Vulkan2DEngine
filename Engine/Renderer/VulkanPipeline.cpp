@@ -35,15 +35,33 @@ void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass rende
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertStage, fragStage};
 
     //Vertex input
-    auto bindingDescription = Vertex::GetVertexInputBindingDescription();
-    auto attributeDescriptions = Vertex::GetVertexInputAttributeDescription();
+    auto vertexBinding = Vertex::GetVertexInputBindingDescription();
+    auto instanceBinding = QuadInstanceData::GetBindingDescription();
+
+    std::array<VkVertexInputBindingDescription, 2> bindings = {
+        vertexBinding,
+        instanceBinding
+    };
+
+    auto vertexAttributes = Vertex::GetVertexInputAttributeDescription();
+    auto instanceAttributes = QuadInstanceData::GetAttributeDescriptions();
+
+    std::array<VkVertexInputAttributeDescription, 7> attributes = {
+        vertexAttributes[0],
+        vertexAttributes[1],
+        instanceAttributes[0],
+        instanceAttributes[1],
+        instanceAttributes[2],
+        instanceAttributes[3],
+        instanceAttributes[4]
+    };
 
     VkPipelineVertexInputStateCreateInfo vertexInput{};
     vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInput.vertexBindingDescriptionCount = 1;
-    vertexInput.pVertexBindingDescriptions = &bindingDescription;
-    vertexInput.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInput.pVertexAttributeDescriptions = attributeDescriptions.data();
+    vertexInput.vertexBindingDescriptionCount = static_cast<uint32_t>(bindings.size());
+    vertexInput.pVertexBindingDescriptions = bindings.data();
+    vertexInput.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes.size());
+    vertexInput.pVertexAttributeDescriptions = attributes.data();
 
     //Input assembly
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
@@ -101,17 +119,12 @@ void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass rende
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
-    VkPushConstantRange pushConstantRange{};
-    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(PushConstantData);
-
     VkPipelineLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layoutInfo.setLayoutCount = 1;
     layoutInfo.pSetLayouts = &descriptorSetLayout;
-    layoutInfo.pushConstantRangeCount = 1;
-    layoutInfo.pPushConstantRanges = &pushConstantRange;
+    layoutInfo.pushConstantRangeCount = 0;
+    layoutInfo.pPushConstantRanges = nullptr;
 
     if (vkCreatePipelineLayout(device, &layoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)
         throw std::runtime_error("Failed to create pipeline layout");

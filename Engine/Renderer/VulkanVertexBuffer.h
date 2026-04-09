@@ -1,15 +1,16 @@
 #pragma once
 #include <array>
 #include <vector>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 #include <vulkan/vulkan_core.h>
 
 class VulkanDevice;
 
 struct Vertex
 {
-    float pos[3];
-    float colour[3];
-    float uv[2];
+    glm::vec3 pos{0.0f};
+    glm::vec2 uv{0.0f};
 
     static VkVertexInputBindingDescription GetVertexInputBindingDescription()
     {
@@ -20,26 +21,19 @@ struct Vertex
         return binding;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 3> GetVertexInputAttributeDescription()
+    static std::array<VkVertexInputAttributeDescription, 2> GetVertexInputAttributeDescription()
     {
-        std::array<VkVertexInputAttributeDescription, 3> attributes{};
+        std::array<VkVertexInputAttributeDescription, 2> attributes{};
 
-        // Position
         attributes[0].binding = 0;
         attributes[0].location = 0;
         attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributes[0].offset = offsetof(Vertex, pos);
 
-        // Color
         attributes[1].binding = 0;
         attributes[1].location = 1;
-        attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributes[1].offset = offsetof(Vertex, colour);
-        
-        attributes[2].binding = 0;
-        attributes[2].location = 2;
-        attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-        attributes[2].offset = offsetof(Vertex, uv);
+        attributes[1].format = VK_FORMAT_R32G32_SFLOAT;
+        attributes[1].offset = offsetof(Vertex, uv);
 
         return attributes;
     }

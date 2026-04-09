@@ -18,10 +18,10 @@ void VulkanRenderer::Init(GLFWwindow* window, int width, int height)
     CreateSwapchainResources(width, height);
 
     std::vector<Vertex> quadVertices = {
-        {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
-        {{1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
-        {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-        {{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+        {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+        {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+        {{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}}
     };
     
     std::vector<uint32_t> quadIndices = {
@@ -32,12 +32,15 @@ void VulkanRenderer::Init(GLFWwindow* window, int width, int height)
     m_VertexBuffer.Init(device, m_CommandBuffer.GetCommandPool(), device.GetGraphicsQueue(), quadVertices);
     
     m_IndexBuffer.Init(device, m_CommandBuffer.GetCommandPool(), device.GetGraphicsQueue(), quadIndices);
+    
+    m_InstanceBuffer.Init(device, 1000);
 }
 
 void VulkanRenderer::Cleanup()
 {
     vkDeviceWaitIdle(device.GetDevice());
-
+    
+    m_InstanceBuffer.Cleanup(device.GetDevice());
     m_IndexBuffer.Cleanup(device.GetDevice());
     m_VertexBuffer.Cleanup(device.GetDevice());
 
@@ -65,6 +68,23 @@ void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, fl
 
 void VulkanRenderer::EndFrame()
 {
+    m_InstanceData.clear();
+    m_InstanceData.reserve(m_QuadCommands.size());
+
+    for (const QuadCommand& quad : m_QuadCommands)
+    {
+        QuadInstanceData instance{};
+        instance.position = quad.position;
+        instance.size = quad.size;
+        instance.rotation = quad.rotation;
+        instance.textureIndex = static_cast<float>(quad.textureIndex);
+        instance.tint = quad.tint;
+
+        m_InstanceData.push_back(instance);
+    }
+
+    m_InstanceBuffer.Update(device, m_InstanceData);
+
     DrawFrame();
 }
 
@@ -100,44 +120,41 @@ void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
     //Begin render pass
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    // Bind pipeline
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.Get());
-    
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.GetLayout(),0,1, &m_DescriptorSet,0,nullptr);
 
-    //Bind vertex buffer
-    VkBuffer vertexBuffers[] = {m_VertexBuffer.GetBuffer()};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    
+    vkCmdBindDescriptorSets(
+        commandBuffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        m_Pipeline.GetLayout(),
+        0,
+        1,
+        &m_DescriptorSet,
+        0,
+        nullptr
+    );
+
+    VkBuffer vertexBuffers[] = {
+        m_VertexBuffer.GetBuffer(),
+        m_InstanceBuffer.GetBuffer()
+    };
+
+    VkDeviceSize offsets[] = {0, 0};
+
+    vkCmdBindVertexBuffers(commandBuffer, 0, 2, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-    assert(m_VertexBuffer.GetBuffer() != VK_NULL_HANDLE);
-    assert(m_IndexBuffer.GetBuffer() != VK_NULL_HANDLE);
-    
-    //Draw
-    for (const QuadCommand& quad : m_QuadCommands)
+    if (m_InstanceBuffer.GetInstanceCount() > 0)
     {
-        PushConstantData pushData{};
-        pushData.position = quad.position;
-        pushData.size = quad.size;
-        pushData.origin = glm::vec2(0.5f, 0.5f);
-        pushData.rotation = quad.rotation;
-        pushData.tint = quad.tint;
-
-        vkCmdPushConstants(
+        vkCmdDrawIndexed(
             commandBuffer,
-            m_Pipeline.GetLayout(),
-            VK_SHADER_STAGE_VERTEX_BIT,
+            m_IndexBuffer.GetIndexCount(),
+            m_InstanceBuffer.GetInstanceCount(),
             0,
-            sizeof(PushConstantData),
-            &pushData
+            0,
+            0
         );
-
-        vkCmdDrawIndexed(commandBuffer, m_IndexBuffer.GetIndexCount(), 1, 0, 0, 0);
     }
 
-    // End render pass
     vkCmdEndRenderPass(commandBuffer);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)

@@ -10,6 +10,7 @@
 #include "VulkanRenderPass.h"
 #include "VulkanSync.h"
 #include "VulkanVertexBuffer.h"
+#include "VulkanQuadInstanceBuffer.h"
 #include "VulkanUniformBuffer.h"
 #include <glm/mat4x4.hpp>
 #include "VulkanTexture.h"
@@ -21,16 +22,6 @@ struct QuadCommand
     float rotation = 0.0f;
     glm::vec4 tint{1.0f};
     uint32_t textureIndex = 0;
-};
-
-struct PushConstantData
-{
-    glm::vec2 position{0.0f};
-    glm::vec2 size{1.0f};
-    glm::vec2 origin{0.5f, 0.5f};
-    float rotation = 0.0f;
-    float padding = 0.0f;
-    glm::vec4 tint{1.0f};
 };
 
 struct GlobalUBO
@@ -95,6 +86,8 @@ private:
     VulkanVertexBuffer m_VertexBuffer;
     VulkanIndexBuffer m_IndexBuffer;
     VulkanUniformBuffer m_GlobalUniformBuffer;
+    VulkanQuadInstanceBuffer m_InstanceBuffer;
+    std::vector<QuadInstanceData> m_InstanceData;
 
     VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
