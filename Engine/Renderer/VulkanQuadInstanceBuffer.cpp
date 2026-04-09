@@ -51,7 +51,10 @@ void VulkanQuadInstanceBuffer::Update(VulkanDevice device, const std::vector<Qua
         return;
 
     if (instances.size() > m_Capacity)
-        throw std::runtime_error("Instance buffer capacity exceeded");
+    {
+        Cleanup(device.GetDevice());
+        CreateBuffer(device, std::max(instances.size(), m_Capacity > 0 ? m_Capacity * 2 : size_t(1)));
+    }
 
     VkDeviceSize bufferSize = sizeof(QuadInstanceData) * instances.size();
 

@@ -11,23 +11,10 @@
 #include "VulkanSync.h"
 #include "VulkanVertexBuffer.h"
 #include "VulkanQuadInstanceBuffer.h"
+#include "RenderTypes.h"
 #include "VulkanUniformBuffer.h"
 #include <glm/mat4x4.hpp>
 #include "VulkanTexture.h"
-
-struct QuadCommand
-{
-    glm::vec2 position{0.0f};
-    glm::vec2 size{1.0f};
-    float rotation = 0.0f;
-    glm::vec4 tint{1.0f};
-    uint32_t textureIndex = 0;
-};
-
-struct GlobalUBO
-{
-    glm::mat4 projection{1.0f};
-};
 
 class VulkanRenderer
 {
