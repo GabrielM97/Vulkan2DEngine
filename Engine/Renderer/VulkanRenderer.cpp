@@ -65,9 +65,8 @@ uint32_t VulkanRenderer::LoadTexture(const char* path)
     );
 
     const uint32_t textureIndex = static_cast<uint32_t>(m_Textures.size() - 1);
-
-    if (m_DescriptorPool != VK_NULL_HANDLE)
-        RebuildTextureDescriptorResources();
+    
+    RebuildTextureDescriptorResources();
 
     return textureIndex;
 }
@@ -232,10 +231,7 @@ void VulkanRenderer::CreateGlobalResources(int width, int height)
     CreateDescriptorSetLayout();
 
     m_GlobalUniformBuffer.Init(device, sizeof(GlobalUBO));
-
-    LoadTexture("Assets/Textures/texture.jpg");
-    LoadTexture("Assets/Textures/texture2.jpg");
-
+    
     CreateDescriptorPool();
     CreateDescriptorSets();
 
@@ -299,6 +295,9 @@ void VulkanRenderer::CreateDescriptorSetLayout()
 void VulkanRenderer::CreateDescriptorPool()
 {
     const uint32_t textureCount = static_cast<uint32_t>(m_Textures.size());
+    
+    if (textureCount == 0)
+        return;
 
     std::array<VkDescriptorPoolSize, 2> poolSizes{};
 
@@ -321,6 +320,9 @@ void VulkanRenderer::CreateDescriptorPool()
 void VulkanRenderer::CreateDescriptorSets()
 {
    const uint32_t textureCount = static_cast<uint32_t>(m_Textures.size());
+    
+    if (textureCount == 0)
+        return;
 
     std::vector<VkDescriptorSetLayout> layouts(textureCount, m_DescriptorSetLayout);
 

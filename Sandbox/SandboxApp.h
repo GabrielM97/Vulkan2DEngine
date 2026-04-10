@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core/Application.h"
-#include "Scene/GameObject.h"
+#include "Scene/Scene.h"
 
 #include <vector>
 
@@ -13,5 +13,5 @@ protected:
     void OnRender(VulkanRenderer& renderer) override;
 
 private:
-    std::vector<GameObject> m_GameObjects;
+    Scene m_Scene;
 };
