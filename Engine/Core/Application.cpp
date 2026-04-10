@@ -57,7 +57,6 @@ void Application::Run()
             );
 
             window->ResetResizeFlag();
-            continue;
         }
 
         OnUpdate(deltaTime);
@@ -68,4 +67,9 @@ void Application::Run()
 
         vulkanRenderer.EndFrame();
     }
+}
+
+bool Application::IsKeyDown(int key) const
+{
+    return glfwGetKey(window->GetNativeWindow(), key) == GLFW_PRESS;
 }

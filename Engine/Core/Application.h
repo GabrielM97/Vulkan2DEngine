@@ -22,6 +22,8 @@ protected:
 
     VulkanRenderer& GetRenderer() { return vulkanRenderer; }
 
+    bool IsKeyDown(int key) const;
+
 private:
     std::unique_ptr<Window> window = nullptr;
     VulkanRenderer vulkanRenderer;

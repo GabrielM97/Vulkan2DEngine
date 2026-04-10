@@ -3,6 +3,12 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
+struct Camera2D
+{
+    glm::vec2 position{ 0.0f, 0.0f };
+    float zoom = 1.0f;
+};
+
 struct PreparedBatch
 {
     uint32_t textureIndex = 0;
@@ -21,7 +27,7 @@ struct QuadCommand
 
 struct GlobalUBO
 {
-    glm::mat4 projection{1.0f};
+    glm::mat4 viewProjection{1.0f};
 };
 
 struct QuadInstanceData

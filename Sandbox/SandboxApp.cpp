@@ -1,6 +1,7 @@
 #include "SandboxApp.h"
 
 #include <algorithm>
+#include <GLFW/glfw3.h>
 
 void SandboxApp::OnInit()
 {
@@ -42,6 +43,32 @@ void SandboxApp::OnInit()
 
 void SandboxApp::OnUpdate(float deltaTime)
 {
+    constexpr float cameraSpeed = 400.0f;
+    constexpr float zoomSpeed = 1.5f;
+
+    if (IsKeyDown(GLFW_KEY_A))
+        m_Camera.position.x += cameraSpeed * deltaTime;
+
+    if (IsKeyDown(GLFW_KEY_D))
+        m_Camera.position.x -= cameraSpeed * deltaTime;
+
+    if (IsKeyDown(GLFW_KEY_W))
+        m_Camera.position.y += cameraSpeed * deltaTime;
+
+    if (IsKeyDown(GLFW_KEY_S))
+        m_Camera.position.y -= cameraSpeed * deltaTime;
+
+    if (IsKeyDown(GLFW_KEY_Q))
+        m_Camera.zoom -= zoomSpeed * deltaTime;
+
+    if (IsKeyDown(GLFW_KEY_E))
+        m_Camera.zoom += zoomSpeed * deltaTime;
+
+    m_Camera.zoom = std::clamp(m_Camera.zoom, 0.25f, 4.0f);
+
+    GetRenderer().SetCamera(m_Camera);
+
+
     auto& objects = m_Scene.GetGameObjects();
 
     // Tiny test so we know Sandbox owns game behavior.

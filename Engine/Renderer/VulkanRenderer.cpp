@@ -13,6 +13,9 @@ void VulkanRenderer::Init(GLFWwindow* window, int width, int height)
 {
     m_Window = window;
 
+    m_FramebufferWidth = width;
+    m_FramebufferHeight = height;
+
     CreatePersistentResources(window);
     CreateGlobalResources(width, height);
     CreateSwapchainResources(width, height);
@@ -69,6 +72,12 @@ uint32_t VulkanRenderer::LoadTexture(const char* path)
     RebuildTextureDescriptorResources();
 
     return textureIndex;
+}
+
+void VulkanRenderer::SetCamera(const Camera2D& camera) 
+{
+    m_Camera = camera;
+    UpdateCameraMatrices();
 }
 
 void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec4 tint, uint32_t textureIndex)
@@ -235,7 +244,7 @@ void VulkanRenderer::CreateGlobalResources(int width, int height)
     CreateDescriptorPool();
     CreateDescriptorSets();
 
-    UpdateProjectionMatrix(width, height);
+    UpdateCameraMatrices();
 }
 
 void VulkanRenderer::DestroyGlobalResources()
@@ -396,25 +405,40 @@ void VulkanRenderer::RebuildTextureDescriptorResources()
     CreateDescriptorSets();
 }
 
-void VulkanRenderer::UpdateProjectionMatrix(int width, int height)
+void VulkanRenderer::UpdateCameraMatrices() 
 {
+    if (m_FramebufferWidth <= 0 || m_FramebufferHeight <= 0)
+        return;
+
     GlobalUBO ubo{};
 
-    // Top-left origin, x right, y downward.
-    // Vulkan clip space is still [-1,1], but glm::ortho builds the transform for us.
-    ubo.projection = glm::ortho(
-        0.0f,
-        static_cast<float>(width),
-        static_cast<float>(height),
-        0.0f,
+    const float zoom = glm::max(m_Camera.zoom, 0.01f);
+
+    const float viewWidth = static_cast<float>(m_FramebufferWidth) / zoom;
+    const float viewHeight = static_cast<float>(m_FramebufferHeight) / zoom;
+
+    const float left = m_Camera.position.x;
+    const float right = m_Camera.position.x + viewWidth;
+    const float top = m_Camera.position.y;
+    const float bottom = m_Camera.position.y + viewHeight;
+
+    ubo.viewProjection = glm::ortho(
+        left,
+        right,
+        bottom,
+        top,
         -1.0f,
         1.0f
     );
-    
-    ubo.projection[1][1] *= -1.0f;
-    ubo.projection[3][1] *= -1.0f;
 
-    m_GlobalUniformBuffer.Update(device.GetDevice(), &ubo, sizeof(GlobalUBO));
+    ubo.viewProjection[1][1] *= -1.0f;
+    ubo.viewProjection[3][1] *= -1.0f;
+
+    m_GlobalUniformBuffer.Update(
+        device.GetDevice(),
+        &ubo,
+        sizeof(GlobalUBO)
+    );
 }
 
 void VulkanRenderer::CreateSwapchainResources(int width, int height)
@@ -505,9 +529,13 @@ void VulkanRenderer::RecreateSwapchain(int width, int height)
 {
     vkDeviceWaitIdle(device.GetDevice());
 
+    m_FramebufferWidth = width;
+    m_FramebufferHeight = height;
+
     DestroySwapchainResources();
-    UpdateProjectionMatrix(width, height);
     CreateSwapchainResources(width, height);
+
+    UpdateCameraMatrices();
 }
 
 void VulkanRenderer::DrawFrame()

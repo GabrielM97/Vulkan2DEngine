@@ -14,7 +14,7 @@ layout(location = 1) out vec4 fragColor;
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
-    mat4 projection;
+    mat4 viewProjection;
 } ubo;
 
 void main()
@@ -33,7 +33,7 @@ void main()
 
     vec2 worldPosition = rotated + inInstancePosition + origin * inInstanceSize;
 
-    gl_Position = ubo.projection * vec4(worldPosition, inPosition.z, 1.0);
+    gl_Position = ubo.viewProjection * vec4(worldPosition, inPosition.z, 1.0);
 
     fragUV = inUV;
     fragColor = inTint;

@@ -14,4 +14,5 @@ protected:
 
 private:
     Scene m_Scene;
+    Camera2D m_Camera;
 };

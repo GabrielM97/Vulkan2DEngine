@@ -23,13 +23,14 @@ public:
     void Cleanup();
 
     uint32_t LoadTexture(const char* path);
+    void SetCamera(const Camera2D& camera);
+
     void BeginFrame();
     void DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec4 tint = glm::vec4(1.0f), uint32_t textureIndex = 0);
     void EndFrame();
     void DrawFrame();
     
     void OnFramebufferResized(int width, int height);
-    
 
 private:
     void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -45,7 +46,7 @@ private:
     void CreateDescriptorPool();
     void CreateDescriptorSets();
     void RebuildTextureDescriptorResources();
-    void UpdateProjectionMatrix(int width, int height);
+    void UpdateCameraMatrices();
 
     // Swapchain-dependent setup: rebuilt on resize/out-of-date.
     void CreateSwapchainResources(int width, int height);
@@ -69,6 +70,10 @@ private:
     VulkanCommandBuffer m_CommandBuffer;
     VkCommandPool m_UploadCommandPool = VK_NULL_HANDLE;
     std::vector<VulkanTexture> m_Textures;
+
+    Camera2D m_Camera;
+    int m_FramebufferWidth = 1;
+    int m_FramebufferHeight = 1;
 
     VulkanSync m_Sync;
     VulkanVertexBuffer m_VertexBuffer;
