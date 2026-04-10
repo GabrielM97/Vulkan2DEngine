@@ -1,7 +1,6 @@
 ﻿#include "Application.h"
-#include <iostream>
 
-#include "Platform/Window.h"
+#include <chrono>
 
 Application::Application()
 {
@@ -10,6 +9,7 @@ Application::Application()
 
 Application::~Application()
 {
+    OnShutdown();
     vulkanRenderer.Cleanup();
 }
 
@@ -19,57 +19,53 @@ bool Application::Init()
         return false;
 
     auto [framebufferWidth, framebufferHeight] = window->GetFramebufferSize();
-    vulkanRenderer.Init(window->GetNativeWindow(), framebufferWidth, framebufferHeight);
+
+    vulkanRenderer.Init(
+        window->GetNativeWindow(),
+        framebufferWidth,
+        framebufferHeight
+    );
+
+    OnInit();
 
     return true;
 }
 
 void Application::Run()
 {
+    auto lastTime = std::chrono::high_resolution_clock::now();
+
     while (!window->ShouldClose())
     {
+        auto currentTime = std::chrono::high_resolution_clock::now();
+
+        float deltaTime = std::chrono::duration<float>(
+            currentTime - lastTime
+        ).count();
+
+        lastTime = currentTime;
+
         window->PollEvents();
+
         if (window->WasResized())
         {
             auto [framebufferWidth, framebufferHeight] = window->GetFramebufferSize();
-            vulkanRenderer.OnFramebufferResized(framebufferWidth, framebufferHeight);
+
+            vulkanRenderer.OnFramebufferResized(
+                framebufferWidth,
+                framebufferHeight
+            );
+
             window->ResetResizeFlag();
             continue;
         }
-        
+
+        OnUpdate(deltaTime);
+
         vulkanRenderer.BeginFrame();
 
-        vulkanRenderer.DrawQuad(
-      {50.0f, 50.0f},
-      {128.0f, 128.0f},
-      0.0f,
-      glm::vec4(1.0f),
-      0
-        );
+        OnRender(vulkanRenderer);
 
-        vulkanRenderer.DrawQuad(
-            {240.0f, 50.0f},
-            {128.0f, 128.0f},
-            25.0f,
-            glm::vec4(1.0f),
-            1
-        );
-        vulkanRenderer.DrawQuad(
-           {240.0f, 50.0f},
-           {128.0f, 128.0f},
-           25.0f,
-           glm::vec4(1.0f, 1.0f, 0.0f, 0.3f),
-           0
-       );
-
-        vulkanRenderer.DrawQuad(
-            {430.0f, 50.0f},
-            {128.0f, 128.0f},
-            -15.0f,
-            glm::vec4(1.0f),
-            0
-        );
-        
         vulkanRenderer.EndFrame();
     }
 }

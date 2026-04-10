@@ -1,10 +1,10 @@
 ﻿#include <iostream>
-#include <GLFW/glfw3.h>
-#include "Core/Application.h"
+
+#include "SandboxApp.h"
 
 int main()
 {
-    Application app;
+    SandboxApp app;
 
     if (!app.Init())
     {

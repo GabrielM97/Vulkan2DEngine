@@ -44,11 +44,18 @@ target_link_libraries(EngineDeps INTERFACE
 add_subdirectory(Engine)
 
 # --- Sandbox executable ---
-add_executable(Sandbox Sandbox/Main.cpp)
+file(GLOB_RECURSE SANDBOX_SRC
+    CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/Sandbox/*.cpp
+    ${CMAKE_SOURCE_DIR}/Sandbox/*.h
+)
+
+add_executable(Sandbox ${SANDBOX_SRC})
 target_link_libraries(Sandbox
     Core
     Platform
     Renderer
+    Scene
     EngineDeps
 )
 target_include_directories(Sandbox PUBLIC Engine)
