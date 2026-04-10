@@ -15,6 +15,7 @@
 #include "VulkanUniformBuffer.h"
 #include <vector>
 #include "VulkanTexture.h"
+#include "Scene/Camera2D.h"
 
 class VulkanRenderer
 {

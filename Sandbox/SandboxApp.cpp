@@ -43,48 +43,30 @@ void SandboxApp::OnInit()
 
 void SandboxApp::OnUpdate(float deltaTime)
 {
-    constexpr float cameraSpeed = 400.0f;
-    constexpr float zoomSpeed = 1.5f;
+    CameraCommand command{};
 
     if (IsKeyDown(GLFW_KEY_A))
-        m_Camera.position.x += cameraSpeed * deltaTime;
-
+        command.moveX -= 1.0f;
     if (IsKeyDown(GLFW_KEY_D))
-        m_Camera.position.x -= cameraSpeed * deltaTime;
-
+        command.moveX += 1.0f;
     if (IsKeyDown(GLFW_KEY_W))
-        m_Camera.position.y += cameraSpeed * deltaTime;
-
+        command.moveY -= 1.0f;
     if (IsKeyDown(GLFW_KEY_S))
-        m_Camera.position.y -= cameraSpeed * deltaTime;
+        command.moveY += 1.0f;
 
     if (IsKeyDown(GLFW_KEY_Q))
-        m_Camera.zoom -= zoomSpeed * deltaTime;
-
+        command.zoomDelta -= 1.0f;
     if (IsKeyDown(GLFW_KEY_E))
-        m_Camera.zoom += zoomSpeed * deltaTime;
+        command.zoomDelta += 1.0f;
 
-    m_Camera.zoom = std::clamp(m_Camera.zoom, 0.25f, 4.0f);
-
-    GetRenderer().SetCamera(m_Camera);
-    
-    auto& objects = m_Scene.GetGameObjects();
-
-    // Tiny test so we know Sandbox owns game behavior.
-    if (!objects.empty())
-    {
-        for (auto& object : objects)
-        {
-            object->transform.rotationDegrees += 45.0f * deltaTime;
-        
-            if (object->transform.rotationDegrees > 360.0f)
-            {
-                m_Scene.DestroyGameObject(*object);
-            }
-        }
-    }
-    
     m_Scene.Update(deltaTime);
+    m_Scene.UpdateCamera(command, deltaTime);
+
+    GetRenderer().SetCamera(m_Scene.GetCamera());
+
+    auto& objects = m_Scene.GetGameObjects();
+    for (auto& object : objects)
+        object->transform.rotationDegrees += 45.0f * deltaTime;
 }
 
 void SandboxApp::OnRender(VulkanRenderer& renderer)

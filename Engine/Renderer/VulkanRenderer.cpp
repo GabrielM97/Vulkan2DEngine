@@ -412,15 +412,15 @@ void VulkanRenderer::UpdateCameraMatrices()
 
     GlobalUBO ubo{};
 
-    const float zoom = glm::max(m_Camera.zoom, 0.01f);
+    const float zoom = glm::max(m_Camera.GetZoom(), 0.01f);
 
     const float viewWidth = static_cast<float>(m_FramebufferWidth) / zoom;
     const float viewHeight = static_cast<float>(m_FramebufferHeight) / zoom;
 
-    const float left = m_Camera.position.x;
-    const float right = m_Camera.position.x + viewWidth;
-    const float top = m_Camera.position.y;
-    const float bottom = m_Camera.position.y + viewHeight;
+    const float left = m_Camera.GetPosition().x;
+    const float right = m_Camera.GetPosition().x + viewWidth;
+    const float top = m_Camera.GetPosition().y;
+    const float bottom = m_Camera.GetPosition().y + viewHeight;
 
     ubo.viewProjection = glm::ortho(
         left,
@@ -474,7 +474,6 @@ void VulkanRenderer::DestroySwapchainResources()
     m_Pipeline.Cleanup(device.GetDevice());
     m_renderPass.Cleanup(device.GetDevice());
     m_swapchain.Cleanup(device.GetDevice());
- 
 }
 
 void VulkanRenderer::CreatePerImageSyncObjects()

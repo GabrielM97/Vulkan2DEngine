@@ -1,6 +1,7 @@
 #include "Scene.h"
 
 #include "Renderer/VulkanRenderer.h"
+#include "Camera2D.h"
 
 #include <algorithm>
 
@@ -62,6 +63,16 @@ void Scene::Update(float deltaTime)
     }
 
     DestroyPendingGameObjects();
+}
+
+void Scene::UpdateCamera(const CameraCommand& command, float deltaTime)
+{
+    m_Camera.Update(
+        command.moveX,
+        command.moveY,
+        command.zoomDelta,
+        deltaTime
+    );
 }
 
 std::vector<std::unique_ptr<GameObject>>& Scene::GetGameObjects()

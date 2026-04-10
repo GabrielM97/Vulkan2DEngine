@@ -1,5 +1,6 @@
 ﻿#include "Application.h"
 
+#include <GLFW/glfw3.h>
 #include <chrono>
 
 Application::Application()
@@ -29,6 +30,11 @@ bool Application::Init()
     OnInit();
 
     return true;
+}
+
+bool Application::IsKeyDown(int key) const
+{
+    return glfwGetKey(window->GetNativeWindow(), key) == GLFW_PRESS;
 }
 
 void Application::Run()
@@ -67,9 +73,4 @@ void Application::Run()
 
         vulkanRenderer.EndFrame();
     }
-}
-
-bool Application::IsKeyDown(int key) const
-{
-    return glfwGetKey(window->GetNativeWindow(), key) == GLFW_PRESS;
 }
