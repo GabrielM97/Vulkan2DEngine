@@ -3,6 +3,13 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
+struct PreparedBatch
+{
+    uint32_t textureIndex = 0;
+    uint32_t firstInstance = 0;
+    uint32_t instanceCount = 0;
+};
+
 struct QuadCommand
 {
     glm::vec2 position{0.0f};

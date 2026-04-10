@@ -54,6 +54,24 @@ void VulkanRenderer::BeginFrame()
     m_QuadCommands.clear();
 }
 
+uint32_t VulkanRenderer::LoadTexture(const char* path)
+{
+    m_Textures.emplace_back();
+    m_Textures.back().Init(
+        device,
+        m_UploadCommandPool,
+        device.GetGraphicsQueue(),
+        path
+    );
+
+    const uint32_t textureIndex = static_cast<uint32_t>(m_Textures.size() - 1);
+
+    if (m_DescriptorPool != VK_NULL_HANDLE)
+        RebuildTextureDescriptorResources();
+
+    return textureIndex;
+}
+
 void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec4 tint, uint32_t textureIndex)
 {
     QuadCommand command{};
@@ -69,10 +87,23 @@ void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, fl
 void VulkanRenderer::EndFrame()
 {
     m_InstanceData.clear();
+    m_PreparedBatches.clear();
+
     m_InstanceData.reserve(m_QuadCommands.size());
 
     for (const QuadCommand& quad : m_QuadCommands)
     {
+        if (quad.textureIndex >= m_TextureDescriptorSets.size())
+            throw std::runtime_error("Quad uses invalid texture index");
+
+        if (m_PreparedBatches.empty() || m_PreparedBatches.back().textureIndex != quad.textureIndex)
+        {
+            PreparedBatch prepared{};
+            prepared.textureIndex = quad.textureIndex;
+            prepared.firstInstance = static_cast<uint32_t>(m_InstanceData.size());
+            m_PreparedBatches.push_back(prepared);
+        }
+
         QuadInstanceData instance{};
         instance.position = quad.position;
         instance.size = quad.size;
@@ -81,6 +112,7 @@ void VulkanRenderer::EndFrame()
         instance.tint = quad.tint;
 
         m_InstanceData.push_back(instance);
+        m_PreparedBatches.back().instanceCount++;
     }
 
     m_InstanceBuffer.Update(device, m_InstanceData);
@@ -122,17 +154,6 @@ void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.Get());
 
-    vkCmdBindDescriptorSets(
-        commandBuffer,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        m_Pipeline.GetLayout(),
-        0,
-        1,
-        &m_DescriptorSet,
-        0,
-        nullptr
-    );
-
     VkBuffer vertexBuffers[] = {
         m_VertexBuffer.GetBuffer(),
         m_InstanceBuffer.GetBuffer()
@@ -143,18 +164,30 @@ void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
     vkCmdBindVertexBuffers(commandBuffer, 0, 2, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-    if (m_InstanceBuffer.GetInstanceCount() > 0)
+    for (const PreparedBatch& batch : m_PreparedBatches)
     {
+        VkDescriptorSet descriptorSet = m_TextureDescriptorSets[batch.textureIndex];
+
+        vkCmdBindDescriptorSets(
+            commandBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            m_Pipeline.GetLayout(),
+            0,
+            1,
+            &descriptorSet,
+            0,
+            nullptr
+        );
+
         vkCmdDrawIndexed(
             commandBuffer,
             m_IndexBuffer.GetIndexCount(),
-            m_InstanceBuffer.GetInstanceCount(),
+            batch.instanceCount,
             0,
             0,
-            0
+            batch.firstInstance
         );
     }
-
     vkCmdEndRenderPass(commandBuffer);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -197,17 +230,15 @@ void VulkanRenderer::DestroyPersistentResources()
 void VulkanRenderer::CreateGlobalResources(int width, int height)
 {
     CreateDescriptorSetLayout();
+
     m_GlobalUniformBuffer.Init(device, sizeof(GlobalUBO));
 
-    m_Texture.Init(
-        device,
-        m_UploadCommandPool,
-        device.GetGraphicsQueue(),
-        "Assets/Textures/texture.jpg"
-    );
+    LoadTexture("Assets/Textures/texture.jpg");
+    LoadTexture("Assets/Textures/texture2.jpg");
 
     CreateDescriptorPool();
-    CreateDescriptorSet();
+    CreateDescriptorSets();
+
     UpdateProjectionMatrix(width, height);
 }
 
@@ -219,8 +250,14 @@ void VulkanRenderer::DestroyGlobalResources()
         m_DescriptorPool = VK_NULL_HANDLE;
     }
 
+    m_TextureDescriptorSets.clear();
+
     m_GlobalUniformBuffer.Cleanup(device.GetDevice());
-    m_Texture.Cleanup(device.GetDevice());
+
+    for (auto& texture : m_Textures)
+        texture.Cleanup(device.GetDevice());
+
+    m_Textures.clear();
 
     if (m_DescriptorSetLayout != VK_NULL_HANDLE)
     {
@@ -261,69 +298,100 @@ void VulkanRenderer::CreateDescriptorSetLayout()
 
 void VulkanRenderer::CreateDescriptorPool()
 {
-    std::array<VkDescriptorPoolSize, 2> poolSize{};
-    poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSize[0].descriptorCount = 1;
-    
-    poolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSize[1].descriptorCount = 1;
+    const uint32_t textureCount = static_cast<uint32_t>(m_Textures.size());
+
+    std::array<VkDescriptorPoolSize, 2> poolSizes{};
+
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[0].descriptorCount = textureCount;
+
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSizes[1].descriptorCount = textureCount;
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
-    poolInfo.pPoolSizes = poolSize.data();
-    poolInfo.maxSets = 1;
+    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    poolInfo.pPoolSizes = poolSizes.data();
+    poolInfo.maxSets = textureCount;
 
     if (vkCreateDescriptorPool(device.GetDevice(), &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("Failed to create descriptor pool");
 }
 
-void VulkanRenderer::CreateDescriptorSet()
+void VulkanRenderer::CreateDescriptorSets()
 {
+   const uint32_t textureCount = static_cast<uint32_t>(m_Textures.size());
+
+    std::vector<VkDescriptorSetLayout> layouts(textureCount, m_DescriptorSetLayout);
+
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = m_DescriptorPool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &m_DescriptorSetLayout;
+    allocInfo.descriptorSetCount = textureCount;
+    allocInfo.pSetLayouts = layouts.data();
 
-    if (vkAllocateDescriptorSets(device.GetDevice(), &allocInfo, &m_DescriptorSet) != VK_SUCCESS)
-        throw std::runtime_error("Failed to allocate descriptor set");
+    m_TextureDescriptorSets.resize(textureCount);
 
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = m_GlobalUniformBuffer.GetBuffer();
-    bufferInfo.offset = 0;
-    bufferInfo.range = sizeof(GlobalUBO);
+    if (vkAllocateDescriptorSets(device.GetDevice(), &allocInfo, m_TextureDescriptorSets.data()) != VK_SUCCESS)
+        throw std::runtime_error("Failed to allocate texture descriptor sets");
 
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = m_Texture.GetImageView();
-    imageInfo.sampler = m_Texture.GetSampler();
+    for (uint32_t i = 0; i < textureCount; ++i)
+    {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = m_GlobalUniformBuffer.GetBuffer();
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(GlobalUBO);
 
-    std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = m_Textures[i].GetImageView();
+        imageInfo.sampler = m_Textures[i].GetSampler();
 
-    descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrites[0].dstSet = m_DescriptorSet;
-    descriptorWrites[0].dstBinding = 0;
-    descriptorWrites[0].dstArrayElement = 0;
-    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrites[0].descriptorCount = 1;
-    descriptorWrites[0].pBufferInfo = &bufferInfo;
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
-    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrites[1].dstSet = m_DescriptorSet;
-    descriptorWrites[1].dstBinding = 1;
-    descriptorWrites[1].dstArrayElement = 0;
-    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorWrites[1].descriptorCount = 1;
-    descriptorWrites[1].pImageInfo = &imageInfo;
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = m_TextureDescriptorSets[i];
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-    vkUpdateDescriptorSets(
-        device.GetDevice(),
-        static_cast<uint32_t>(descriptorWrites.size()),
-        descriptorWrites.data(),
-        0,
-        nullptr
-    );
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = m_TextureDescriptorSets[i];
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pImageInfo = &imageInfo;
+
+        vkUpdateDescriptorSets(
+            device.GetDevice(),
+            static_cast<uint32_t>(descriptorWrites.size()),
+            descriptorWrites.data(),
+            0,
+            nullptr
+        );
+    }
+}
+
+void VulkanRenderer::RebuildTextureDescriptorResources()
+{
+    vkDeviceWaitIdle(device.GetDevice());
+
+    if (m_DescriptorPool != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorPool(device.GetDevice(), m_DescriptorPool, nullptr);
+        m_DescriptorPool = VK_NULL_HANDLE;
+    }
+
+    m_TextureDescriptorSets.clear();
+
+    if (m_Textures.empty())
+        return;
+
+    CreateDescriptorPool();
+    CreateDescriptorSets();
 }
 
 void VulkanRenderer::UpdateProjectionMatrix(int width, int height)

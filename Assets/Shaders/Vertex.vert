@@ -11,7 +11,6 @@ layout(location = 6) in vec4 inTint;
 
 layout(location = 0) out vec2 fragUV;
 layout(location = 1) out vec4 fragColor;
-layout(location = 2) out float fragTextureIndex;
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
@@ -38,5 +37,4 @@ void main()
 
     fragUV = inUV;
     fragColor = inTint;
-    fragTextureIndex = inTextureIndex;
 }

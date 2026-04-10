@@ -14,6 +14,15 @@ class VulkanDevice;
 class VulkanTexture
 {
 public:
+    VulkanTexture() = default;
+    ~VulkanTexture() = default;
+
+    VulkanTexture(const VulkanTexture&) = delete;
+    VulkanTexture& operator=(const VulkanTexture&) = delete;
+
+    VulkanTexture(VulkanTexture&& other) noexcept;
+    VulkanTexture& operator=(VulkanTexture&& other) noexcept;
+
     void Init(VulkanDevice& device, VkCommandPool commandPool, VkQueue graphicsQueue, const char* path);
     void Cleanup(VkDevice device);
 

@@ -5,6 +5,36 @@
 #include <iostream>
 #include <filesystem>
 
+VulkanTexture::VulkanTexture(VulkanTexture&& other) noexcept
+    : m_Image(other.m_Image),
+      m_ImageMemory(other.m_ImageMemory),
+      m_ImageView(other.m_ImageView),
+      m_Sampler(other.m_Sampler)
+{
+    other.m_Image = VK_NULL_HANDLE;
+    other.m_ImageMemory = VK_NULL_HANDLE;
+    other.m_ImageView = VK_NULL_HANDLE;
+    other.m_Sampler = VK_NULL_HANDLE;
+}
+
+VulkanTexture& VulkanTexture::operator=(VulkanTexture&& other) noexcept
+{
+    if (this == &other)
+        return *this;
+
+    m_Image = other.m_Image;
+    m_ImageMemory = other.m_ImageMemory;
+    m_ImageView = other.m_ImageView;
+    m_Sampler = other.m_Sampler;
+
+    other.m_Image = VK_NULL_HANDLE;
+    other.m_ImageMemory = VK_NULL_HANDLE;
+    other.m_ImageView = VK_NULL_HANDLE;
+    other.m_Sampler = VK_NULL_HANDLE;
+
+    return *this;
+}
+
 void VulkanTexture::Init(VulkanDevice& device, VkCommandPool commandPool, VkQueue graphicsQueue, const char* path)
 {
     CreateTextureImage(device, commandPool, graphicsQueue, path);
@@ -15,16 +45,28 @@ void VulkanTexture::Init(VulkanDevice& device, VkCommandPool commandPool, VkQueu
 void VulkanTexture::Cleanup(VkDevice device)
 {
     if (m_Sampler != VK_NULL_HANDLE)
+    {
         vkDestroySampler(device, m_Sampler, nullptr);
+        m_Sampler = VK_NULL_HANDLE;
+    }
 
     if (m_ImageView != VK_NULL_HANDLE)
+    {
         vkDestroyImageView(device, m_ImageView, nullptr);
+        m_ImageView = VK_NULL_HANDLE;
+    }
 
     if (m_Image != VK_NULL_HANDLE)
+    {
         vkDestroyImage(device, m_Image, nullptr);
+        m_Image = VK_NULL_HANDLE;
+    }
 
     if (m_ImageMemory != VK_NULL_HANDLE)
+    {
         vkFreeMemory(device, m_ImageMemory, nullptr);
+        m_ImageMemory = VK_NULL_HANDLE;
+    }
 }
 
 void VulkanTexture::CreateTextureImage(VulkanDevice& device, VkCommandPool commandPool, VkQueue graphicsQueue, const char* path)

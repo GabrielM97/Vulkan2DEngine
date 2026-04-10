@@ -13,7 +13,7 @@
 #include "VulkanQuadInstanceBuffer.h"
 #include "RenderTypes.h"
 #include "VulkanUniformBuffer.h"
-#include <glm/mat4x4.hpp>
+#include <vector>
 #include "VulkanTexture.h"
 
 class VulkanRenderer
@@ -22,6 +22,7 @@ public:
     void Init(GLFWwindow* window, int width, int height);
     void Cleanup();
 
+    uint32_t LoadTexture(const char* path);
     void BeginFrame();
     void DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec4 tint = glm::vec4(1.0f), uint32_t textureIndex = 0);
     void EndFrame();
@@ -42,7 +43,8 @@ private:
 
     void CreateDescriptorSetLayout();
     void CreateDescriptorPool();
-    void CreateDescriptorSet();
+    void CreateDescriptorSets();
+    void RebuildTextureDescriptorResources();
     void UpdateProjectionMatrix(int width, int height);
 
     // Swapchain-dependent setup: rebuilt on resize/out-of-date.
@@ -55,7 +57,6 @@ private:
     void CreatePerImageSyncObjects();
     void DestroyPerImageSyncObjects();
     
-    
     GLFWwindow* m_Window = nullptr;
 
     VulkanContext context;
@@ -67,7 +68,7 @@ private:
     VulkanFramebuffer m_Framebuffer;
     VulkanCommandBuffer m_CommandBuffer;
     VkCommandPool m_UploadCommandPool = VK_NULL_HANDLE;
-    VulkanTexture m_Texture;
+    std::vector<VulkanTexture> m_Textures;
 
     VulkanSync m_Sync;
     VulkanVertexBuffer m_VertexBuffer;
@@ -78,7 +79,8 @@ private:
 
     VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
-    VkDescriptorSet m_DescriptorSet = VK_NULL_HANDLE;
+    std::vector<VkDescriptorSet> m_TextureDescriptorSets;
+    std::vector<PreparedBatch> m_PreparedBatches;
 
     uint32_t m_CurrentFrame = 0;
 

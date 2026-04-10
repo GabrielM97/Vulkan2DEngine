@@ -36,18 +36,39 @@ void Application::Run()
             window->ResetResizeFlag();
             continue;
         }
-
-        // Temporary test quads in clip-space coordinates.
+        
         vulkanRenderer.BeginFrame();
 
-        for (int i = 0; i < 100; ++i)
-        {
-            for (int j = 0; j < 50; ++j)
-            {
-                vulkanRenderer.DrawQuad(glm::vec2(60.f*i, 60.f*j), glm::vec2(40.0f, 40.0f) , i*10, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-            }
-         
-        }
+        vulkanRenderer.DrawQuad(
+      {50.0f, 50.0f},
+      {128.0f, 128.0f},
+      0.0f,
+      glm::vec4(1.0f),
+      0
+        );
+
+        vulkanRenderer.DrawQuad(
+            {240.0f, 50.0f},
+            {128.0f, 128.0f},
+            25.0f,
+            glm::vec4(1.0f),
+            1
+        );
+        vulkanRenderer.DrawQuad(
+           {240.0f, 50.0f},
+           {128.0f, 128.0f},
+           25.0f,
+           glm::vec4(1.0f, 1.0f, 0.0f, 0.3f),
+           0
+       );
+
+        vulkanRenderer.DrawQuad(
+            {430.0f, 50.0f},
+            {128.0f, 128.0f},
+            -15.0f,
+            glm::vec4(1.0f),
+            0
+        );
         
         vulkanRenderer.EndFrame();
     }
