@@ -4,33 +4,72 @@
 
 #include <algorithm>
 
-GameObject& Scene::CreateGameObject()
+GameObject& Scene::CreateGameObject(const std::string& name)
 {
-    return m_GameObjects.emplace_back();
+    auto object = std::make_unique<GameObject>();
+    object->name = name;
+
+    GameObject& reference = *object;
+    m_GameObjects.push_back(std::move(object));
+    return reference;
+}
+
+void Scene::DestroyGameObject(GameObject& object)
+{
+    object.pendingDestroy = true;
+    object.active = false;
+}
+
+void Scene::DestroyPendingGameObjects()
+{
+    std::erase_if(
+      m_GameObjects,
+      [](const std::unique_ptr<GameObject>& object)
+      {
+          return object->pendingDestroy;
+      }
+  );
 }
 
 void Scene::Render(VulkanRenderer& renderer)
 {
     SortForRendering();
 
-    for (const GameObject& object : m_GameObjects)
+    for (const std::unique_ptr<GameObject>& object : m_GameObjects)
     {
+        if (!object->active || !object->sprite.visible)
+            continue;
+
         renderer.DrawQuad(
-            object.transform.position,
-            object.transform.size,
-            object.transform.rotationDegrees,
-            object.sprite.tint,
-            object.sprite.textureIndex
+            object->transform.position,
+            object->transform.size,
+            object->transform.rotationDegrees,
+            object->sprite.tint,
+            object->sprite.textureIndex
         );
     }
 }
 
-std::vector<GameObject>& Scene::GetGameObjects()
+void Scene::Update(float deltaTime)
+{
+    for (const std::unique_ptr<GameObject>& object : m_GameObjects)
+    {
+        if (!object->active)
+            continue;
+
+        // Later this is where engine-level object/component updates can happen.
+        // For now, Scene update mainly gives us a safe cleanup point.
+    }
+
+    DestroyPendingGameObjects();
+}
+
+std::vector<std::unique_ptr<GameObject>>& Scene::GetGameObjects()
 {
     return m_GameObjects;
 }
 
-const std::vector<GameObject>& Scene::GetGameObjects() const
+const std::vector<std::unique_ptr<GameObject>>& Scene::GetGameObjects() const
 {
     return m_GameObjects;
 }
@@ -41,9 +80,9 @@ void Scene::SortForRendering()
     std::stable_sort(
         m_GameObjects.begin(),
         m_GameObjects.end(),
-        [](const GameObject& a, const GameObject& b)
+        [](const std::unique_ptr<GameObject>& a, const std::unique_ptr<GameObject>& b)
         {
-            return a.sprite.layer < b.sprite.layer;
+            return a->sprite.layer < b->sprite.layer;
         }
     );
 }

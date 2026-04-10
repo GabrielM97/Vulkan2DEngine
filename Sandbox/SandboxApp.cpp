@@ -5,38 +5,38 @@
 
 void SandboxApp::OnInit()
 {
-    uint32_t m_TextureA = GetRenderer().LoadTexture("Assets/Textures/texture.jpg");
-    uint32_t m_TextureB = GetRenderer().LoadTexture("Assets/Textures/texture2.jpg");
+    uint32_t textureA = GetRenderer().LoadTexture("Assets/Textures/texture.jpg");
+    uint32_t textureB = GetRenderer().LoadTexture("Assets/Textures/texture2.jpg");
     
-    GameObject& first = m_Scene.CreateGameObject();
+    GameObject& first = m_Scene.CreateGameObject("First Sprite");
     first.transform.position = {50.0f, 50.0f};
     first.transform.size = {128.0f, 128.0f};
     first.transform.rotationDegrees = 0.0f;
-    first.sprite.textureIndex = m_TextureA;
+    first.sprite.textureIndex = textureA;
     first.sprite.tint = glm::vec4(1.0f);
     first.sprite.layer = 0;
 
-    GameObject& second = m_Scene.CreateGameObject();
+    GameObject& second = m_Scene.CreateGameObject("Second Sprite");
     second.transform.position = {240.0f, 50.0f};
     second.transform.size = {128.0f, 128.0f};
     second.transform.rotationDegrees = 0.0f;
-    second.sprite.textureIndex = m_TextureB;
+    second.sprite.textureIndex = textureB;
     second.sprite.tint = glm::vec4(1.0f);
     second.sprite.layer = 1;
 
-    GameObject& transparent = m_Scene.CreateGameObject();
+    GameObject& transparent = m_Scene.CreateGameObject("Transparent Sprite");
     transparent.transform.position = {300.0f, 50.0f};
     transparent.transform.size = {128.0f, 128.0f};
     transparent.transform.rotationDegrees = 0.0f;
-    transparent.sprite.textureIndex = m_TextureA;
+    transparent.sprite.textureIndex = textureA;
     transparent.sprite.tint = glm::vec4(1.0f, 1.0f, 1.0f, 0.6f);
     transparent.sprite.layer = 2;
 
-    GameObject& third = m_Scene.CreateGameObject();
+    GameObject& third = m_Scene.CreateGameObject("Third Sprite");
     third.transform.position = {430.0f, 50.0f};
     third.transform.size = {128.0f, 128.0f};
     third.transform.rotationDegrees = 0.0f;
-    third.sprite.textureIndex = m_TextureA;
+    third.sprite.textureIndex = textureA;
     third.sprite.tint = glm::vec4(1.0f);
     third.sprite.layer = 0;
 }
@@ -67,16 +67,24 @@ void SandboxApp::OnUpdate(float deltaTime)
     m_Camera.zoom = std::clamp(m_Camera.zoom, 0.25f, 4.0f);
 
     GetRenderer().SetCamera(m_Camera);
-
-
+    
     auto& objects = m_Scene.GetGameObjects();
 
     // Tiny test so we know Sandbox owns game behavior.
     if (!objects.empty())
     {
         for (auto& object : objects)
-            object.transform.rotationDegrees += 45.0f * deltaTime;
+        {
+            object->transform.rotationDegrees += 45.0f * deltaTime;
+        
+            if (object->transform.rotationDegrees > 360.0f)
+            {
+                m_Scene.DestroyGameObject(*object);
+            }
+        }
     }
+    
+    m_Scene.Update(deltaTime);
 }
 
 void SandboxApp::OnRender(VulkanRenderer& renderer)

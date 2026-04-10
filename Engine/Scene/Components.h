@@ -13,6 +13,7 @@ struct SpriteRenderer
 {
     uint32_t textureIndex = 0;
     glm::vec4 tint{1.0f};
+    bool visible = true;
 
     // Higher layers are rendered later, so they appear in front.
     int layer = 0;

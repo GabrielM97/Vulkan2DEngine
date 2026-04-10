@@ -2,6 +2,8 @@
 
 #include "GameObject.h"
 
+#include <memory>
+#include <string>
 #include <vector>
 
 class VulkanRenderer;
@@ -9,16 +11,21 @@ class VulkanRenderer;
 class Scene
 {
 public:
-    GameObject& CreateGameObject();
-
+    GameObject& CreateGameObject(const std::string& name = "GameObject");
+    
     void Render(VulkanRenderer& renderer);
-
-    std::vector<GameObject>& GetGameObjects();
-    const std::vector<GameObject>& GetGameObjects() const;
+    void Update(float deltaTime);
+    
+    void DestroyGameObject(GameObject& object);
+    
+    std::vector<std::unique_ptr<GameObject>>& GetGameObjects();
+    const std::vector<std::unique_ptr<GameObject>>& GetGameObjects() const;
 
 private:
     void SortForRendering();
+    
+    void DestroyPendingGameObjects();
 
 private:
-    std::vector<GameObject> m_GameObjects;
+    std::vector<std::unique_ptr<GameObject>> m_GameObjects;
 };
