@@ -17,7 +17,11 @@ target_include_directories(Renderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(Renderer PUBLIC Core Platform EngineDeps)
 
 # --- Scene ---
-file(GLOB_RECURSE SCENE_SRC Scene/*.cpp Scene/*.h)
+file(GLOB_RECURSE SCENE_SRC
+        CONFIGURE_DEPENDS
+        Scene/*.cpp
+        Scene/*.h
+)
 add_library(Scene STATIC ${SCENE_SRC})
 target_include_directories(Scene PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(Scene PUBLIC Renderer EngineDeps)

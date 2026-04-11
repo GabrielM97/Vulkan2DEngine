@@ -7,12 +7,17 @@ void SandboxApp::OnInit()
 {
     GameObject& Player = m_Scene.CreateGameObject("Player Sprite");
     Player.transform.position = {300.0f, 50.0f};
-    Player.transform.size = {128.0f, 128.0f};
+    Player.transform.size = {64.0f, 64.0f};
     Player.transform.rotationDegrees = 0.0f;
-    Player.sprite.SetTexturePath("Assets/Textures/testspritesheet.png");
-    Player.sprite.SetSourceRect(0,0, 128, 128);
-    Player.sprite.SetTint(glm::vec4(1.0f, 1.0f, 1.0f, 0.6f));
+    Player.sprite.SetTexturePath("Assets/Textures/character-spritesheet.png");
+    Player.sprite.SetSourceRectFromGrid(0,10, 64, 64);
+    Player.sprite.SetTint(glm::vec4(1.0f));
     Player.sprite.SetLayer(0);
+    
+    Player.animation.emplace();
+    Player.animation->SetClip(0, 10, 9, 64, 64);
+    Player.animation->SetFrameDuration(0.16f);
+    Player.animation->SetLooping(true);
 }
 
 void SandboxApp::OnUpdate(float deltaTime)

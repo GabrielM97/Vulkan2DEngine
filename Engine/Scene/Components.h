@@ -1,6 +1,5 @@
 #pragma once
-#include <cstdint>
-#include <string>
+
 #include <glm/glm.hpp>
 
 struct Transform2D

@@ -1,7 +1,10 @@
 #pragma once
 
+#include <optional>
+
 #include "Components.h"
 #include "SpriteRenderer.h"
+#include "SpriteAnimation.h"
 
 #include <string>
 
@@ -14,4 +17,6 @@ public:
 
     Transform2D transform;
     SpriteRenderer sprite;
+    
+    std::optional<SpriteAnimation> animation;
 };

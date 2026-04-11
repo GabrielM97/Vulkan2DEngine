@@ -98,8 +98,10 @@ void Scene::Update(float deltaTime)
         if (!object->active)
             continue;
 
-        // Later this is where engine-level object/component updates can happen.
-        // For now, Scene update mainly gives us a safe cleanup point.
+        if (object->animation.has_value())
+        {
+            object->animation->Update(deltaTime, object->sprite);
+        }
     }
 
     DestroyPendingGameObjects();
