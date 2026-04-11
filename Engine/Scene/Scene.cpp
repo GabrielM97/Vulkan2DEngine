@@ -9,8 +9,8 @@
 GameObject& Scene::CreateGameObject(const std::string& name)
 {
     auto object = std::make_unique<GameObject>();
-    object->id = m_NextGameObjectID++;
-    object->name = name;
+    object->SetID(m_NextGameObjectID++);
+    object->SetName(name);
 
     GameObject& reference = *object;
     m_GameObjects.push_back(std::move(object));
@@ -19,8 +19,7 @@ GameObject& Scene::CreateGameObject(const std::string& name)
 
 void Scene::DestroyGameObject(GameObject& object)
 {
-    object.pendingDestroy = true;
-    object.active = false;
+    object.Destroy();
 }
 
 void Scene::DestroyGameObject(GameObjectID id)
@@ -54,7 +53,7 @@ GameObject* Scene::FindGameObjectByName(const std::string& name)
 {
     for (const auto& object : m_GameObjects)
     {
-        if (object->name == name)
+        if (object->GetName() == name)
             return object.get();
     }
 
@@ -65,7 +64,7 @@ GameObject* Scene::FindGameObjectByID(GameObjectID id)
 {
     for (const auto& object : m_GameObjects)
     {
-        if (object->id == id)
+        if (object->GetID() == id)
             return object.get();
     }
 
@@ -76,7 +75,7 @@ const GameObject* Scene::FindGameObjectByID(GameObjectID id) const
 {
     for (const auto& object : m_GameObjects)
     {
-        if (object->id == id)
+        if (object->GetID() == id)
             return object.get();
     }
 
@@ -87,7 +86,7 @@ const GameObject* Scene::FindGameObjectByName(const std::string& name) const
 {
     for (const auto& object : m_GameObjects)
     {
-        if (object->name == name)
+        if (object->GetName() == name)
             return object.get();
     }
 
@@ -100,7 +99,7 @@ void Scene::DestroyPendingGameObjects()
       m_GameObjects,
       [](const std::unique_ptr<GameObject>& object)
       {
-          return object->pendingDestroy;
+          return object->isPendingDestroy();
       }
   );
 }
@@ -127,15 +126,17 @@ const SpriteAnimationSet* Scene::GetOrLoadAnimationSet(const std::string& path)
 
 void Scene::Render(IRenderer2D& renderer)
 {
-    SortForRendering();
+    const std::vector<const GameObject*> renderQueue = SortForRendering();
     
-    for (const std::unique_ptr<GameObject>& object : m_GameObjects)
+    for (const GameObject* object : renderQueue)
     {
-        if (!object->active || !object->sprite.IsVisible())
+        if (!object->isActive() || !object->sprite.IsVisible())
             continue;
 
+        Transform2D worldTransform = GetWorldTransform(object->GetID());
+        
         renderer.DrawSprite(
-            object->transform,
+            worldTransform,
             object->sprite
         );
     }
@@ -145,7 +146,7 @@ void Scene::Update(float deltaTime)
 {
     for (const std::unique_ptr<GameObject>& object : m_GameObjects)
     {
-        if (!object->active)
+        if (!object->isActive())
             continue;
 
         if (object->animation.has_value())
@@ -180,15 +181,78 @@ const std::vector<std::unique_ptr<GameObject>>& Scene::GetGameObjects() const
     return m_GameObjects;
 }
 
-void Scene::SortForRendering()
+bool Scene::SetParent(GameObjectID childID, GameObjectID parentID)
 {
-    // Stable sort preserves creation order for objects on the same layer.
+    if (childID == 0 || parentID == 0 || childID == parentID)
+        return false;
+
+    GameObject* child = FindGameObjectByID(childID);
+    GameObject* parent = FindGameObjectByID(parentID);
+
+    if (child == nullptr || parent == nullptr)
+        return false;
+
+    child->SetParentID(parentID);
+    return true;
+}
+
+bool Scene::ClearParent(GameObjectID childID)
+{
+    GameObject* child = FindGameObjectByID(childID);
+    if (child == nullptr)
+        return false;
+
+    child->ClearParent();
+    return true;
+}
+
+Transform2D Scene::GetWorldTransform(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return {};
+
+    Transform2D world = object->transform;
+
+    GameObjectID currentParentID = object->GetParentID();
+
+    while (currentParentID != 0)
+    {
+        const GameObject* parent = FindGameObjectByID(currentParentID);
+        if (parent == nullptr)
+            break;
+
+        world.position += parent->transform.position;
+        world.rotationDegrees += parent->transform.rotationDegrees;
+        //world.size *= parent->transform.size;
+
+        currentParentID = parent->GetParentID();
+    }
+
+    return world;
+}
+
+std::vector<const GameObject*> Scene::SortForRendering()
+{
+    std::vector<const GameObject*> renderQueue;
+    renderQueue.reserve(m_GameObjects.size());
+
+    for (const auto& object : m_GameObjects)
+    {
+        if (!object->isActive() || !object->sprite.IsVisible())
+            continue;
+
+        renderQueue.push_back(object.get());
+    }
+
     std::stable_sort(
-        m_GameObjects.begin(),
-        m_GameObjects.end(),
-        [](const std::unique_ptr<GameObject>& a, const std::unique_ptr<GameObject>& b)
+        renderQueue.begin(),
+        renderQueue.end(),
+        [](const GameObject* a, const GameObject* b)
         {
             return a->sprite.GetLayer() < b->sprite.GetLayer();
         }
     );
+
+    return renderQueue;
 }

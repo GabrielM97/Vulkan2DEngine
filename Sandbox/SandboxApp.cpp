@@ -6,7 +6,8 @@
 void SandboxApp::OnInit()
 {
     GameObject& Player = m_Scene.CreateGameObject("Player Sprite");
-    Player.transform.position = {0.0f, 0.0f};
+    m_PlayerID = Player.GetID();
+    Player.transform.position = {-300.0f, 0.0f};
     Player.transform.size = {64.0f, 64.0f};
     Player.transform.rotationDegrees = 0.0f;
     Player.sprite.SetTexturePath("Assets/Textures/character-spritesheet.png");
@@ -16,6 +17,14 @@ void SandboxApp::OnInit()
     Player.animation.emplace();
     Player.animation->SetAnimationSetPath("Assets/Animations/CharacterSpriteSheet.csv");
     Player.animation->Play("Walk");
+    
+    GameObject& Weapon = m_Scene.CreateGameObject("Weapon");
+    Weapon.transform.position = {0.f, 0.f};
+    Weapon.transform.size = {16.f, 16.f};
+    Weapon.sprite.SetTexturePath("Assets/Textures/texture.jpg");
+    Weapon.sprite.SetLayer(1);
+    
+    m_Scene.SetParent(Weapon.GetID(), m_PlayerID);
 }
 
 void SandboxApp::OnUpdate(float deltaTime)
@@ -41,7 +50,10 @@ void SandboxApp::OnUpdate(float deltaTime)
             command.zoomDelta += 1.0f;
     }
     
-    m_Scene.GetGameObject(0)->transform.position.x += 5 * deltaTime;
+    if (GameObject* player = m_Scene.FindGameObjectByID(m_PlayerID))
+    {
+        player->transform.position.x += 25.0f * deltaTime;
+    }
     
     m_Scene.UpdateCamera(command, deltaTime);
 

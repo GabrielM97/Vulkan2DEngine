@@ -17,4 +17,5 @@ protected:
 
 private:
     Scene m_Scene;
+    GameObjectID m_PlayerID = 0;
 };

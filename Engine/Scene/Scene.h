@@ -43,10 +43,14 @@ public:
 
     Camera2D& GetCamera() { return m_Camera; }
     const Camera2D& GetCamera() const { return m_Camera; }
+    
+    bool SetParent(GameObjectID childID, GameObjectID parentID);
+    bool ClearParent(GameObjectID childID);
+    Transform2D GetWorldTransform(GameObjectID id) const;
 
 private:
     const SpriteAnimationSet* GetOrLoadAnimationSet(const std::string& path);
-    void SortForRendering();
+    std::vector<const GameObject*> SortForRendering();
     void DestroyPendingGameObjects();
 
 private:
