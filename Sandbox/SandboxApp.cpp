@@ -7,7 +7,7 @@ void SandboxApp::OnInit()
 {
     GameObject& Player = m_Scene.CreateGameObject("Player Sprite");
     m_PlayerID = Player.GetID();
-    Player.transform.position = {-300.0f, 0.0f};
+    Player.transform.position = {0.0f, 0.0f};
     Player.transform.size = {64.0f, 64.0f};
     Player.transform.rotationDegrees = 0.0f;
     Player.sprite.SetTexturePath("Assets/Textures/character-spritesheet.png");
@@ -18,13 +18,11 @@ void SandboxApp::OnInit()
     Player.animation->SetAnimationSetPath("Assets/Animations/CharacterSpriteSheet.csv");
     Player.animation->Play("Walk");
     
-    GameObject& Weapon = m_Scene.CreateGameObject("Weapon");
-    Weapon.transform.position = {0.f, 0.f};
+    GameObject& Weapon = m_Scene.CreateGameObject("Weapon", m_PlayerID);
+    Weapon.transform.position = {50.f, 0.f};
     Weapon.transform.size = {16.f, 16.f};
     Weapon.sprite.SetTexturePath("Assets/Textures/texture.jpg");
     Weapon.sprite.SetLayer(1);
-    
-    m_Scene.SetParent(Weapon.GetID(), m_PlayerID);
 }
 
 void SandboxApp::OnUpdate(float deltaTime)
@@ -52,12 +50,15 @@ void SandboxApp::OnUpdate(float deltaTime)
     
     if (GameObject* player = m_Scene.FindGameObjectByID(m_PlayerID))
     {
-        player->transform.position.x += 25.0f * deltaTime;
+       player->transform.position.y += 25.0f * deltaTime;
     }
     
-    m_Scene.UpdateCamera(command, deltaTime);
-
-    GetRenderer().SetCamera(m_Scene.GetCamera());
+    m_Scene.UpdateCamera(
+        command,
+        deltaTime,
+        static_cast<float>(GetRenderer().GetFramebufferWidth()),
+        static_cast<float>(GetRenderer().GetFramebufferHeight())
+    );
     
     m_Scene.Update(deltaTime);
 }

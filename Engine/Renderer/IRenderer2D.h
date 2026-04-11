@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Scene/Camera2D.h"
 #include "Scene/Components.h"
 #include "Scene/SpriteRenderer.h"
 
@@ -9,6 +10,7 @@ class IRenderer2D
 {
 public:
     virtual ~IRenderer2D() = default;
+    virtual void SetCamera(const Camera2D& camera) = 0;
 
     virtual void DrawSprite(
         const Transform2D& transform,

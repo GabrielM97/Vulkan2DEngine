@@ -21,11 +21,11 @@ class IRenderer2D;
 class Scene
 {
 public:
-    GameObject& CreateGameObject(const std::string& name = "GameObject");
+    GameObject& CreateGameObject(const std::string& name = "GameObject", GameObjectID parentID = 0);
 
     void Render(IRenderer2D& renderer);
     void Update(float deltaTime);
-    void UpdateCamera(const CameraCommand& command, float deltaTime);
+    void UpdateCamera(const CameraCommand& command, float deltaTime, float viewportWidth, float viewportHeight);
 
     void DestroyGameObject(GameObject& object);
     void DestroyGameObject(GameObjectID id);
@@ -52,8 +52,8 @@ private:
     const SpriteAnimationSet* GetOrLoadAnimationSet(const std::string& path);
     std::vector<const GameObject*> SortForRendering();
     void DestroyPendingGameObjects();
-
-private:
+    bool WouldCreateCycle(GameObjectID childID, GameObjectID parentID) const;
+    
     std::vector<std::unique_ptr<GameObject>> m_GameObjects;
     Camera2D m_Camera;
     std::unordered_map<std::string, SpriteAnimationSet> m_AnimationSetCache;

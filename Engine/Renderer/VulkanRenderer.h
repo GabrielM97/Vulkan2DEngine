@@ -39,6 +39,8 @@ public:
     void DrawFrame();
     
     void OnFramebufferResized(int width, int height);
+    int GetFramebufferWidth() const { return m_FramebufferWidth; }
+    int GetFramebufferHeight() const { return m_FramebufferHeight; }
     
     void SetImGuiRenderCallback(std::function<void(VkCommandBuffer)> callback)
     {

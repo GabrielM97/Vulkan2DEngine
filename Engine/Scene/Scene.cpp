@@ -6,11 +6,14 @@
 #include <algorithm>
 #include <iostream>
 
-GameObject& Scene::CreateGameObject(const std::string& name)
+GameObject& Scene::CreateGameObject(const std::string& name, GameObjectID parentID)
 {
     auto object = std::make_unique<GameObject>();
     object->SetID(m_NextGameObjectID++);
     object->SetName(name);
+    
+    if (parentID != 0)
+        object->SetParentID(parentID);
 
     GameObject& reference = *object;
     m_GameObjects.push_back(std::move(object));
@@ -104,6 +107,21 @@ void Scene::DestroyPendingGameObjects()
   );
 }
 
+bool Scene::WouldCreateCycle(GameObjectID childID, GameObjectID parentID) const
+{
+    if (parentID == 0)
+        return false;
+
+    if (parentID == childID)
+        return true;
+
+    const GameObject* parent = FindGameObjectByID(parentID);
+    if (parent == nullptr)
+        return false;
+
+    return WouldCreateCycle(childID, parent->GetParentID());
+}
+
 const SpriteAnimationSet* Scene::GetOrLoadAnimationSet(const std::string& path)
 {
     if (path.empty())
@@ -126,6 +144,7 @@ const SpriteAnimationSet* Scene::GetOrLoadAnimationSet(const std::string& path)
 
 void Scene::Render(IRenderer2D& renderer)
 {
+    renderer.SetCamera(m_Camera);
     const std::vector<const GameObject*> renderQueue = SortForRendering();
     
     for (const GameObject* object : renderQueue)
@@ -161,13 +180,15 @@ void Scene::Update(float deltaTime)
     DestroyPendingGameObjects();
 }
 
-void Scene::UpdateCamera(const CameraCommand& command, float deltaTime)
+void Scene::UpdateCamera(const CameraCommand& command, float deltaTime, float viewportWidth, float viewportHeight)
 {
     m_Camera.Update(
         command.moveX,
         command.moveY,
         command.zoomDelta,
-        deltaTime
+        deltaTime,
+        viewportWidth,
+        viewportHeight
     );
 }
 
@@ -186,23 +207,38 @@ bool Scene::SetParent(GameObjectID childID, GameObjectID parentID)
     if (childID == 0 || parentID == 0 || childID == parentID)
         return false;
 
+    if (WouldCreateCycle(childID, parentID))
+        return false;
+    
     GameObject* child = FindGameObjectByID(childID);
     GameObject* parent = FindGameObjectByID(parentID);
 
     if (child == nullptr || parent == nullptr)
         return false;
 
+    Transform2D childWorld = GetWorldTransform(childID);
+    Transform2D parentWorld = GetWorldTransform(parentID);
+
     child->SetParentID(parentID);
+
+    child->transform.position = childWorld.position - parentWorld.position;
+    child->transform.rotationDegrees = childWorld.rotationDegrees - parentWorld.rotationDegrees;
     return true;
 }
 
 bool Scene::ClearParent(GameObjectID childID)
 {
     GameObject* child = FindGameObjectByID(childID);
+    
     if (child == nullptr)
         return false;
 
+    Transform2D world = GetWorldTransform(childID);
+
     child->ClearParent();
+    child->transform.position = world.position;
+    child->transform.rotationDegrees = world.rotationDegrees;
+
     return true;
 }
 
