@@ -21,6 +21,7 @@ public:
     void Reset();
 
     bool IsPlaying() const { return m_Playing; }
+    bool HasFinished() const { return m_Finished; }
     bool IsPlayingClip(const std::string& clipName) const;
     const std::string& GetRequestedClipName() const { return m_RequestedClipName; }
     const AnimationSetRef& GetAnimationSetRef() const { return m_AnimationSetRef; }
@@ -36,4 +37,5 @@ private:
     float m_ElapsedTime = 0.0f;
     int m_CurrentFrame = 0;
     bool m_Playing = false;
+    bool m_Finished = false;
 };

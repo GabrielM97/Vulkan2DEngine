@@ -9,6 +9,7 @@ void SpriteAnimation::SetAnimationSetPath(const std::string& path)
     m_RequestedClipName.clear();
     Reset();
     m_Playing = false;
+    m_Finished = false;
 }
 
 void SpriteAnimation::Play(const std::string& clipName, bool restartIfSame)
@@ -21,6 +22,7 @@ void SpriteAnimation::Play(const std::string& clipName, bool restartIfSame)
     m_CurrentFrame = 0;
     m_ElapsedTime = 0.0f;
     m_Playing = true;
+    m_Finished = false;
 }
 
 void SpriteAnimation::Stop()
@@ -32,6 +34,7 @@ void SpriteAnimation::Reset()
 {
     m_CurrentFrame = 0;
     m_ElapsedTime = 0.0f;
+    m_Finished = false;
 }
 
 bool SpriteAnimation::IsPlayingClip(const std::string& clipName) const
@@ -50,6 +53,7 @@ void SpriteAnimation::Update(float deltaTime, SpriteRenderer& sprite, const Spri
         m_CurrentClip = animationSet->FindClip(m_RequestedClipName);
         m_CurrentFrame = 0;
         m_ElapsedTime = 0.0f;
+        m_Finished = false;
     }
 
     if (m_CurrentClip == nullptr)
@@ -80,6 +84,7 @@ void SpriteAnimation::Update(float deltaTime, SpriteRenderer& sprite, const Spri
             {
                 m_CurrentFrame = m_CurrentClip->frameCount - 1;
                 m_Playing = false;
+                m_Finished = true;
             }
         }
     }

@@ -560,6 +560,12 @@ void VulkanRenderer::DrawSprite(const Transform2D& transform, const SpriteRender
         }
     }
 
+    if (sprite.IsFlippedX())
+        std::swap(uvMin.x, uvMax.x);
+
+    if (sprite.IsFlippedY())
+        std::swap(uvMin.y, uvMax.y);
+
     DrawQuad(
         transform.position,
         transform.size,

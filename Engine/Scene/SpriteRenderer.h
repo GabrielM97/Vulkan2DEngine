@@ -56,6 +56,11 @@ public:
     int GetLayer() const { return m_Layer; }
     void SetLayer(int layer) { m_Layer = layer; }
 
+    bool IsFlippedX() const { return m_FlipX; }
+    bool IsFlippedY() const { return m_FlipY; }
+    void SetFlipX(bool flip) { m_FlipX = flip; }
+    void SetFlipY(bool flip) { m_FlipY = flip; }
+
 private:
     TextureRef m_Texture;
     IntRect m_SourceRect{0, 0, 0, 0};
@@ -63,4 +68,6 @@ private:
     glm::vec4 m_Tint{1.0f};
     bool m_Visible = true;
     int m_Layer = 0;
+    bool m_FlipX = false;
+    bool m_FlipY = false;
 };
