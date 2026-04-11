@@ -16,10 +16,12 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include "IRenderer2D.h"
 #include "VulkanTexture.h"
 #include "Scene/Camera2D.h"
 
-class VulkanRenderer
+class VulkanRenderer : public IRenderer2D
 {
 public:
     void Init(GLFWwindow* window, int width, int height);
@@ -27,10 +29,10 @@ public:
 
     uint32_t LoadTexture(const char* path);
     void SetCamera(const Camera2D& camera);
+    
+    void DrawSprite(const Transform2D& transform, const SpriteRenderer& sprite) override;
 
     void BeginFrame();
-    void DrawQuad(glm::vec2 position, glm::vec2 size, float rotationDegrees, glm::vec2 uvMin, glm::vec2 uvMax, glm::vec4 tint =
-                      glm::vec4(1.0f), uint32_t textureIndex = 0);
     void EndFrame();
     void DrawFrame();
     
@@ -40,6 +42,9 @@ public:
     const VulkanTexture* GetTexture(uint32_t index) const;
 
 private:
+    void DrawQuad(glm::vec2 position, glm::vec2 size, float rotationDegrees, glm::vec2 uvMin, glm::vec2 uvMax, 
+                    glm::vec4 tint =glm::vec4(1.0f), uint32_t textureIndex = 0);
+    
     void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     
     // Long-lived setup: survives swapchain recreation.
@@ -65,7 +70,7 @@ private:
 
     void CreatePerImageSyncObjects();
     void DestroyPerImageSyncObjects();
-    
+
     GLFWwindow* m_Window = nullptr;
 
     VulkanContext context;

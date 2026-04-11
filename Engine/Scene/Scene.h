@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-class VulkanRenderer;
-
 struct CameraCommand
 {
     float moveX = 0.0f;
@@ -16,12 +14,14 @@ struct CameraCommand
     float zoomDelta = 0.0f;
 };
 
+class IRenderer2D;
+
 class Scene
 {
 public:
     GameObject& CreateGameObject(const std::string& name = "GameObject");
 
-    void Render(VulkanRenderer& renderer);
+    void Render(IRenderer2D& renderer);
     void Update(float deltaTime);
     void UpdateCamera(const CameraCommand& command, float deltaTime);
 

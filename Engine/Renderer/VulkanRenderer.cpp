@@ -528,6 +528,42 @@ void VulkanRenderer::DestroyPerImageSyncObjects()
     m_ImagesInFlight.clear();
 }
 
+void VulkanRenderer::DrawSprite(const Transform2D& transform, const SpriteRenderer& sprite)
+{
+    uint32_t textureIndex = GetOrLoadTexture(sprite.texture.path);
+
+    glm::vec2 uvMin{0.0f, 0.0f};
+    glm::vec2 uvMax{1.0f, 1.0f};
+
+    if (sprite.useSourceRect)
+    {
+        if (const VulkanTexture* texture = GetTexture(textureIndex))
+        {
+            const float textureWidth = static_cast<float>(texture->GetWidth());
+            const float textureHeight = static_cast<float>(texture->GetHeight());
+
+            if (textureWidth > 0.0f && textureHeight > 0.0f)
+            {
+                uvMin.x = static_cast<float>(sprite.sourceRect.x) / textureWidth;
+                uvMin.y = static_cast<float>(sprite.sourceRect.y) / textureHeight;
+
+                uvMax.x = static_cast<float>(sprite.sourceRect.x + sprite.sourceRect.width) / textureWidth;
+                uvMax.y = static_cast<float>(sprite.sourceRect.y + sprite.sourceRect.height) / textureHeight;
+            }
+        }
+    }
+
+    DrawQuad(
+        transform.position,
+        transform.size,
+        transform.rotationDegrees,
+        uvMin,
+        uvMax,
+        sprite.tint,
+        textureIndex
+    );
+}
+
 uint32_t VulkanRenderer::GetOrLoadTexture(const std::string& path)
 {
     auto it = m_TextureCache.find(path);
