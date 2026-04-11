@@ -2,9 +2,11 @@
 
 #include "Camera2D.h"
 #include "GameObject.h"
+#include "SpriteAnimationSet.h"
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 struct CameraCommand
@@ -40,10 +42,12 @@ public:
     const Camera2D& GetCamera() const { return m_Camera; }
 
 private:
+    const SpriteAnimationSet* GetOrLoadAnimationSet(const std::string& path);
     void SortForRendering();
     void DestroyPendingGameObjects();
 
 private:
     std::vector<std::unique_ptr<GameObject>> m_GameObjects;
     Camera2D m_Camera;
+    std::unordered_map<std::string, SpriteAnimationSet> m_AnimationSetCache;
 };

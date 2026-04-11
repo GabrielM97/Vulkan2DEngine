@@ -1,30 +1,22 @@
 #include "SpriteAnimation.h"
-
+#include "SpriteAnimationSet.h"
 #include "SpriteRenderer.h"
 
-void SpriteAnimation::SetClip(int startColumn, int row, int frameCount, int cellWidth, int cellHeight)
+void SpriteAnimation::SetAnimationSetPath(const std::string& path)
 {
-    m_StartColumn = startColumn;
-    m_Row = row;
-    m_FrameCount = frameCount;
-    m_CellWidth = cellWidth;
-    m_CellHeight = cellHeight;
+    m_AnimationSetRef.path = path;
+    m_CurrentClip = nullptr;
+    m_RequestedClipName.clear();
+    Reset();
+    m_Playing = false;
+}
+
+void SpriteAnimation::Play(const std::string& clipName)
+{
+    m_RequestedClipName = clipName;
+    m_CurrentClip = nullptr;
     m_CurrentFrame = 0;
     m_ElapsedTime = 0.0f;
-}
-
-void SpriteAnimation::SetFrameDuration(float seconds)
-{
-    m_FrameDuration = seconds;
-}
-
-void SpriteAnimation::SetLooping(bool looping)
-{
-    m_Looping = looping;
-}
-
-void SpriteAnimation::Play()
-{
     m_Playing = true;
 }
 
@@ -39,36 +31,55 @@ void SpriteAnimation::Reset()
     m_ElapsedTime = 0.0f;
 }
 
-void SpriteAnimation::Update(float deltaTime, SpriteRenderer& sprite)
+void SpriteAnimation::Update(float deltaTime, SpriteRenderer& sprite, const SpriteAnimationSet* animationSet)
 {
-    if (!m_Playing || m_FrameCount <= 0 || m_CellWidth <= 0 || m_CellHeight <= 0)
+    if (!m_Playing || animationSet == nullptr)
         return;
+
+    if (m_CurrentClip == nullptr ||
+        !m_RequestedClipName.empty() && m_CurrentClip->name != m_RequestedClipName)
+    {
+        m_CurrentClip = animationSet->FindClip(m_RequestedClipName);
+        m_CurrentFrame = 0;
+        m_ElapsedTime = 0.0f;
+    }
+
+    if (m_CurrentClip == nullptr)
+        return;
+
+    if (m_CurrentClip->frameCount <= 0 ||
+        m_CurrentClip->cellWidth <= 0 ||
+        m_CurrentClip->cellHeight <= 0 ||
+        m_CurrentClip->frameDuration <= 0.0f)
+    {
+        return;
+    }
 
     m_ElapsedTime += deltaTime;
 
-    while (m_ElapsedTime >= m_FrameDuration)
+    while (m_ElapsedTime >= m_CurrentClip->frameDuration)
     {
-        m_ElapsedTime -= m_FrameDuration;
+        m_ElapsedTime -= m_CurrentClip->frameDuration;
         ++m_CurrentFrame;
 
-        if (m_CurrentFrame >= m_FrameCount)
+        if (m_CurrentFrame >= m_CurrentClip->frameCount)
         {
-            if (m_Looping)
+            if (m_CurrentClip->looping)
             {
                 m_CurrentFrame = 0;
             }
             else
             {
-                m_CurrentFrame = m_FrameCount - 1;
+                m_CurrentFrame = m_CurrentClip->frameCount - 1;
                 m_Playing = false;
             }
         }
     }
 
     sprite.SetSourceRectFromGrid(
-        m_StartColumn + m_CurrentFrame,
-        m_Row,
-        m_CellWidth,
-        m_CellHeight
+        m_CurrentClip->startColumn + m_CurrentFrame,
+        m_CurrentClip->row,
+        m_CurrentClip->cellWidth,
+        m_CurrentClip->cellHeight
     );
 }

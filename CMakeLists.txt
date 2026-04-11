@@ -94,8 +94,8 @@ endforeach()
 add_custom_target(Shaders ALL DEPENDS ${SPIRV_BINARIES})
 add_dependencies(Sandbox Shaders)
 
-# --- Copy compiled shaders to executable folder ---
-add_custom_command(TARGET Sandbox POST_BUILD
+# --- Copy runtime assets to executable folder ---
+add_custom_target(CopySandboxAssets ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:Sandbox>/Assets/Shaders
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${SHADER_OUT_DIR}
@@ -104,8 +104,15 @@ add_custom_command(TARGET Sandbox POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/Assets/Textures
             $<TARGET_FILE_DIR:Sandbox>/Assets/Textures
-    COMMENT "Copying shaders and textures to executable folder"
+    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:Sandbox>/Assets/Animations
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/Assets/Animations
+            $<TARGET_FILE_DIR:Sandbox>/Assets/Animations
+    COMMENT "Copying shaders, textures, and animations to executable folder"
 )
+
+add_dependencies(CopySandboxAssets Shaders)
+add_dependencies(Sandbox CopySandboxAssets)
 
 # --- Organize shaders in IDE ---
 source_group("Shaders" FILES ${SHADERS})

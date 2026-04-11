@@ -13,11 +13,9 @@ void SandboxApp::OnInit()
     Player.sprite.SetSourceRectFromGrid(0,10, 64, 64);
     Player.sprite.SetTint(glm::vec4(1.0f));
     Player.sprite.SetLayer(0);
-    
     Player.animation.emplace();
-    Player.animation->SetClip(0, 10, 9, 64, 64);
-    Player.animation->SetFrameDuration(0.16f);
-    Player.animation->SetLooping(true);
+    Player.animation->SetAnimationSetPath("Assets/Animations/CharacterSpriteSheet.csv");
+    Player.animation->Play("Walk");
 }
 
 void SandboxApp::OnUpdate(float deltaTime)

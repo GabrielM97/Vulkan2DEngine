@@ -4,6 +4,7 @@
 #include "Camera2D.h"
 
 #include <algorithm>
+#include <iostream>
 
 GameObject& Scene::CreateGameObject(const std::string& name)
 {
@@ -75,6 +76,26 @@ void Scene::DestroyPendingGameObjects()
   );
 }
 
+const SpriteAnimationSet* Scene::GetOrLoadAnimationSet(const std::string& path)
+{
+    if (path.empty())
+        return nullptr;
+
+    auto it = m_AnimationSetCache.find(path);
+    if (it != m_AnimationSetCache.end())
+        return &it->second;
+
+    SpriteAnimationSet animationSet;
+    if (!animationSet.LoadFromCSV(path))
+    {
+        std::cerr << "Failed to load animation set '" << path << "'\n";
+        return nullptr;
+    }
+
+    auto [insertedIt, inserted] = m_AnimationSetCache.emplace(path, std::move(animationSet));
+    return &insertedIt->second;
+}
+
 void Scene::Render(IRenderer2D& renderer)
 {
     SortForRendering();
@@ -100,7 +121,10 @@ void Scene::Update(float deltaTime)
 
         if (object->animation.has_value())
         {
-            object->animation->Update(deltaTime, object->sprite);
+            const SpriteAnimationSet* animationSet =
+                GetOrLoadAnimationSet(object->animation->GetAnimationSetRef().path);
+
+            object->animation->Update(deltaTime, object->sprite, animationSet);
         }
     }
 

@@ -1,0 +1,3 @@
+name,row,startColumn,frameCount,cellWidth,cellHeight,frameDuration,looping
+Walk,10,0,9,64,64,0.16,1
+Idle,24,0,2,64,64,0.16,1

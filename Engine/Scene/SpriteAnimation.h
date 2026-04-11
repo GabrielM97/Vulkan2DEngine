@@ -1,30 +1,37 @@
 #pragma once
 
+#include <string>
+
+struct AnimationSetRef
+{
+    std::string path;
+};
+
+struct AnimationClip;
 class SpriteRenderer;
+class SpriteAnimationSet;
 
 class SpriteAnimation
 {
 public:
-    void SetClip(int startColumn, int row, int frameCount, int cellWidth, int cellHeight);
-    void SetFrameDuration(float seconds);
-    void SetLooping(bool looping);
-    void Play();
+    void SetAnimationSetPath(const std::string& path);
+    void Play(const std::string& clipName);
     void Stop();
     void Reset();
 
-    void Update(float deltaTime, SpriteRenderer& sprite);
+    bool IsPlaying() const { return m_Playing; }
+    const AnimationSetRef& GetAnimationSetRef() const { return m_AnimationSetRef; }
+    const std::string& GetRequestedClipName() const { return m_RequestedClipName; }
+    const AnimationClip* GetCurrentClip() const { return m_CurrentClip; }
+
+    void Update(float deltaTime, SpriteRenderer& sprite, const SpriteAnimationSet* animationSet);
 
 private:
-    int m_StartColumn = 0;
-    int m_Row = 0;
-    int m_FrameCount = 1;
-    int m_CellWidth = 0;
-    int m_CellHeight = 0;
+    AnimationSetRef m_AnimationSetRef;
+    std::string m_RequestedClipName;
+    const AnimationClip* m_CurrentClip = nullptr;
 
-    float m_FrameDuration = 0.1f;
     float m_ElapsedTime = 0.0f;
-
     int m_CurrentFrame = 0;
-    bool m_Playing = true;
-    bool m_Looping = true;
+    bool m_Playing = false;
 };
