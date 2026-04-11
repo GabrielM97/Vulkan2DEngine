@@ -6,7 +6,7 @@
 void SandboxApp::OnInit()
 {
     GameObject& Player = m_Scene.CreateGameObject("Player Sprite");
-    Player.transform.position = {300.0f, 50.0f};
+    Player.transform.position = {0.0f, 0.0f};
     Player.transform.size = {64.0f, 64.0f};
     Player.transform.rotationDegrees = 0.0f;
     Player.sprite.SetTexturePath("Assets/Textures/character-spritesheet.png");

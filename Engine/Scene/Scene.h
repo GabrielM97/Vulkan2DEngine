@@ -26,7 +26,7 @@ public:
     void UpdateCamera(const CameraCommand& command, float deltaTime);
 
     void DestroyGameObject(GameObject& object);
-size_t GetGameObjectCount() const;
+    size_t GetGameObjectCount() const;
     GameObject* GetGameObject(size_t index);
     const GameObject* GetGameObject(size_t index) const;
 

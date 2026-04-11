@@ -440,10 +440,15 @@ void VulkanRenderer::UpdateCameraMatrices()
     const float viewWidth = static_cast<float>(m_FramebufferWidth) / zoom;
     const float viewHeight = static_cast<float>(m_FramebufferHeight) / zoom;
 
-    const float left = m_Camera.GetPosition().x;
-    const float right = m_Camera.GetPosition().x + viewWidth;
-    const float top = m_Camera.GetPosition().y;
-    const float bottom = m_Camera.GetPosition().y + viewHeight;
+    const float halfViewWidth = viewWidth * 0.5f;
+    const float halfViewHeight = viewHeight * 0.5f;
+
+    const glm::vec2& center = m_Camera.GetPosition();
+
+    const float left = center.x - halfViewWidth;
+    const float right = center.x + halfViewWidth;
+    const float top = center.y - halfViewHeight;
+    const float bottom = center.y + halfViewHeight;
 
     ubo.viewProjection = glm::ortho(
         left,
