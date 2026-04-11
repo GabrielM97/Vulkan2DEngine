@@ -9,12 +9,16 @@ VulkanTexture::VulkanTexture(VulkanTexture&& other) noexcept
     : m_Image(other.m_Image),
       m_ImageMemory(other.m_ImageMemory),
       m_ImageView(other.m_ImageView),
-      m_Sampler(other.m_Sampler)
+      m_Sampler(other.m_Sampler),
+      m_Width(other.m_Width),
+      m_Height(other.m_Height)
 {
     other.m_Image = VK_NULL_HANDLE;
     other.m_ImageMemory = VK_NULL_HANDLE;
     other.m_ImageView = VK_NULL_HANDLE;
     other.m_Sampler = VK_NULL_HANDLE;
+    other.m_Width = 0;
+    other.m_Height = 0;
 }
 
 VulkanTexture& VulkanTexture::operator=(VulkanTexture&& other) noexcept
@@ -26,11 +30,15 @@ VulkanTexture& VulkanTexture::operator=(VulkanTexture&& other) noexcept
     m_ImageMemory = other.m_ImageMemory;
     m_ImageView = other.m_ImageView;
     m_Sampler = other.m_Sampler;
+    m_Width = other.m_Width;
+    m_Height = other.m_Height;
 
     other.m_Image = VK_NULL_HANDLE;
     other.m_ImageMemory = VK_NULL_HANDLE;
     other.m_ImageView = VK_NULL_HANDLE;
     other.m_Sampler = VK_NULL_HANDLE;
+    other.m_Width = 0;
+    other.m_Height = 0;
 
     return *this;
 }
@@ -67,6 +75,9 @@ void VulkanTexture::Cleanup(VkDevice device)
         vkFreeMemory(device, m_ImageMemory, nullptr);
         m_ImageMemory = VK_NULL_HANDLE;
     }
+    
+    m_Width = 0;
+    m_Height = 0;
 }
 
 void VulkanTexture::CreateTextureImage(VulkanDevice& device, VkCommandPool commandPool, VkQueue graphicsQueue, const char* path)
@@ -79,8 +90,10 @@ void VulkanTexture::CreateTextureImage(VulkanDevice& device, VkCommandPool comma
         std::cout << stbi_failure_reason() << "\n";
         throw std::runtime_error(stbi_failure_reason());
     }
-        
-
+    
+    m_Width = static_cast<uint32_t>(texWidth);
+    m_Height = static_cast<uint32_t>(texHeight);
+    
     VkDeviceSize imageSize = static_cast<VkDeviceSize>(texWidth) * texHeight * 4;
 
     VkBuffer stagingBuffer;

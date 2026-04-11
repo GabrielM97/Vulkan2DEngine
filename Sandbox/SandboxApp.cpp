@@ -11,6 +11,7 @@ void SandboxApp::OnInit()
     first.transform.rotationDegrees = 0.0f;
     first.sprite.texture.path = "Assets/Textures/texture.jpg";
     first.sprite.tint = glm::vec4(1.0f);
+    first.active = false;
     first.sprite.layer = 0;
 
     GameObject& second = m_Scene.CreateGameObject("Second Sprite");
@@ -19,13 +20,16 @@ void SandboxApp::OnInit()
     second.transform.rotationDegrees = 0.0f;
     second.sprite.texture.path = "Assets/Textures/texture2.jpg";
     second.sprite.tint = glm::vec4(1.0f);
+    second.active = false;
     second.sprite.layer = 1;
 
     GameObject& transparent = m_Scene.CreateGameObject("Transparent Sprite");
     transparent.transform.position = {300.0f, 50.0f};
-    transparent.transform.size = {128.0f, 128.0f};
+    transparent.transform.size = {32.0f, 32.0f};
     transparent.transform.rotationDegrees = 0.0f;
-    transparent.sprite.texture.path = "Assets/Textures/texture.jpg";
+    transparent.sprite.texture.path = "Assets/Textures/testspritesheet.png";
+    transparent.sprite.sourceRect = {0,0, 128, 128};
+    transparent.sprite.useSourceRect = true;
     transparent.sprite.tint = glm::vec4(1.0f, 1.0f, 1.0f, 0.6f);
     transparent.sprite.layer = 2;
 
@@ -35,6 +39,7 @@ void SandboxApp::OnInit()
     third.transform.rotationDegrees = 0.0f;
     third.sprite.texture.path = "Assets/Textures/cute pixel art cat_21719083.png";
     third.sprite.tint = glm::vec4(1.0f);
+    third.active = false;
     third.sprite.layer = 0;
 }
 

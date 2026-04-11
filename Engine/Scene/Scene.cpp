@@ -85,11 +85,36 @@ void Scene::Render(VulkanRenderer& renderer)
             continue;
 
         uint32_t textureIndex = renderer.GetOrLoadTexture(object->sprite.texture.path);
-        
+
+        glm::vec2 uvMin{0.0f, 0.0f};
+        glm::vec2 uvMax{1.0f, 1.0f};
+
+        if (object->sprite.useSourceRect)
+        {
+            if (const VulkanTexture* texture = renderer.GetTexture(textureIndex))
+            {
+                const float textureWidth = static_cast<float>(texture->GetWidth());
+                const float textureHeight = static_cast<float>(texture->GetHeight());
+
+                if (textureWidth > 0.0f && textureHeight > 0.0f)
+                {
+                    const IntRect& rect = object->sprite.sourceRect;
+
+                    uvMin.x = static_cast<float>(rect.x) / textureWidth;
+                    uvMin.y = static_cast<float>(rect.y) / textureHeight;
+
+                    uvMax.x = static_cast<float>(rect.x + rect.width) / textureWidth;
+                    uvMax.y = static_cast<float>(rect.y + rect.height) / textureHeight;
+                }
+            }
+        }
+
         renderer.DrawQuad(
             object->transform.position,
             object->transform.size,
             object->transform.rotationDegrees,
+            uvMin,
+            uvMax,
             object->sprite.tint,
             textureIndex
         );

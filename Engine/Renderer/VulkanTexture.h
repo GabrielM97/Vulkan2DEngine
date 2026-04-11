@@ -28,6 +28,9 @@ public:
 
     VkImageView GetImageView() const { return m_ImageView; }
     VkSampler GetSampler() const { return m_Sampler; }
+    
+    uint32_t GetWidth() const { return m_Width; }
+    uint32_t GetHeight() const { return m_Height; }
 
 private:
     void CreateTextureImage(VulkanDevice& device, VkCommandPool commandPool, VkQueue graphicsQueue, const char* path);
@@ -43,4 +46,7 @@ private:
     VkDeviceMemory m_ImageMemory = VK_NULL_HANDLE;
     VkImageView m_ImageView = VK_NULL_HANDLE;
     VkSampler m_Sampler = VK_NULL_HANDLE;
+    
+    uint32_t m_Width = 0;
+    uint32_t m_Height = 0;
 };

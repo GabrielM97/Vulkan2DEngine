@@ -7,7 +7,9 @@ layout(location = 2) in vec2 inInstancePosition;
 layout(location = 3) in vec2 inInstanceSize;
 layout(location = 4) in float inInstanceRotation;
 layout(location = 5) in float inTextureIndex;
-layout(location = 6) in vec4 inTint;
+layout(location = 6) in vec2 inInstanceUVMin;
+layout(location = 7) in vec2 inInstanceUVMax;
+layout(location = 8) in vec4 inTint;
 
 layout(location = 0) out vec2 fragUV;
 layout(location = 1) out vec4 fragColor;
@@ -35,6 +37,6 @@ void main()
 
     gl_Position = ubo.viewProjection * vec4(worldPosition, inPosition.z, 1.0);
 
-    fragUV = inUV;
+    fragUV = mix(inInstanceUVMin, inInstanceUVMax, inUV);;
     fragColor = inTint;
 }

@@ -83,12 +83,14 @@ void VulkanRenderer::SetCamera(const Camera2D& camera)
     UpdateCameraMatrices();
 }
 
-void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec4 tint, uint32_t textureIndex)
+void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec2 uvMin, const glm::vec2 uvMax, const glm::vec4 tint, uint32_t textureIndex)
 {
     QuadCommand command{};
     command.position = position;
     command.size = size;
     command.rotation = glm::radians(rotationDegrees);
+    command.uvMin = uvMin;
+    command.uvMax = uvMax;
     command.tint = tint;
     command.textureIndex = textureIndex;
 
@@ -120,6 +122,8 @@ void VulkanRenderer::EndFrame()
         instance.size = quad.size;
         instance.rotation = quad.rotation;
         instance.textureIndex = static_cast<float>(quad.textureIndex);
+        instance.uvMin = quad.uvMin;
+        instance.uvMax = quad.uvMax;
         instance.tint = quad.tint;
 
         m_InstanceData.push_back(instance);
@@ -418,7 +422,7 @@ void VulkanRenderer::CreateFallbackTexture()
 
     // Temporary fallback: use a known-good project texture.
     // This can later be replaced with a dedicated missing-texture asset.
-    m_FallbackTextureIndex = LoadTexture("Assets/Textures/missing_texture.png");
+    m_FallbackTextureIndex = LoadTexture("Assets/Textures/texture.jpg");
     m_HasFallbackTexture = true;
 }
 
@@ -548,6 +552,14 @@ uint32_t VulkanRenderer::GetOrLoadTexture(const std::string& path)
         m_TextureCache[path] = m_FallbackTextureIndex;
         return m_FallbackTextureIndex;
     }
+}
+
+const VulkanTexture* VulkanRenderer::GetTexture(uint32_t index) const
+{
+    if (index >= m_Textures.size())
+        return nullptr;
+
+    return &m_Textures[index];
 }
 
 void VulkanRenderer::RecreateSwapchain()
