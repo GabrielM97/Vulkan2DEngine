@@ -26,6 +26,15 @@ bool Application::Init()
         framebufferHeight
     );
 
+    imguiLayer.Init(window->GetNativeWindow(), vulkanRenderer);
+
+    vulkanRenderer.SetImGuiRenderCallback(
+        [this](VkCommandBuffer commandBuffer)
+        {
+            imguiLayer.Render(commandBuffer);
+        }
+    );
+
     OnInit();
 
     return true;
@@ -51,6 +60,7 @@ void Application::Run()
         lastTime = currentTime;
 
         window->PollEvents();
+        imguiLayer.BeginFrame();
 
         if (window->WasResized())
         {
@@ -69,7 +79,9 @@ void Application::Run()
         vulkanRenderer.BeginFrame();
 
         OnRender(vulkanRenderer);
+        OnImGuiUpdate();
 
+        imguiLayer.EndFrame();
         vulkanRenderer.EndFrame();
     }
     
@@ -83,7 +95,7 @@ void Application::Shutdown()
         return;
 
     OnShutdown();
-
+    imguiLayer.Shutdown();
     vulkanRenderer.Cleanup();
 
     isShutdown = true;

@@ -4,6 +4,7 @@
 
 #include "Platform/Window.h"
 #include "Renderer/VulkanRenderer.h"
+#include "Renderer/ImGuiLayer.h"
 
 class Application
 {
@@ -21,6 +22,8 @@ protected:
     virtual void OnRender(VulkanRenderer& renderer) {}
     virtual void OnShutdown() {}
 
+    virtual void OnImGuiUpdate() {}
+
     VulkanRenderer& GetRenderer() { return vulkanRenderer; }
 
     bool IsKeyDown(int key) const;
@@ -28,6 +31,7 @@ protected:
 private:
     std::unique_ptr<Window> window = nullptr;
     VulkanRenderer vulkanRenderer;
+    ImGuiLayer imguiLayer;
     
     bool isRunning = false;
     bool isShutdown = false;

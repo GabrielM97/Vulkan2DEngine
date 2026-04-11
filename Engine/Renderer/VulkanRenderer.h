@@ -13,9 +13,11 @@
 #include "VulkanQuadInstanceBuffer.h"
 #include "RenderTypes.h"
 #include "VulkanUniformBuffer.h"
+
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <functional>
 
 #include "IRenderer2D.h"
 #include "VulkanTexture.h"
@@ -38,8 +40,22 @@ public:
     
     void OnFramebufferResized(int width, int height);
     
+    void SetImGuiRenderCallback(std::function<void(VkCommandBuffer)> callback)
+    {
+        m_ImGuiRenderCallback = std::move(callback);
+    }
+
     uint32_t GetOrLoadTexture(const std::string& path);
     const VulkanTexture* GetTexture(uint32_t index) const;
+    VkInstance GetInstance() const { return context.GetInstance(); }
+    VkPhysicalDevice GetPhysicalDevice() const { return device.GetPhysicalDevice(); }
+    VkDevice GetDevice() const { return device.GetDevice(); }
+    VkQueue GetGraphicsQueue() const { return device.GetGraphicsQueue(); }
+    uint32_t GetGraphicsQueueFamily() const { return device.GetGraphicsQueueFamily(); }
+    VkRenderPass GetRenderPass() const { return m_renderPass.Get(); }
+    VkCommandPool GetUploadCommandPool() const { return m_UploadCommandPool; }
+    uint32_t GetMinImageCount() const { return 2; }
+    uint32_t GetImageCount() const { return static_cast<uint32_t>(m_swapchain.GetImageViews().size()); }
 
 private:
     void DrawQuad(glm::vec2 position, glm::vec2 size, float rotationDegrees, glm::vec2 origin, glm::vec2 uvMin, glm::vec2 uvMax, 
@@ -83,6 +99,8 @@ private:
     VulkanCommandBuffer m_CommandBuffer;
     VkCommandPool m_UploadCommandPool = VK_NULL_HANDLE;
     std::vector<VulkanTexture> m_Textures;
+
+    std::function<void(VkCommandBuffer)> m_ImGuiRenderCallback;
 
     Camera2D m_Camera;
     bool m_CameraDirty = true;

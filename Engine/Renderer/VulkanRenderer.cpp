@@ -207,6 +207,10 @@ void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
             batch.firstInstance
         );
     }
+
+    if (m_ImGuiRenderCallback)
+        m_ImGuiRenderCallback(commandBuffer);
+
     vkCmdEndRenderPass(commandBuffer);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)

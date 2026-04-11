@@ -22,19 +22,24 @@ void SandboxApp::OnUpdate(float deltaTime)
 {
     CameraCommand command{};
 
-    if (IsKeyDown(GLFW_KEY_A))
-        command.moveX -= 1.0f;
-    if (IsKeyDown(GLFW_KEY_D))
-        command.moveX += 1.0f;
-    if (IsKeyDown(GLFW_KEY_W))
-        command.moveY -= 1.0f;
-    if (IsKeyDown(GLFW_KEY_S))
-        command.moveY += 1.0f;
+    ImGuiIO& io = ImGui::GetIO();
 
-    if (IsKeyDown(GLFW_KEY_Q))
-        command.zoomDelta -= 1.0f;
-    if (IsKeyDown(GLFW_KEY_E))
-        command.zoomDelta += 1.0f;
+    if (!io.WantCaptureKeyboard)
+    {
+        if (IsKeyDown(GLFW_KEY_A))
+            command.moveX -= 1.0f;
+        if (IsKeyDown(GLFW_KEY_D))
+            command.moveX += 1.0f;
+        if (IsKeyDown(GLFW_KEY_W))
+            command.moveY -= 1.0f;
+        if (IsKeyDown(GLFW_KEY_S))
+            command.moveY += 1.0f;
+
+        if (IsKeyDown(GLFW_KEY_Q))
+            command.zoomDelta -= 1.0f;
+        if (IsKeyDown(GLFW_KEY_E))
+            command.zoomDelta += 1.0f;
+    }
     
     m_Scene.GetGameObject(0)->transform.position.x += 5 * deltaTime;
     
@@ -48,4 +53,12 @@ void SandboxApp::OnUpdate(float deltaTime)
 void SandboxApp::OnRender(VulkanRenderer& renderer)
 {
     m_Scene.Render(renderer);
+}
+
+void SandboxApp::OnImGuiUpdate()
+{
+    ImGui::Begin("Debug");
+    ImGui::Text("ImGui is working.");
+    ImGui::Text("Objects: %d", 1);
+    ImGui::End();
 }
