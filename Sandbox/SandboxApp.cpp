@@ -50,7 +50,7 @@ void SandboxApp::OnUpdate(float deltaTime)
     
     if (GameObject* player = m_Scene.FindGameObjectByID(m_PlayerID))
     {
-       player->transform.position.y += 25.0f * deltaTime;
+       //player->transform.position.y += 25.0f * deltaTime;
     }
     
     m_Scene.UpdateCamera(
@@ -71,7 +71,20 @@ void SandboxApp::OnRender(VulkanRenderer& renderer)
 void SandboxApp::OnImGuiUpdate()
 {
     ImGui::Begin("Debug");
-    ImGui::Text("ImGui is working.");
-    ImGui::Text("Objects: %d", 1);
+
+    ImGui::Text("Game Objects: %zu", m_Scene.GetGameObjectCount());
+    ImGui::Text("Framebuffer: %d x %d",
+        GetRenderer().GetFramebufferWidth(),
+        GetRenderer().GetFramebufferHeight());
+
+    if (GameObject* player = m_Scene.FindGameObjectByID(m_PlayerID))
+    {
+        ImGui::Separator();
+        ImGui::Text("Player");
+        ImGui::DragFloat2("Position", &player->transform.position.x, 1.0f);
+        ImGui::DragFloat2("Size", &player->transform.size.x, 1.0f);
+        ImGui::DragFloat("Rotation", &player->transform.rotationDegrees, 1.0f);
+    }
+
     ImGui::End();
 }
