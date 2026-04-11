@@ -81,7 +81,7 @@ void Scene::Render(IRenderer2D& renderer)
     
     for (const std::unique_ptr<GameObject>& object : m_GameObjects)
     {
-        if (!object->active || !object->sprite.visible)
+        if (!object->active || !object->sprite.IsVisible())
             continue;
 
         renderer.DrawSprite(
@@ -133,7 +133,7 @@ void Scene::SortForRendering()
         m_GameObjects.end(),
         [](const std::unique_ptr<GameObject>& a, const std::unique_ptr<GameObject>& b)
         {
-            return a->sprite.layer < b->sprite.layer;
+            return a->sprite.GetLayer() < b->sprite.GetLayer();
         }
     );
 }

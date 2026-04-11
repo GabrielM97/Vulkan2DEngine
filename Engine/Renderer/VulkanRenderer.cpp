@@ -5,9 +5,11 @@
 #include <stdexcept>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <Scene/SpriteRenderer.h>
 
 #include "VulkanVertexBuffer.h"
 
+class SpriteRenderer;
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
 void VulkanRenderer::Init(GLFWwindow* window, int width, int height)
@@ -530,12 +532,12 @@ void VulkanRenderer::DestroyPerImageSyncObjects()
 
 void VulkanRenderer::DrawSprite(const Transform2D& transform, const SpriteRenderer& sprite)
 {
-    uint32_t textureIndex = GetOrLoadTexture(sprite.texture.path);
+    uint32_t textureIndex = GetOrLoadTexture(sprite.GetTexture().path);
 
     glm::vec2 uvMin{0.0f, 0.0f};
     glm::vec2 uvMax{1.0f, 1.0f};
 
-    if (sprite.useSourceRect)
+    if (sprite.UsesSourceRect())
     {
         if (const VulkanTexture* texture = GetTexture(textureIndex))
         {
@@ -544,11 +546,11 @@ void VulkanRenderer::DrawSprite(const Transform2D& transform, const SpriteRender
 
             if (textureWidth > 0.0f && textureHeight > 0.0f)
             {
-                uvMin.x = static_cast<float>(sprite.sourceRect.x) / textureWidth;
-                uvMin.y = static_cast<float>(sprite.sourceRect.y) / textureHeight;
+                uvMin.x = static_cast<float>(sprite.GetSourceRect().x) / textureWidth;
+                uvMin.y = static_cast<float>(sprite.GetSourceRect().y) / textureHeight;
 
-                uvMax.x = static_cast<float>(sprite.sourceRect.x + sprite.sourceRect.width) / textureWidth;
-                uvMax.y = static_cast<float>(sprite.sourceRect.y + sprite.sourceRect.height) / textureHeight;
+                uvMax.x = static_cast<float>(sprite.GetSourceRect().x + sprite.GetSourceRect().width) / textureWidth;
+                uvMax.y = static_cast<float>(sprite.GetSourceRect().y + sprite.GetSourceRect().height) / textureHeight;
             }
         }
     }
@@ -559,7 +561,7 @@ void VulkanRenderer::DrawSprite(const Transform2D& transform, const SpriteRender
         transform.rotationDegrees,
         uvMin,
         uvMax,
-        sprite.tint,
+        sprite.GetTint(),
         textureIndex
     );
 }
