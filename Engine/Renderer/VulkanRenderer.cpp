@@ -82,7 +82,7 @@ uint32_t VulkanRenderer::LoadTexture(const char* path)
 void VulkanRenderer::SetCamera(const Camera2D& camera) 
 {
     m_Camera = camera;
-    UpdateCameraMatrices();
+    m_CameraDirty = true;
 }
 
 void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec2 uvMin, const glm::vec2 uvMax, const glm::vec4 tint, uint32_t textureIndex)
@@ -253,7 +253,7 @@ void VulkanRenderer::CreateGlobalResources(int width, int height)
     CreateDescriptorPool();
     CreateDescriptorSets();
 
-    UpdateCameraMatrices();
+    m_CameraDirty = true;
 }
 
 void VulkanRenderer::DestroyGlobalResources()
@@ -627,7 +627,7 @@ void VulkanRenderer::RecreateSwapchain(int width, int height)
     DestroySwapchainResources();
     CreateSwapchainResources(width, height);
 
-    UpdateCameraMatrices();
+    m_CameraDirty = true;
 }
 
 void VulkanRenderer::DrawFrame()
@@ -660,6 +660,12 @@ void VulkanRenderer::DrawFrame()
 
     vkResetFences(device.GetDevice(), 1, &m_Sync.GetInFlightFence(m_CurrentFrame));
     vkResetCommandBuffer(m_CommandBuffer.Get()[imageIndex], 0);
+
+    if (m_CameraDirty)
+    {
+        UpdateCameraMatrices();
+        m_CameraDirty = false;
+    }
 
     RecordCommandBuffer(m_CommandBuffer.Get()[imageIndex], imageIndex);
 

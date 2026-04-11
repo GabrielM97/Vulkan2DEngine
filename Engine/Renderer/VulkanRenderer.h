@@ -85,6 +85,7 @@ private:
     std::vector<VulkanTexture> m_Textures;
 
     Camera2D m_Camera;
+    bool m_CameraDirty = true;
     int m_FramebufferWidth = 1;
     int m_FramebufferHeight = 1;
 
