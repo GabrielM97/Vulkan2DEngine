@@ -36,6 +36,8 @@ void SandboxApp::OnUpdate(float deltaTime)
     if (IsKeyDown(GLFW_KEY_E))
         command.zoomDelta += 1.0f;
     
+    m_Scene.GetGameObject(0)->transform.position.x += 5 * deltaTime;
+    
     m_Scene.UpdateCamera(command, deltaTime);
 
     GetRenderer().SetCamera(m_Scene.GetCamera());

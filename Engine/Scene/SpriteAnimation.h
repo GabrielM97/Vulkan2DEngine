@@ -15,13 +15,15 @@ class SpriteAnimation
 {
 public:
     void SetAnimationSetPath(const std::string& path);
-    void Play(const std::string& clipName);
+
+    void Play(const std::string& clipName, bool restartIfSame = false);
     void Stop();
     void Reset();
 
     bool IsPlaying() const { return m_Playing; }
-    const AnimationSetRef& GetAnimationSetRef() const { return m_AnimationSetRef; }
+    bool IsPlayingClip(const std::string& clipName) const;
     const std::string& GetRequestedClipName() const { return m_RequestedClipName; }
+    const AnimationSetRef& GetAnimationSetRef() const { return m_AnimationSetRef; }
     const AnimationClip* GetCurrentClip() const { return m_CurrentClip; }
 
     void Update(float deltaTime, SpriteRenderer& sprite, const SpriteAnimationSet* animationSet);

@@ -11,8 +11,11 @@ void SpriteAnimation::SetAnimationSetPath(const std::string& path)
     m_Playing = false;
 }
 
-void SpriteAnimation::Play(const std::string& clipName)
+void SpriteAnimation::Play(const std::string& clipName, bool restartIfSame)
 {
+    if (!restartIfSame && m_Playing && m_RequestedClipName == clipName)
+        return;
+
     m_RequestedClipName = clipName;
     m_CurrentClip = nullptr;
     m_CurrentFrame = 0;
@@ -29,6 +32,11 @@ void SpriteAnimation::Reset()
 {
     m_CurrentFrame = 0;
     m_ElapsedTime = 0.0f;
+}
+
+bool SpriteAnimation::IsPlayingClip(const std::string& clipName) const
+{
+    return m_Playing && m_RequestedClipName == clipName;
 }
 
 void SpriteAnimation::Update(float deltaTime, SpriteRenderer& sprite, const SpriteAnimationSet* animationSet)
