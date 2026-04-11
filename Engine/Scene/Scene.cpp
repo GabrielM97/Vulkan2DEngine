@@ -9,6 +9,7 @@
 GameObject& Scene::CreateGameObject(const std::string& name)
 {
     auto object = std::make_unique<GameObject>();
+    object->id = m_NextGameObjectID++;
     object->name = name;
 
     GameObject& reference = *object;
@@ -20,6 +21,12 @@ void Scene::DestroyGameObject(GameObject& object)
 {
     object.pendingDestroy = true;
     object.active = false;
+}
+
+void Scene::DestroyGameObject(GameObjectID id)
+{
+    if (GameObject* object = FindGameObjectByID(id))
+        DestroyGameObject(*object);
 }
 
 size_t Scene::GetGameObjectCount() const
@@ -48,6 +55,28 @@ GameObject* Scene::FindGameObjectByName(const std::string& name)
     for (const auto& object : m_GameObjects)
     {
         if (object->name == name)
+            return object.get();
+    }
+
+    return nullptr;
+}
+
+GameObject* Scene::FindGameObjectByID(GameObjectID id)
+{
+    for (const auto& object : m_GameObjects)
+    {
+        if (object->id == id)
+            return object.get();
+    }
+
+    return nullptr;
+}
+
+const GameObject* Scene::FindGameObjectByID(GameObjectID id) const
+{
+    for (const auto& object : m_GameObjects)
+    {
+        if (object->id == id)
             return object.get();
     }
 

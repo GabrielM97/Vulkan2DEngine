@@ -15,6 +15,7 @@ struct QuadCommand
     glm::vec2 position{0.0f};
     glm::vec2 size{1.0f};
     float rotation = 0.0f;
+    glm::vec2 origin{0.5f, 0.5f};
     glm::vec2 uvMin{0.0f};
     glm::vec2 uvMax{1.0f};
     glm::vec4 tint{1.0f};
@@ -31,6 +32,7 @@ struct QuadInstanceData
     glm::vec2 position{0.0f};
     glm::vec2 size{1.0f};
     float rotation = 0.0f;
+    glm::vec2 origin{0.5f, 0.5f};
     glm::vec2 uvMin{0.0f};
     glm::vec2 uvMax{1.0f};
     float textureIndex = 0.0f;
@@ -45,9 +47,9 @@ struct QuadInstanceData
         return binding;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 7> GetAttributeDescriptions()
+    static std::array<VkVertexInputAttributeDescription, 8> GetAttributeDescriptions()
     {
-        std::array<VkVertexInputAttributeDescription, 7> attributes{};
+        std::array<VkVertexInputAttributeDescription, 8> attributes{};
 
         attributes[0].binding = 1;
         attributes[0].location = 2;
@@ -66,23 +68,28 @@ struct QuadInstanceData
 
         attributes[3].binding = 1;
         attributes[3].location = 5;
-        attributes[3].format = VK_FORMAT_R32_SFLOAT;
-        attributes[3].offset = offsetof(QuadInstanceData, textureIndex);
+        attributes[3].format = VK_FORMAT_R32G32_SFLOAT;
+        attributes[3].offset = offsetof(QuadInstanceData, origin);
 
         attributes[4].binding = 1;
         attributes[4].location = 6;
-        attributes[4].format = VK_FORMAT_R32G32_SFLOAT;
-        attributes[4].offset = offsetof(QuadInstanceData, uvMin);
+        attributes[4].format = VK_FORMAT_R32_SFLOAT;
+        attributes[4].offset = offsetof(QuadInstanceData, textureIndex);
 
         attributes[5].binding = 1;
         attributes[5].location = 7;
         attributes[5].format = VK_FORMAT_R32G32_SFLOAT;
-        attributes[5].offset = offsetof(QuadInstanceData, uvMax);
+        attributes[5].offset = offsetof(QuadInstanceData, uvMin);
 
         attributes[6].binding = 1;
         attributes[6].location = 8;
-        attributes[6].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-        attributes[6].offset = offsetof(QuadInstanceData, tint);
+        attributes[6].format = VK_FORMAT_R32G32_SFLOAT;
+        attributes[6].offset = offsetof(QuadInstanceData, uvMax);
+
+        attributes[7].binding = 1;
+        attributes[7].location = 9;
+        attributes[7].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        attributes[7].offset = offsetof(QuadInstanceData, tint);
 
         return attributes;
     }

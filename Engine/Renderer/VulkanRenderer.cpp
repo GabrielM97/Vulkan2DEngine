@@ -85,12 +85,13 @@ void VulkanRenderer::SetCamera(const Camera2D& camera)
     m_CameraDirty = true;
 }
 
-void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec2 uvMin, const glm::vec2 uvMax, const glm::vec4 tint, uint32_t textureIndex)
+void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec2 origin, const glm::vec2 uvMin, const glm::vec2 uvMax, const glm::vec4 tint, uint32_t textureIndex)
 {
     QuadCommand command{};
     command.position = position;
     command.size = size;
     command.rotation = glm::radians(rotationDegrees);
+    command.origin = origin;
     command.uvMin = uvMin;
     command.uvMax = uvMax;
     command.tint = tint;
@@ -123,6 +124,7 @@ void VulkanRenderer::EndFrame()
         instance.position = quad.position;
         instance.size = quad.size;
         instance.rotation = quad.rotation;
+        instance.origin = quad.origin;
         instance.textureIndex = static_cast<float>(quad.textureIndex);
         instance.uvMin = quad.uvMin;
         instance.uvMax = quad.uvMax;
@@ -570,6 +572,7 @@ void VulkanRenderer::DrawSprite(const Transform2D& transform, const SpriteRender
         transform.position,
         transform.size,
         transform.rotationDegrees,
+        sprite.GetOrigin(),
         uvMin,
         uvMax,
         sprite.GetTint(),

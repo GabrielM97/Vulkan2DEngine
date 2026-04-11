@@ -6,10 +6,11 @@ layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec2 inInstancePosition;
 layout(location = 3) in vec2 inInstanceSize;
 layout(location = 4) in float inInstanceRotation;
-layout(location = 5) in float inTextureIndex;
-layout(location = 6) in vec2 inInstanceUVMin;
-layout(location = 7) in vec2 inInstanceUVMax;
-layout(location = 8) in vec4 inTint;
+layout(location = 5) in vec2 inInstanceOrigin;
+layout(location = 6) in float inTextureIndex;
+layout(location = 7) in vec2 inInstanceUVMin;
+layout(location = 8) in vec2 inInstanceUVMax;
+layout(location = 9) in vec4 inTint;
 
 layout(location = 0) out vec2 fragUV;
 layout(location = 1) out vec4 fragColor;
@@ -21,7 +22,7 @@ layout(set = 0, binding = 0) uniform GlobalUBO
 
 void main()
 {
-    vec2 origin = vec2(0.5, 0.5);
+    vec2 origin = inInstanceOrigin;
 
     vec2 local = inPosition.xy - origin;
     local *= inInstanceSize;
@@ -37,6 +38,6 @@ void main()
 
     gl_Position = ubo.viewProjection * vec4(worldPosition, inPosition.z, 1.0);
 
-    fragUV = mix(inInstanceUVMin, inInstanceUVMax, inUV);;
+    fragUV = mix(inInstanceUVMin, inInstanceUVMax, inUV);
     fragColor = inTint;
 }

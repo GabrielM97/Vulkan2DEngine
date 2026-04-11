@@ -28,10 +28,13 @@ public:
     void UpdateCamera(const CameraCommand& command, float deltaTime);
 
     void DestroyGameObject(GameObject& object);
+    void DestroyGameObject(GameObjectID id);
     size_t GetGameObjectCount() const;
     GameObject* GetGameObject(size_t index);
     const GameObject* GetGameObject(size_t index) const;
 
+    GameObject* FindGameObjectByID(GameObjectID id);
+    const GameObject* FindGameObjectByID(GameObjectID id) const;
     GameObject* FindGameObjectByName(const std::string& name);
     const GameObject* FindGameObjectByName(const std::string& name) const;
     
@@ -50,4 +53,5 @@ private:
     std::vector<std::unique_ptr<GameObject>> m_GameObjects;
     Camera2D m_Camera;
     std::unordered_map<std::string, SpriteAnimationSet> m_AnimationSetCache;
+    GameObjectID m_NextGameObjectID = 1;
 };

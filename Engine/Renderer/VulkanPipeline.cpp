@@ -46,7 +46,7 @@ void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass rende
     auto vertexAttributes = Vertex::GetVertexInputAttributeDescription();
     auto instanceAttributes = QuadInstanceData::GetAttributeDescriptions();
 
-    std::array<VkVertexInputAttributeDescription, 9> attributes = {
+    std::array<VkVertexInputAttributeDescription, 10> attributes = {
         vertexAttributes[0],
         vertexAttributes[1],
         instanceAttributes[0],
@@ -55,7 +55,8 @@ void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass rende
         instanceAttributes[3],
         instanceAttributes[4],
         instanceAttributes[5],
-        instanceAttributes[6]
+        instanceAttributes[6],
+        instanceAttributes[7]
     };
 
     VkPipelineVertexInputStateCreateInfo vertexInput{};

@@ -61,6 +61,9 @@ public:
     void SetFlipX(bool flip) { m_FlipX = flip; }
     void SetFlipY(bool flip) { m_FlipY = flip; }
 
+    const glm::vec2& GetOrigin() const { return m_Origin; }
+    void SetOrigin(const glm::vec2& origin) { m_Origin = origin; }
+
 private:
     TextureRef m_Texture;
     IntRect m_SourceRect{0, 0, 0, 0};
@@ -70,4 +73,5 @@ private:
     int m_Layer = 0;
     bool m_FlipX = false;
     bool m_FlipY = false;
+    glm::vec2 m_Origin{0.5f, 0.5f};
 };
