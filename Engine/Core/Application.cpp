@@ -10,8 +10,7 @@ Application::Application()
 
 Application::~Application()
 {
-    OnShutdown();
-    vulkanRenderer.Cleanup();
+    Shutdown();
 }
 
 bool Application::Init()
@@ -73,4 +72,19 @@ void Application::Run()
 
         vulkanRenderer.EndFrame();
     }
+    
+    isRunning = false;
+    Shutdown();   
+}
+
+void Application::Shutdown()
+{
+    if (isShutdown)
+        return;
+
+    OnShutdown();
+
+    vulkanRenderer.Cleanup();
+
+    isShutdown = true;
 }

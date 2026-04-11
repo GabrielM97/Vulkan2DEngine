@@ -1,6 +1,7 @@
 #include "VulkanRenderer.h"
 
 #include <cassert>
+#include <iostream>
 #include <stdexcept>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -59,13 +60,15 @@ void VulkanRenderer::BeginFrame()
 
 uint32_t VulkanRenderer::LoadTexture(const char* path)
 {
-    m_Textures.emplace_back();
-    m_Textures.back().Init(
+    VulkanTexture texture;
+    texture.Init(
         device,
         m_UploadCommandPool,
         device.GetGraphicsQueue(),
         path
     );
+
+    m_Textures.push_back(std::move(texture));
 
     const uint32_t textureIndex = static_cast<uint32_t>(m_Textures.size() - 1);
     
@@ -263,6 +266,9 @@ void VulkanRenderer::DestroyGlobalResources()
         texture.Cleanup(device.GetDevice());
 
     m_Textures.clear();
+    m_TextureCache.clear();
+    m_FallbackTextureIndex = 0;
+    m_HasFallbackTexture = false;
 
     if (m_DescriptorSetLayout != VK_NULL_HANDLE)
     {
@@ -405,6 +411,17 @@ void VulkanRenderer::RebuildTextureDescriptorResources()
     CreateDescriptorSets();
 }
 
+void VulkanRenderer::CreateFallbackTexture()
+{
+    if (m_HasFallbackTexture)
+        return;
+
+    // Temporary fallback: use a known-good project texture.
+    // This can later be replaced with a dedicated missing-texture asset.
+    m_FallbackTextureIndex = LoadTexture("Assets/Textures/missing_texture.png");
+    m_HasFallbackTexture = true;
+}
+
 void VulkanRenderer::UpdateCameraMatrices() 
 {
     if (m_FramebufferWidth <= 0 || m_FramebufferHeight <= 0)
@@ -505,6 +522,32 @@ void VulkanRenderer::DestroyPerImageSyncObjects()
 
     m_RenderFinishedPerImage.clear();
     m_ImagesInFlight.clear();
+}
+
+uint32_t VulkanRenderer::GetOrLoadTexture(const std::string& path)
+{
+    auto it = m_TextureCache.find(path);
+    if (it != m_TextureCache.end())
+        return it->second;
+
+    try
+    {
+        uint32_t index = LoadTexture(path.c_str());
+        m_TextureCache[path] = index;
+        return index;
+    }
+    catch (const std::exception& exception)
+    {
+        std::cerr << "Failed to load texture '" << path
+                  << "'. Using fallback texture instead. Reason: "
+                  << exception.what() << "\n";
+
+        if (!m_HasFallbackTexture)
+            CreateFallbackTexture();
+
+        m_TextureCache[path] = m_FallbackTextureIndex;
+        return m_FallbackTextureIndex;
+    }
 }
 
 void VulkanRenderer::RecreateSwapchain()

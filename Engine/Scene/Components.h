@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <string>
 #include <glm/glm.hpp>
 
 struct Transform2D
@@ -9,12 +10,15 @@ struct Transform2D
     float rotationDegrees = 0.0f;
 };
 
+struct TextureRef
+{
+    std::string path;
+};
+
 struct SpriteRenderer
 {
-    uint32_t textureIndex = 0;
+    TextureRef texture;
     glm::vec4 tint{1.0f};
     bool visible = true;
-
-    // Higher layers are rendered later, so they appear in front.
     int layer = 0;
 };

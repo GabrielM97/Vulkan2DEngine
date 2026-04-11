@@ -26,7 +26,13 @@ public:
     void UpdateCamera(const CameraCommand& command, float deltaTime);
 
     void DestroyGameObject(GameObject& object);
+size_t GetGameObjectCount() const;
+    GameObject* GetGameObject(size_t index);
+    const GameObject* GetGameObject(size_t index) const;
 
+    GameObject* FindGameObjectByName(const std::string& name);
+    const GameObject* FindGameObjectByName(const std::string& name) const;
+    
     std::vector<std::unique_ptr<GameObject>>& GetGameObjects();
     const std::vector<std::unique_ptr<GameObject>>& GetGameObjects() const;
 

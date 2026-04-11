@@ -13,6 +13,8 @@
 #include "VulkanQuadInstanceBuffer.h"
 #include "RenderTypes.h"
 #include "VulkanUniformBuffer.h"
+#include <string>
+#include <unordered_map>
 #include <vector>
 #include "VulkanTexture.h"
 #include "Scene/Camera2D.h"
@@ -32,6 +34,8 @@ public:
     void DrawFrame();
     
     void OnFramebufferResized(int width, int height);
+    
+    uint32_t GetOrLoadTexture(const std::string& path);
 
 private:
     void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -47,6 +51,7 @@ private:
     void CreateDescriptorPool();
     void CreateDescriptorSets();
     void RebuildTextureDescriptorResources();
+    void CreateFallbackTexture();
     void UpdateCameraMatrices();
 
     // Swapchain-dependent setup: rebuilt on resize/out-of-date.
@@ -95,5 +100,9 @@ private:
     // One render-finished semaphore per swapchain image.
     std::vector<VkSemaphore> m_RenderFinishedPerImage;
     std::vector<QuadCommand> m_QuadCommands;
+    
+    std::unordered_map<std::string, uint32_t> m_TextureCache;
+    uint32_t m_FallbackTextureIndex = 0;
+    bool m_HasFallbackTexture = false;
 
 };

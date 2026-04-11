@@ -21,6 +21,49 @@ void Scene::DestroyGameObject(GameObject& object)
     object.active = false;
 }
 
+size_t Scene::GetGameObjectCount() const
+{
+    return m_GameObjects.size();
+}
+
+GameObject* Scene::GetGameObject(size_t index)
+{
+    if (index >= m_GameObjects.size())
+        return nullptr;
+
+    return m_GameObjects[index].get();
+}
+
+const GameObject* Scene::GetGameObject(size_t index) const
+{
+    if (index >= m_GameObjects.size())
+        return nullptr;
+
+    return m_GameObjects[index].get();
+}
+
+GameObject* Scene::FindGameObjectByName(const std::string& name)
+{
+    for (const auto& object : m_GameObjects)
+    {
+        if (object->name == name)
+            return object.get();
+    }
+
+    return nullptr;
+}
+
+const GameObject* Scene::FindGameObjectByName(const std::string& name) const
+{
+    for (const auto& object : m_GameObjects)
+    {
+        if (object->name == name)
+            return object.get();
+    }
+
+    return nullptr;
+}
+
 void Scene::DestroyPendingGameObjects()
 {
     std::erase_if(
@@ -41,12 +84,14 @@ void Scene::Render(VulkanRenderer& renderer)
         if (!object->active || !object->sprite.visible)
             continue;
 
+        uint32_t textureIndex = renderer.GetOrLoadTexture(object->sprite.texture.path);
+        
         renderer.DrawQuad(
             object->transform.position,
             object->transform.size,
             object->transform.rotationDegrees,
             object->sprite.tint,
-            object->sprite.textureIndex
+            textureIndex
         );
     }
 }

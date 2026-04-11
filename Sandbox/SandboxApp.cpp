@@ -5,14 +5,11 @@
 
 void SandboxApp::OnInit()
 {
-    uint32_t textureA = GetRenderer().LoadTexture("Assets/Textures/texture.jpg");
-    uint32_t textureB = GetRenderer().LoadTexture("Assets/Textures/texture2.jpg");
-    
     GameObject& first = m_Scene.CreateGameObject("First Sprite");
     first.transform.position = {50.0f, 50.0f};
     first.transform.size = {128.0f, 128.0f};
     first.transform.rotationDegrees = 0.0f;
-    first.sprite.textureIndex = textureA;
+    first.sprite.texture.path = "Assets/Textures/texture.jpg";
     first.sprite.tint = glm::vec4(1.0f);
     first.sprite.layer = 0;
 
@@ -20,7 +17,7 @@ void SandboxApp::OnInit()
     second.transform.position = {240.0f, 50.0f};
     second.transform.size = {128.0f, 128.0f};
     second.transform.rotationDegrees = 0.0f;
-    second.sprite.textureIndex = textureB;
+    second.sprite.texture.path = "Assets/Textures/texture2.jpg";
     second.sprite.tint = glm::vec4(1.0f);
     second.sprite.layer = 1;
 
@@ -28,7 +25,7 @@ void SandboxApp::OnInit()
     transparent.transform.position = {300.0f, 50.0f};
     transparent.transform.size = {128.0f, 128.0f};
     transparent.transform.rotationDegrees = 0.0f;
-    transparent.sprite.textureIndex = textureA;
+    transparent.sprite.texture.path = "Assets/Textures/texture.jpg";
     transparent.sprite.tint = glm::vec4(1.0f, 1.0f, 1.0f, 0.6f);
     transparent.sprite.layer = 2;
 
@@ -36,7 +33,7 @@ void SandboxApp::OnInit()
     third.transform.position = {430.0f, 50.0f};
     third.transform.size = {128.0f, 128.0f};
     third.transform.rotationDegrees = 0.0f;
-    third.sprite.textureIndex = textureA;
+    third.sprite.texture.path = "Assets/Textures/cute pixel art cat_21719083.png";
     third.sprite.tint = glm::vec4(1.0f);
     third.sprite.layer = 0;
 }
@@ -58,15 +55,19 @@ void SandboxApp::OnUpdate(float deltaTime)
         command.zoomDelta -= 1.0f;
     if (IsKeyDown(GLFW_KEY_E))
         command.zoomDelta += 1.0f;
-
-    m_Scene.Update(deltaTime);
+    
     m_Scene.UpdateCamera(command, deltaTime);
 
     GetRenderer().SetCamera(m_Scene.GetCamera());
-
-    auto& objects = m_Scene.GetGameObjects();
-    for (auto& object : objects)
-        object->transform.rotationDegrees += 45.0f * deltaTime;
+    
+    for (size_t i = 0; i < m_Scene.GetGameObjectCount(); ++i)
+    {
+        if (GameObject* object = m_Scene.GetGameObject(i))
+        {
+            object->transform.rotationDegrees += 45.0f * deltaTime;
+        }
+    }
+    m_Scene.Update(deltaTime);
 }
 
 void SandboxApp::OnRender(VulkanRenderer& renderer)

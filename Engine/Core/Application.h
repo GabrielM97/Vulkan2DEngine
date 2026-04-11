@@ -13,6 +13,7 @@ public:
 
     bool Init();
     void Run();
+    void Shutdown();
 
 protected:
     virtual void OnInit() {}
@@ -27,4 +28,7 @@ protected:
 private:
     std::unique_ptr<Window> window = nullptr;
     VulkanRenderer vulkanRenderer;
+    
+    bool isRunning = false;
+    bool isShutdown = false;
 };
