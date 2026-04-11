@@ -62,6 +62,12 @@ target_include_directories(Sandbox PUBLIC Engine)
 
 target_sources(Renderer PUBLIC
     ${CMAKE_SOURCE_DIR}/External/stb/stb_image.cpp
+    ${CMAKE_SOURCE_DIR}/External/imgui/backends/imgui_impl_glfw.cpp
+    ${CMAKE_SOURCE_DIR}/External/imgui/backends/imgui_impl_vulkan.cpp
+)
+
+target_include_directories(EngineDeps INTERFACE
+    ${CMAKE_SOURCE_DIR}/External/imgui
 )
 
 # --- Shader compilation ---
