@@ -1,128 +1,727 @@
 #include "Scene.h"
 
-#include "Math/TransformMath2D.h"
-#include "Renderer/IRenderer2D.h"
-#include "Camera2D.h"
-
 #include <algorithm>
 #include <iostream>
 
-GameObject& Scene::CreateGameObject(const std::string& name, GameObjectID parentID)
+#include "Math/TransformMath2D.h"
+#include "Renderer/IRenderer2D.h"
+
+entt::entity Scene::CreateGameObjectEntity(const std::string& name)
 {
-    auto object = std::make_unique<GameObject>();
-    object->SetID(m_NextGameObjectID++);
-    object->SetName(name);
-    object->SetSiblingOrder(static_cast<int>(m_GameObjects.size()));
-    
-    GameObject& reference = *object;
-    m_GameObjects.push_back(std::move(object));
-    
-    if (parentID != 0 && FindGameObjectByID(parentID) != nullptr)
-        SetParent(reference.GetID(), parentID);
-    
-    return reference;
+    const entt::entity entity = m_Registry.create();
+    const GameObjectID id = m_NextGameObjectID++;
+
+    auto& idComponent = m_Registry.emplace<IDComponent>(entity);
+    idComponent.id = id;
+
+    auto& nameComponent = m_Registry.emplace<NameComponent>(entity);
+    nameComponent.name = name;
+
+    m_Registry.emplace<ActiveComponent>(entity);
+    auto& relationship = m_Registry.emplace<RelationshipComponent>(entity);
+    relationship.parentID = 0;
+    relationship.siblingOrder = static_cast<int>(m_EntityByID.size());
+
+    m_Registry.emplace<LocalTransformComponent>(entity);
+    m_Registry.emplace<WorldTransformComponent>(entity);
+    m_Registry.emplace<SpriteComponent>(entity);
+
+    m_EntityByID.emplace(id, entity);
+    return entity;
 }
 
-void Scene::DestroyGameObject(GameObject& object)
+entt::entity Scene::FindEntityByID(GameObjectID id) const
 {
-    object.Destroy();
+    auto it = m_EntityByID.find(id);
+    return it != m_EntityByID.end() ? it->second : entt::null;
+}
+
+GameObjectHandle Scene::CreateGameObject(const std::string& name, GameObjectID parentID)
+{
+    const entt::entity entity = CreateGameObjectEntity(name);
+    const GameObjectID id = m_Registry.get<IDComponent>(entity).id;
+
+    if (parentID != 0)
+        SetParent(id, parentID);
+
+    return GameObjectHandle(this, entity, id);
+}
+
+GameObjectHandle Scene::GetGameObject(GameObjectID id)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return {};
+
+    return GameObjectHandle(this, entity, id);
+}
+
+GameObjectHandle Scene::GetGameObjectHandle(GameObjectID id)
+{
+    return GetGameObject(id);
+}
+
+GameObjectHandle Scene::CreateGameObjectHandle(const std::string& name, GameObjectID parentID)
+{
+    return CreateGameObject(name, parentID);
+}
+
+bool Scene::IsValidGameObject(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    return entity != entt::null && m_Registry.valid(entity);
+}
+
+bool Scene::IsValidHandle(entt::entity entity, GameObjectID id) const
+{
+    if (entity == entt::null || !m_Registry.valid(entity))
+        return false;
+
+    const IDComponent* idComponent = m_Registry.try_get<IDComponent>(entity);
+    return idComponent != nullptr && idComponent->id == id;
 }
 
 void Scene::DestroyGameObject(GameObjectID id)
 {
-    if (GameObject* object = FindGameObjectByID(id))
-        DestroyGameObject(*object);
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return;
+
+    auto& active = m_Registry.get<ActiveComponent>(entity);
+    active.pendingDestroy = true;
+    active.active = false;
 }
 
 size_t Scene::GetGameObjectCount() const
 {
-    return m_GameObjects.size();
+    return m_EntityByID.size();
 }
 
-GameObject* Scene::GetGameObject(size_t index)
+void Scene::Update(float deltaTime)
 {
-    if (index >= m_GameObjects.size())
-        return nullptr;
-
-    return m_GameObjects[index].get();
-}
-
-const GameObject* Scene::GetGameObject(size_t index) const
-{
-    if (index >= m_GameObjects.size())
-        return nullptr;
-
-    return m_GameObjects[index].get();
-}
-
-GameObject* Scene::FindGameObjectByName(const std::string& name)
-{
-    for (const auto& object : m_GameObjects)
+    auto view = m_Registry.view<ActiveComponent, SpriteComponent, SpriteAnimationComponent>();
+    for (entt::entity entity : view)
     {
-        if (object->GetName() == name)
-            return object.get();
+        auto& active = view.get<ActiveComponent>(entity);
+        auto& sprite = view.get<SpriteComponent>(entity);
+        auto& animation = view.get<SpriteAnimationComponent>(entity);
+
+        if (!active.active)
+            continue;
+
+        const SpriteAnimationSet* animationSet =
+            GetOrLoadAnimationSet(animation.GetAnimationSetRef().path);
+
+        animation.Update(deltaTime, sprite, animationSet);
     }
 
-    return nullptr;
+    DestroyPendingGameObjects();
 }
 
-GameObject* Scene::FindGameObjectByID(GameObjectID id)
+void Scene::Render(IRenderer2D& renderer)
 {
-    for (const auto& object : m_GameObjects)
+    renderer.SetCamera(m_Camera);
+
+    for (entt::entity entity : SortForRendering())
     {
-        if (object->GetID() == id)
-            return object.get();
+        const auto& id = m_Registry.get<IDComponent>(entity);
+        const auto& sprite = m_Registry.get<SpriteComponent>(entity);
+        renderer.DrawSprite(GetWorldTransform(id.id), sprite);
     }
-
-    return nullptr;
 }
 
-const GameObject* Scene::FindGameObjectByID(GameObjectID id) const
+void Scene::UpdateCamera(const CameraCommand& command, float deltaTime, float viewportWidth, float viewportHeight)
 {
-    for (const auto& object : m_GameObjects)
-    {
-        if (object->GetID() == id)
-            return object.get();
-    }
-
-    return nullptr;
+    m_Camera.Update(
+        command.moveX,
+        command.moveY,
+        command.zoomDelta,
+        deltaTime,
+        viewportWidth,
+        viewportHeight
+    );
 }
 
-const GameObject* Scene::FindGameObjectByName(const std::string& name) const
+std::string Scene::GetGameObjectName(GameObjectID id) const
 {
-    for (const auto& object : m_GameObjects)
-    {
-        if (object->GetName() == name)
-            return object.get();
-    }
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return {};
 
-    return nullptr;
+    return m_Registry.get<NameComponent>(entity).name;
 }
 
-void Scene::DestroyPendingGameObjects()
+bool Scene::SetGameObjectName(GameObjectID id, const std::string& name)
 {
-    std::erase_if(
-      m_GameObjects,
-      [](const std::unique_ptr<GameObject>& object)
-      {
-          return object->isPendingDestroy();
-      }
-  );
-}
-
-bool Scene::WouldCreateCycle(GameObjectID childID, GameObjectID parentID) const
-{
-    if (parentID == 0)
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
         return false;
 
-    if (parentID == childID)
+    m_Registry.get<NameComponent>(entity).name = name;
+    return true;
+}
+
+bool Scene::IsGameObjectActive(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    return m_Registry.get<ActiveComponent>(entity).active;
+}
+
+bool Scene::SetGameObjectActive(GameObjectID id, bool active)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.get<ActiveComponent>(entity).active = active;
+    return true;
+}
+
+std::vector<GameObjectID> Scene::GetGameObjectIDs() const
+{
+    std::vector<GameObjectID> ids;
+    ids.reserve(m_EntityByID.size());
+
+    auto view = m_Registry.view<IDComponent>();
+    for (entt::entity entity : view)
+        ids.push_back(view.get<IDComponent>(entity).id);
+
+    return ids;
+}
+
+std::vector<GameObjectID> Scene::GetRootGameObjects() const
+{
+    std::vector<GameObjectID> roots;
+
+    auto view = m_Registry.view<IDComponent, RelationshipComponent>();
+    for (entt::entity entity : view)
+    {
+        const auto& id = view.get<IDComponent>(entity);
+        const auto& relationship = view.get<RelationshipComponent>(entity);
+        if (relationship.parentID == 0)
+            roots.push_back(id.id);
+    }
+
+    std::stable_sort(
+        roots.begin(),
+        roots.end(),
+        [this](GameObjectID a, GameObjectID b)
+        {
+            return m_Registry.get<RelationshipComponent>(FindEntityByID(a)).siblingOrder <
+                   m_Registry.get<RelationshipComponent>(FindEntityByID(b)).siblingOrder;
+        }
+    );
+
+    return roots;
+}
+
+std::vector<GameObjectID> Scene::GetChildGameObjects(GameObjectID parentID) const
+{
+    std::vector<GameObjectID> children;
+
+    auto view = m_Registry.view<IDComponent, RelationshipComponent>();
+    for (entt::entity entity : view)
+    {
+        const auto& id = view.get<IDComponent>(entity);
+        const auto& relationship = view.get<RelationshipComponent>(entity);
+        if (relationship.parentID == parentID)
+            children.push_back(id.id);
+    }
+
+    std::stable_sort(
+        children.begin(),
+        children.end(),
+        [this](GameObjectID a, GameObjectID b)
+        {
+            return m_Registry.get<RelationshipComponent>(FindEntityByID(a)).siblingOrder <
+                   m_Registry.get<RelationshipComponent>(FindEntityByID(b)).siblingOrder;
+        }
+    );
+
+    return children;
+}
+
+bool Scene::HasChildren(GameObjectID parentID) const
+{
+    auto view = m_Registry.view<RelationshipComponent>();
+    for (entt::entity entity : view)
+    {
+        if (view.get<RelationshipComponent>(entity).parentID == parentID)
+            return true;
+    }
+
+    return false;
+}
+
+bool Scene::HasParent(GameObjectID id) const
+{
+    return GetParentID(id) != 0;
+}
+
+GameObjectID Scene::GetParentID(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return 0;
+
+    return m_Registry.get<RelationshipComponent>(entity).parentID;
+}
+
+bool Scene::SetParent(GameObjectID childID, GameObjectID parentID)
+{
+    if (childID == 0 || parentID == 0 || childID == parentID)
+        return false;
+
+    if (WouldCreateCycle(childID, parentID))
+        return false;
+
+    const entt::entity childEntity = FindEntityByID(childID);
+    const entt::entity parentEntity = FindEntityByID(parentID);
+    if (childEntity == entt::null || parentEntity == entt::null)
+        return false;
+
+    const Transform2D childWorld = GetWorldTransform(childID);
+    const Transform2D parentWorld = GetWorldTransform(parentID);
+
+    auto& relationship = m_Registry.get<RelationshipComponent>(childEntity);
+    auto& local = m_Registry.get<LocalTransformComponent>(childEntity);
+    const auto& childSprite = m_Registry.get<SpriteComponent>(childEntity);
+    const auto& parentSprite = m_Registry.get<SpriteComponent>(parentEntity);
+
+    relationship.parentID = parentID;
+    local = TransformMath2D::ToLocalTransform(
+        childWorld,
+        childSprite.GetSize(),
+        parentWorld,
+        parentSprite.GetSize()
+    );
+
+    MarkTransformDirty(childID);
+    return true;
+}
+
+bool Scene::ClearParent(GameObjectID childID)
+{
+    const entt::entity childEntity = FindEntityByID(childID);
+    if (childEntity == entt::null)
+        return false;
+
+    auto& relationship = m_Registry.get<RelationshipComponent>(childEntity);
+    auto& local = m_Registry.get<LocalTransformComponent>(childEntity);
+
+    local = GetWorldTransform(childID);
+    relationship.parentID = 0;
+
+    MarkTransformDirty(childID);
+    return true;
+}
+
+bool Scene::SetSiblingOrder(GameObjectID id, int order)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.get<RelationshipComponent>(entity).siblingOrder = order;
+    return true;
+}
+
+Transform2D Scene::GetWorldTransform(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return {};
+
+    return const_cast<Scene*>(this)->ResolveWorldTransform(entity);
+}
+
+bool Scene::SetWorldTransform(GameObjectID id, const Transform2D& transform)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    auto& local = m_Registry.get<LocalTransformComponent>(entity);
+    const auto& relationship = m_Registry.get<RelationshipComponent>(entity);
+
+    if (relationship.parentID == 0)
+    {
+        local = transform;
+        MarkTransformDirty(id);
         return true;
+    }
 
-    const GameObject* parent = FindGameObjectByID(parentID);
-    if (parent == nullptr)
+    const entt::entity parentEntity = FindEntityByID(relationship.parentID);
+    if (parentEntity == entt::null)
+    {
+        local = transform;
+        MarkTransformDirty(id);
+        return true;
+    }
+
+    const auto& sprite = m_Registry.get<SpriteComponent>(entity);
+    const auto& parentSprite = m_Registry.get<SpriteComponent>(parentEntity);
+    const Transform2D parentWorld = GetWorldTransform(relationship.parentID);
+
+    local = TransformMath2D::ToLocalTransform(
+        transform,
+        sprite.GetSize(),
+        parentWorld,
+        parentSprite.GetSize()
+    );
+
+    MarkTransformDirty(id);
+    return true;
+}
+
+LocalTransformComponent Scene::GetLocalTransform(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return {};
+
+    return m_Registry.get<LocalTransformComponent>(entity);
+}
+
+bool Scene::SetLocalTransform(GameObjectID id, const LocalTransformComponent& transform)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
         return false;
 
-    return WouldCreateCycle(childID, parent->GetParentID());
+    m_Registry.get<LocalTransformComponent>(entity) = transform;
+    MarkTransformDirty(id);
+    return true;
+}
+
+glm::vec2 Scene::GetLocalPosition(GameObjectID id) const { return GetLocalTransform(id).position; }
+glm::vec2 Scene::GetLocalScale(GameObjectID id) const { return GetLocalTransform(id).scale; }
+glm::vec2 Scene::GetLocalPivot(GameObjectID id) const { return GetLocalTransform(id).pivot; }
+float Scene::GetLocalRotation(GameObjectID id) const { return GetLocalTransform(id).rotationDegrees; }
+glm::vec2 Scene::GetWorldPosition(GameObjectID id) const { return GetWorldTransform(id).position; }
+glm::vec2 Scene::GetWorldScale(GameObjectID id) const { return GetWorldTransform(id).scale; }
+glm::vec2 Scene::GetWorldPivot(GameObjectID id) const { return GetWorldTransform(id).pivot; }
+float Scene::GetWorldRotation(GameObjectID id) const { return GetWorldTransform(id).rotationDegrees; }
+
+bool Scene::SetLocalPosition(GameObjectID id, const glm::vec2& position)
+{
+    auto transform = GetLocalTransform(id);
+    transform.position = position;
+    return SetLocalTransform(id, transform);
+}
+
+bool Scene::SetLocalScale(GameObjectID id, const glm::vec2& scale)
+{
+    auto transform = GetLocalTransform(id);
+    transform.scale = scale;
+    return SetLocalTransform(id, transform);
+}
+
+bool Scene::SetLocalPivot(GameObjectID id, const glm::vec2& pivot)
+{
+    auto transform = GetLocalTransform(id);
+    transform.pivot = pivot;
+    return SetLocalTransform(id, transform);
+}
+
+bool Scene::SetLocalRotation(GameObjectID id, float rotationDegrees)
+{
+    auto transform = GetLocalTransform(id);
+    transform.rotationDegrees = rotationDegrees;
+    return SetLocalTransform(id, transform);
+}
+
+bool Scene::SetWorldPosition(GameObjectID id, const glm::vec2& position)
+{
+    auto transform = GetWorldTransform(id);
+    transform.position = position;
+    return SetWorldTransform(id, transform);
+}
+
+bool Scene::SetWorldScale(GameObjectID id, const glm::vec2& scale)
+{
+    auto transform = GetWorldTransform(id);
+    transform.scale = scale;
+    return SetWorldTransform(id, transform);
+}
+
+bool Scene::SetWorldPivot(GameObjectID id, const glm::vec2& pivot)
+{
+    auto transform = GetWorldTransform(id);
+    transform.pivot = pivot;
+    return SetWorldTransform(id, transform);
+}
+
+bool Scene::SetWorldRotation(GameObjectID id, float rotationDegrees)
+{
+    auto transform = GetWorldTransform(id);
+    transform.rotationDegrees = rotationDegrees;
+    return SetWorldTransform(id, transform);
+}
+
+std::string Scene::GetSpriteTexturePath(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    return entity != entt::null ? m_Registry.get<SpriteComponent>(entity).GetTexture().path : std::string{};
+}
+
+IntRect Scene::GetSpriteSourceRect(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    return entity != entt::null ? m_Registry.get<SpriteComponent>(entity).GetSourceRect() : IntRect{};
+}
+
+bool Scene::SpriteUsesSourceRect(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    return entity != entt::null && m_Registry.get<SpriteComponent>(entity).UsesSourceRect();
+}
+
+glm::vec2 Scene::GetSpriteSize(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    return entity != entt::null ? m_Registry.get<SpriteComponent>(entity).GetSize() : glm::vec2{};
+}
+
+glm::vec4 Scene::GetSpriteTint(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    return entity != entt::null ? m_Registry.get<SpriteComponent>(entity).GetTint() : glm::vec4{};
+}
+
+int Scene::GetSpriteLayer(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    return entity != entt::null ? m_Registry.get<SpriteComponent>(entity).GetLayer() : 0;
+}
+
+bool Scene::IsSpriteVisible(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    return entity != entt::null && m_Registry.get<SpriteComponent>(entity).IsVisible();
+}
+
+bool Scene::IsSpriteFlippedX(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    return entity != entt::null && m_Registry.get<SpriteComponent>(entity).IsFlippedX();
+}
+
+bool Scene::IsSpriteFlippedY(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    return entity != entt::null && m_Registry.get<SpriteComponent>(entity).IsFlippedY();
+}
+
+bool Scene::SetSpriteTexturePath(GameObjectID id, const std::string& path)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.get<SpriteComponent>(entity).SetTexturePath(path);
+    return true;
+}
+
+bool Scene::SetSpriteSourceRect(GameObjectID id, int x, int y, int width, int height)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.get<SpriteComponent>(entity).SetSourceRect(x, y, width, height);
+    MarkTransformDirty(id);
+    return true;
+}
+
+bool Scene::SetSpriteSourceRectFromGrid(GameObjectID id, int column, int row, int cellWidth, int cellHeight)
+{
+    return SetSpriteSourceRect(id, column * cellWidth, row * cellHeight, cellWidth, cellHeight);
+}
+
+bool Scene::ClearSpriteSourceRect(GameObjectID id)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.get<SpriteComponent>(entity).ClearSourceRect();
+    return true;
+}
+
+bool Scene::SetSpriteSize(GameObjectID id, const glm::vec2& size)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.get<SpriteComponent>(entity).SetSize(size);
+    MarkTransformDirty(id);
+    return true;
+}
+
+bool Scene::SetSpriteTint(GameObjectID id, const glm::vec4& tint)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.get<SpriteComponent>(entity).SetTint(tint);
+    return true;
+}
+
+bool Scene::SetSpriteLayer(GameObjectID id, int layer)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.get<SpriteComponent>(entity).SetLayer(layer);
+    return true;
+}
+
+bool Scene::SetSpriteVisible(GameObjectID id, bool visible)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.get<SpriteComponent>(entity).SetVisible(visible);
+    return true;
+}
+
+bool Scene::SetSpriteFlipX(GameObjectID id, bool flip)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.get<SpriteComponent>(entity).SetFlipX(flip);
+    return true;
+}
+
+bool Scene::SetSpriteFlipY(GameObjectID id, bool flip)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.get<SpriteComponent>(entity).SetFlipY(flip);
+    return true;
+}
+
+bool Scene::HasAnimation(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    return entity != entt::null && m_Registry.all_of<SpriteAnimationComponent>(entity);
+}
+
+bool Scene::EnsureAnimation(GameObjectID id)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    if (!m_Registry.all_of<SpriteAnimationComponent>(entity))
+        m_Registry.emplace<SpriteAnimationComponent>(entity);
+
+    return true;
+}
+
+bool Scene::RemoveAnimation(GameObjectID id)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.remove<SpriteAnimationComponent>(entity);
+    return true;
+}
+
+std::string Scene::GetAnimationSetPath(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null || !m_Registry.all_of<SpriteAnimationComponent>(entity))
+        return {};
+
+    return m_Registry.get<SpriteAnimationComponent>(entity).GetAnimationSetRef().path;
+}
+
+std::string Scene::GetAnimationClipName(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null || !m_Registry.all_of<SpriteAnimationComponent>(entity))
+        return {};
+
+    return m_Registry.get<SpriteAnimationComponent>(entity).GetRequestedClipName();
+}
+
+bool Scene::SetAnimationSetPath(GameObjectID id, const std::string& path)
+{
+    if (!EnsureAnimation(id))
+        return false;
+
+    m_Registry.get<SpriteAnimationComponent>(FindEntityByID(id)).SetAnimationSetPath(path);
+    return true;
+}
+
+bool Scene::PlayAnimation(GameObjectID id, const std::string& clipName, bool restartIfSame)
+{
+    if (!EnsureAnimation(id))
+        return false;
+
+    m_Registry.get<SpriteAnimationComponent>(FindEntityByID(id)).Play(clipName, restartIfSame);
+    return true;
+}
+
+bool Scene::StopAnimation(GameObjectID id)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null || !m_Registry.all_of<SpriteAnimationComponent>(entity))
+        return false;
+
+    m_Registry.get<SpriteAnimationComponent>(entity).Stop();
+    return true;
+}
+
+bool Scene::ResetAnimation(GameObjectID id)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null || !m_Registry.all_of<SpriteAnimationComponent>(entity))
+        return false;
+
+    m_Registry.get<SpriteAnimationComponent>(entity).Reset();
+    return true;
+}
+
+bool Scene::IsAnimationPlaying(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null || !m_Registry.all_of<SpriteAnimationComponent>(entity))
+        return false;
+
+    return m_Registry.get<SpriteAnimationComponent>(entity).IsPlaying();
+}
+
+bool Scene::HasAnimationFinished(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null || !m_Registry.all_of<SpriteAnimationComponent>(entity))
+        return false;
+
+    return m_Registry.get<SpriteAnimationComponent>(entity).HasFinished();
+}
+
+bool Scene::IsPlayingAnimationClip(GameObjectID id, const std::string& clipName) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null || !m_Registry.all_of<SpriteAnimationComponent>(entity))
+        return false;
+
+    return m_Registry.get<SpriteAnimationComponent>(entity).IsPlayingClip(clipName);
 }
 
 const SpriteAnimationSet* Scene::GetOrLoadAnimationSet(const std::string& path)
@@ -147,754 +746,126 @@ const SpriteAnimationSet* Scene::GetOrLoadAnimationSet(const std::string& path)
 
 void Scene::MarkTransformDirty(GameObjectID id)
 {
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
         return;
 
-    object->transformDirty = true;
+    m_Registry.get<WorldTransformComponent>(entity).dirty = true;
 
-    for (const auto& candidate : m_GameObjects)
+    auto view = m_Registry.view<IDComponent, RelationshipComponent>();
+    for (entt::entity candidate : view)
     {
-        if (candidate->GetParentID() == id)
-            MarkTransformDirty(candidate->GetID());
+        const auto& candidateId = view.get<IDComponent>(candidate);
+        const auto& relationship = view.get<RelationshipComponent>(candidate);
+
+        if (relationship.parentID == id)
+            MarkTransformDirty(candidateId.id);
     }
 }
 
-Transform2D Scene::ResolveWorldTransform(GameObject& object)
+Transform2D Scene::ResolveWorldTransform(entt::entity entity)
 {
-    if (!object.transformDirty)
-        return object.cachedWorldTransform;
+    auto& local = m_Registry.get<LocalTransformComponent>(entity);
+    auto& world = m_Registry.get<WorldTransformComponent>(entity);
+    const auto& relationship = m_Registry.get<RelationshipComponent>(entity);
+    const auto& sprite = m_Registry.get<SpriteComponent>(entity);
 
-    if (!object.HasParent())
+    if (!world.dirty)
+        return world.world;
+
+    if (relationship.parentID == 0)
     {
-        object.cachedWorldTransform = object.transform;
-        object.transformDirty = false;
-        return object.cachedWorldTransform;
+        world.world = local;
+        world.dirty = false;
+        return world.world;
     }
 
-    GameObject* parent = FindGameObjectByID(object.GetParentID());
-    if (parent == nullptr)
+    const entt::entity parentEntity = FindEntityByID(relationship.parentID);
+    if (parentEntity == entt::null)
     {
-        object.cachedWorldTransform = object.transform;
-        object.transformDirty = false;
-        return object.cachedWorldTransform;
+        world.world = local;
+        world.dirty = false;
+        return world.world;
     }
 
-    const Transform2D parentWorld = ResolveWorldTransform(*parent);
-    object.cachedWorldTransform = TransformMath2D::CombineTransforms(
+    const Transform2D parentWorld = ResolveWorldTransform(parentEntity);
+    const auto& parentSprite = m_Registry.get<SpriteComponent>(parentEntity);
+
+    world.world = TransformMath2D::CombineTransforms(
         parentWorld,
-        parent->sprite.GetSize(),
-        object.transform,
-        object.sprite.GetSize()
+        parentSprite.GetSize(),
+        local,
+        sprite.GetSize()
     );
-    object.transformDirty = false;
-    return object.cachedWorldTransform;
+
+    world.dirty = false;
+    return world.world;
 }
 
-void Scene::Render(IRenderer2D& renderer)
+std::vector<entt::entity> Scene::SortForRendering() const
 {
-    renderer.SetCamera(m_Camera);
-    const std::vector<const GameObject*> renderQueue = SortForRendering();
-    
-    for (const GameObject* object : renderQueue)
+    std::vector<entt::entity> renderQueue;
+
+    auto view = m_Registry.view<ActiveComponent, SpriteComponent>();
+    for (entt::entity entity : view)
     {
-        if (!object->isActive() || !object->sprite.IsVisible())
+        const auto& active = view.get<ActiveComponent>(entity);
+        const auto& sprite = view.get<SpriteComponent>(entity);
+
+        if (!active.active || !sprite.IsVisible())
             continue;
 
-        Transform2D worldTransform = GetWorldTransform(object->GetID());
-        
-        renderer.DrawSprite(
-            worldTransform,
-            object->sprite
-        );
-    }
-}
-
-void Scene::Update(float deltaTime)
-{
-    for (const std::unique_ptr<GameObject>& object : m_GameObjects)
-    {
-        if (!object->isActive())
-            continue;
-
-        if (object->animation.has_value())
-        {
-            const SpriteAnimationSet* animationSet =
-                GetOrLoadAnimationSet(object->animation->GetAnimationSetRef().path);
-
-            object->animation->Update(deltaTime, object->sprite, animationSet);
-        }
-    }
-
-    DestroyPendingGameObjects();
-}
-
-void Scene::UpdateCamera(const CameraCommand& command, float deltaTime, float viewportWidth, float viewportHeight)
-{
-    m_Camera.Update(
-        command.moveX,
-        command.moveY,
-        command.zoomDelta,
-        deltaTime,
-        viewportWidth,
-        viewportHeight
-    );
-}
-
-std::vector<std::unique_ptr<GameObject>>& Scene::GetGameObjects()
-{
-    return m_GameObjects;
-}
-
-const std::vector<std::unique_ptr<GameObject>>& Scene::GetGameObjects() const
-{
-    return m_GameObjects;
-}
-
-std::vector<const GameObject*> Scene::GetRootGameObjects() const
-{
-    std::vector<const GameObject*> roots;
-    roots.reserve(m_GameObjects.size());
-
-    for (const auto& object : m_GameObjects)
-    {
-        if (!object->HasParent())
-            roots.push_back(object.get());
-    }
-    
-    std::stable_sort(
-    roots.begin(),
-    roots.end(),
-    [](const GameObject* a, const GameObject* b)
-    {
-        return a->GetSiblingOrder() < b->GetSiblingOrder();
-    });
-
-    return roots;
-}
-
-std::vector<const GameObject*> Scene::GetChildGameObjects(GameObjectID parentID) const
-{
-    std::vector<const GameObject*> children;
-
-    for (const auto& object : m_GameObjects)
-    {
-        if (object->GetParentID() == parentID)
-            children.push_back(object.get());
-    }
-    
-    std::stable_sort(
-    children.begin(),
-    children.end(),
-    [](const GameObject* a, const GameObject* b)
-    {
-        return a->GetSiblingOrder() < b->GetSiblingOrder();
-    });
-
-    return children;
-}
-
-bool Scene::HasChildren(GameObjectID parentID) const
-{
-    for (const auto& object : m_GameObjects)
-    {
-        if (object->GetParentID() == parentID)
-            return true;
-    }
-
-    return false;
-}
-
-bool Scene::SetParent(GameObjectID childID, GameObjectID parentID)
-{
-    if (childID == 0 || parentID == 0 || childID == parentID)
-        return false;
-
-    if (WouldCreateCycle(childID, parentID))
-        return false;
-    
-    GameObject* child = FindGameObjectByID(childID);
-    GameObject* parent = FindGameObjectByID(parentID);
-
-    if (child == nullptr || parent == nullptr)
-        return false;
-
-    const Transform2D childWorld = GetWorldTransform(childID);
-    const Transform2D parentWorld = GetWorldTransform(parentID);
-
-    child->SetParentID(parentID);
-    child->transform = TransformMath2D::ToLocalTransform(
-        childWorld,
-        child->sprite.GetSize(),
-        parentWorld,
-        parent->sprite.GetSize()
-    );
-    MarkTransformDirty(childID);
-    return true;
-}
-
-bool Scene::ClearParent(GameObjectID childID)
-{
-    GameObject* child = FindGameObjectByID(childID);
-    
-    if (child == nullptr)
-        return false;
-
-    const Transform2D world = GetWorldTransform(childID);
-
-    child->ClearParent();
-    child->transform = world;
-    MarkTransformDirty(childID);
-
-    return true;
-}
-
-Transform2D Scene::GetWorldTransform(GameObjectID id) const
-{
-    GameObject* object = const_cast<Scene*>(this)->FindGameObjectByID(id);
-    if (object == nullptr)
-        return {};
-
-    return const_cast<Scene*>(this)->ResolveWorldTransform(*object);
-}
-
-bool Scene::SetWorldTransform(GameObjectID id, const Transform2D& transform)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-    
-    if (!object->HasParent())
-    {
-        object->transform = transform;
-        MarkTransformDirty(id);
-        return true;
-    }
-    
-    const GameObject* parent = FindGameObjectByID(object->GetParentID());
-    if (parent == nullptr)
-    {
-        object->transform = transform;
-        MarkTransformDirty(id);
-        return true;
-    }
-
-    const Transform2D parentWorld = GetWorldTransform(parent->GetID());
-
-    object->transform = TransformMath2D::ToLocalTransform(
-        transform,
-        object->sprite.GetSize(),
-        parentWorld,
-        parent->sprite.GetSize()
-    );
-    MarkTransformDirty(id);
-
-    return true;   
-}
-
-Transform2D Scene::GetLocalTransform(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return {};
-
-    return object->transform;
-}
-
-glm::vec2 Scene::GetLocalPosition(GameObjectID id) const
-{
-    return GetLocalTransform(id).position;
-}
-
-glm::vec2 Scene::GetLocalScale(GameObjectID id) const
-{
-    return GetLocalTransform(id).scale;
-}
-
-glm::vec2 Scene::GetLocalPivot(GameObjectID id) const
-{
-    return GetLocalTransform(id).pivot;
-}
-
-float Scene::GetLocalRotation(GameObjectID id) const
-{
-    return GetLocalTransform(id).rotationDegrees;
-}
-
-glm::vec2 Scene::GetWorldPosition(GameObjectID id) const
-{
-    return GetWorldTransform(id).position;
-}
-
-glm::vec2 Scene::GetWorldScale(GameObjectID id) const
-{
-    return GetWorldTransform(id).scale;
-}
-
-glm::vec2 Scene::GetWorldPivot(GameObjectID id) const
-{
-    return GetWorldTransform(id).pivot;
-}
-
-float Scene::GetWorldRotation(GameObjectID id) const
-{
-    return GetWorldTransform(id).rotationDegrees;
-}
-
-bool Scene::SetLocalTransform(GameObjectID id, const Transform2D& transform)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->transform = transform;
-    MarkTransformDirty(id);
-    return true;
-}
-
-bool Scene::SetLocalPosition(GameObjectID id, const glm::vec2& position)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->transform.position = position;
-    MarkTransformDirty(id);
-    return true;
-}
-
-bool Scene::SetLocalScale(GameObjectID id, const glm::vec2& scale)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->transform.scale = scale;
-    MarkTransformDirty(id);
-    return true;
-}
-
-bool Scene::SetLocalPivot(GameObjectID id, const glm::vec2& pivot)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->transform.pivot = pivot;
-    MarkTransformDirty(id);
-    return true;
-}
-
-bool Scene::SetLocalRotation(GameObjectID id, float rotationDegrees)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->transform.rotationDegrees = rotationDegrees;
-    MarkTransformDirty(id);
-    return true;
-}
-
-bool Scene::SetWorldPosition(GameObjectID id, const glm::vec2& position)
-{
-    Transform2D worldTransform = GetWorldTransform(id);
-    worldTransform.position = position;
-    return SetWorldTransform(id, worldTransform);
-}
-
-bool Scene::SetWorldScale(GameObjectID id, const glm::vec2& scale)
-{
-    Transform2D worldTransform = GetWorldTransform(id);
-    worldTransform.scale = scale;
-    return SetWorldTransform(id, worldTransform);
-}
-
-bool Scene::SetWorldPivot(GameObjectID id, const glm::vec2& pivot)
-{
-    Transform2D worldTransform = GetWorldTransform(id);
-    worldTransform.pivot = pivot;
-    return SetWorldTransform(id, worldTransform);
-}
-
-bool Scene::SetWorldRotation(GameObjectID id, float rotationDegrees)
-{
-    Transform2D worldTransform = GetWorldTransform(id);
-    worldTransform.rotationDegrees = rotationDegrees;
-    return SetWorldTransform(id, worldTransform);
-}
-
-bool Scene::SetSiblingOrder(GameObjectID id, int order)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->SetSiblingOrder(order);
-    return true;
-}
-
-bool Scene::SetGameObjectName(GameObjectID id, const std::string& name)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->SetName(name);
-    return true;
-}
-
-bool Scene::SetGameObjectActive(GameObjectID id, bool active)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->setActive(active);
-    return true;
-}
-
-std::string Scene::GetSpriteTexturePath(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return {};
-
-    return object->sprite.GetTexture().path;
-}
-
-IntRect Scene::GetSpriteSourceRect(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return {};
-
-    return object->sprite.GetSourceRect();
-}
-
-bool Scene::SpriteUsesSourceRect(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    return object->sprite.UsesSourceRect();
-}
-
-glm::vec2 Scene::GetSpriteSize(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return {};
-
-    return object->sprite.GetSize();
-}
-
-glm::vec4 Scene::GetSpriteTint(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return {};
-
-    return object->sprite.GetTint();
-}
-
-int Scene::GetSpriteLayer(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return 0;
-
-    return object->sprite.GetLayer();
-}
-
-bool Scene::IsSpriteVisible(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    return object->sprite.IsVisible();
-}
-
-bool Scene::IsSpriteFlippedX(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    return object->sprite.IsFlippedX();
-}
-
-bool Scene::IsSpriteFlippedY(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    return object->sprite.IsFlippedY();
-}
-
-bool Scene::SetSpriteTexturePath(GameObjectID id, const std::string& path)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->sprite.SetTexturePath(path);
-    return true;
-}
-
-bool Scene::SetSpriteSourceRect(GameObjectID id, int x, int y, int width, int height)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->sprite.SetSourceRect(x, y, width, height);
-    MarkTransformDirty(id);
-    return true;
-}
-
-bool Scene::SetSpriteSourceRectFromGrid(GameObjectID id, int column, int row, int cellWidth, int cellHeight)
-{
-    return SetSpriteSourceRect(
-        id,
-        column * cellWidth,
-        row * cellHeight,
-        cellWidth,
-        cellHeight
-    );
-}
-
-bool Scene::ClearSpriteSourceRect(GameObjectID id)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->sprite.ClearSourceRect();
-    return true;
-}
-
-bool Scene::SetSpriteSize(GameObjectID id, const glm::vec2& size)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->sprite.SetSize(size);
-    MarkTransformDirty(id);
-    return true;
-}
-
-bool Scene::SetSpriteTint(GameObjectID id, const glm::vec4& tint)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->sprite.SetTint(tint);
-    return true;
-}
-
-bool Scene::SetSpriteLayer(GameObjectID id, int layer)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->sprite.SetLayer(layer);
-    return true;
-}
-
-bool Scene::SetSpriteVisible(GameObjectID id, bool visible)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->sprite.SetVisible(visible);
-    return true;
-}
-
-bool Scene::SetSpriteFlipX(GameObjectID id, bool flip)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->sprite.SetFlipX(flip);
-    return true;
-}
-
-bool Scene::SetSpriteFlipY(GameObjectID id, bool flip)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->sprite.SetFlipY(flip);
-    return true;
-}
-
-bool Scene::HasAnimation(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    return object->animation.has_value();
-}
-
-bool Scene::EnsureAnimation(GameObjectID id)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    if (!object->animation.has_value())
-        object->animation.emplace();
-
-    return true;
-}
-
-bool Scene::RemoveAnimation(GameObjectID id)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    object->animation.reset();
-    return true;
-}
-
-std::string Scene::GetAnimationSetPath(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr || !object->animation.has_value())
-        return {};
-
-    return object->animation->GetAnimationSetRef().path;
-}
-
-std::string Scene::GetAnimationClipName(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr || !object->animation.has_value())
-        return {};
-
-    return object->animation->GetRequestedClipName();
-}
-
-bool Scene::SetAnimationSetPath(GameObjectID id, const std::string& path)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    if (!object->animation.has_value())
-        object->animation.emplace();
-
-    object->animation->SetAnimationSetPath(path);
-    return true;
-}
-
-bool Scene::PlayAnimation(GameObjectID id, const std::string& clipName, bool restartIfSame)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr)
-        return false;
-
-    if (!object->animation.has_value())
-        object->animation.emplace();
-
-    object->animation->Play(clipName, restartIfSame);
-    return true;
-}
-
-bool Scene::StopAnimation(GameObjectID id)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr || !object->animation.has_value())
-        return false;
-
-    object->animation->Stop();
-    return true;
-}
-
-bool Scene::ResetAnimation(GameObjectID id)
-{
-    GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr || !object->animation.has_value())
-        return false;
-
-    object->animation->Reset();
-    return true;
-}
-
-bool Scene::IsAnimationPlaying(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr || !object->animation.has_value())
-        return false;
-
-    return object->animation->IsPlaying();
-}
-
-bool Scene::HasAnimationFinished(GameObjectID id) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr || !object->animation.has_value())
-        return false;
-
-    return object->animation->HasFinished();
-}
-
-bool Scene::IsPlayingAnimationClip(GameObjectID id, const std::string& clipName) const
-{
-    const GameObject* object = FindGameObjectByID(id);
-    if (object == nullptr || !object->animation.has_value())
-        return false;
-
-    return object->animation->IsPlayingClip(clipName);
-}
-
-GameObjectHandle Scene::GetGameObjectHandle(GameObjectID id)
-{
-    if (FindGameObjectByID(id) == nullptr)
-        return {};
-
-    return GameObjectHandle(this, id);
-}
-
-GameObjectHandle Scene::CreateGameObjectHandle(const std::string& name, GameObjectID parentID)
-{
-    GameObject& object = CreateGameObject(name, parentID);
-    return GameObjectHandle(this, object.GetID());
-}
-
-std::vector<const GameObject*> Scene::SortForRendering()
-{
-    std::vector<const GameObject*> renderQueue;
-    renderQueue.reserve(m_GameObjects.size());
-
-    for (const auto& object : m_GameObjects)
-    {
-        if (!object->isActive() || !object->sprite.IsVisible())
-            continue;
-
-        renderQueue.push_back(object.get());
+        renderQueue.push_back(entity);
     }
 
     std::stable_sort(
         renderQueue.begin(),
         renderQueue.end(),
-        [](const GameObject* a, const GameObject* b)
+        [this](entt::entity a, entt::entity b)
         {
-            return a->sprite.GetLayer() < b->sprite.GetLayer();
+            return m_Registry.get<SpriteComponent>(a).GetLayer() <
+                   m_Registry.get<SpriteComponent>(b).GetLayer();
         }
     );
 
     return renderQueue;
+}
+
+void Scene::DestroyPendingGameObjects()
+{
+    std::vector<GameObjectID> idsToDestroy;
+
+    auto view = m_Registry.view<IDComponent, ActiveComponent>();
+    for (entt::entity entity : view)
+    {
+        const auto& id = view.get<IDComponent>(entity);
+        const auto& active = view.get<ActiveComponent>(entity);
+
+        if (active.pendingDestroy)
+            idsToDestroy.push_back(id.id);
+    }
+
+    for (GameObjectID id : idsToDestroy)
+    {
+        const entt::entity entity = FindEntityByID(id);
+        if (entity == entt::null)
+            continue;
+
+        m_EntityByID.erase(id);
+        m_Registry.destroy(entity);
+    }
+}
+
+bool Scene::WouldCreateCycle(GameObjectID childID, GameObjectID parentID) const
+{
+    if (parentID == 0)
+        return false;
+    if (childID == parentID)
+        return true;
+
+    const entt::entity parentEntity = FindEntityByID(parentID);
+    if (parentEntity == entt::null)
+        return false;
+
+    return WouldCreateCycle(childID, m_Registry.get<RelationshipComponent>(parentEntity).parentID);
 }

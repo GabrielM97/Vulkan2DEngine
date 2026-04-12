@@ -4,28 +4,24 @@
 
 void SandboxApp::OnInit()
 {
-    m_Player = m_Scene.CreateGameObjectHandle("Player Sprite");
+    m_Player = m_Scene.CreateGameObject("Player Sprite");
     m_Player.SetLocalPosition({0.0f, 0.0f});
     m_Player.SetLocalRotation(0.0f);
     m_Player.SetSpriteTexturePath("Assets/Textures/character-spritesheet.png");
     m_Player.SetSpriteSourceRectFromGrid(0, 10, 64, 64);
     m_Player.SetSpriteTint(glm::vec4(1.0f));
     m_Player.SetSpriteLayer(0);
+    m_Player.EnsureAnimation();
+    m_Player.SetAnimationSetPath("Assets/Animations/CharacterSpriteSheet.csv");
+    m_Player.PlayAnimation("Walk");
 
-    if (GameObject* player = m_Scene.FindGameObjectByID(m_Player.GetID()))
-    {
-        player->animation.emplace();
-        player->animation->SetAnimationSetPath("Assets/Animations/CharacterSpriteSheet.csv");
-        player->animation->Play("Walk");
-    }
-
-    GameObjectHandle weapon = m_Scene.CreateGameObjectHandle("Weapon", m_Player.GetID());
+    GameObjectHandle weapon = m_Scene.CreateGameObject("Weapon", m_Player.GetID());
     weapon.SetLocalPosition({50.f, 0.f});
     weapon.SetSpriteSize({16.f, 16.f});
     weapon.SetSpriteTexturePath("Assets/Textures/texture.jpg");
     weapon.SetSpriteLayer(1);
 
-    GameObjectHandle weapon2 = m_Scene.CreateGameObjectHandle("Weapon", m_Player.GetID());
+    GameObjectHandle weapon2 = m_Scene.CreateGameObject("Weapon", m_Player.GetID());
     weapon2.SetLocalPosition({-25.f, 0.f});
     weapon2.SetSpriteSize({16.f, 16.f});
     weapon2.SetSpriteTexturePath("Assets/Textures/texture.jpg");
