@@ -137,22 +137,17 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
     if (ImGui::Checkbox("Active", &active))
         scene.SetGameObjectActive(selected->GetID(), active);
 
-    Transform2D localTransform = scene.GetLocalTransform(selected->GetID());
-    bool localChanged = false;
-    localChanged |= ImGui::DragFloat2("Local Position", &localTransform.position.x, 1.0f);
-    localChanged |= ImGui::DragFloat2("Local Scale", &localTransform.scale.x, 0.01f, 0.0f, 1000.0f);
-    localChanged |= ImGui::DragFloat2("Local Pivot", &localTransform.pivot.x, 0.01f, 0.0f, 1.0f);
-    localChanged |= ImGui::DragFloat("Local Rotation", &localTransform.rotationDegrees, 1.0f);
-
-    if (localChanged)
-        scene.SetLocalTransform(selected->GetID(), localTransform);
-
-    const Transform2D worldTransform = scene.GetWorldTransform(selected->GetID());
+    Transform2D worldTransform = scene.GetWorldTransform(selected->GetID());
+    bool transformChanged = false; 
+    
     ImGui::SeparatorText("World Transform");
-    ImGui::Text("Position: %.2f, %.2f", worldTransform.position.x, worldTransform.position.y);
-    ImGui::Text("Scale: %.2f, %.2f", worldTransform.scale.x, worldTransform.scale.y);
-    ImGui::Text("Pivot: %.2f, %.2f", worldTransform.pivot.x, worldTransform.pivot.y);
-    ImGui::Text("Rotation: %.2f", worldTransform.rotationDegrees);
+    transformChanged |= ImGui::DragFloat2("Position", &worldTransform.position.x, 1.0f);
+    transformChanged |= ImGui::DragFloat2("Scale", &worldTransform.scale.x, 0.01f, 0.0f, 1000.0f);
+    transformChanged |= ImGui::DragFloat2("Pivot", &worldTransform.pivot.x, 0.01f, 0.0f, 1.0f);
+    transformChanged |= ImGui::DragFloat("Rotation", &worldTransform.rotationDegrees, 1.0f);
+
+    if (transformChanged)
+        scene.SetLocalTransform(selected->GetID(), worldTransform);
 
     ImGui::SeparatorText("Sprite");
 
