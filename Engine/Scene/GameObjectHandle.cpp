@@ -335,6 +335,90 @@ void GameObjectHandle::SetSpriteVisible(bool visible) const
         m_Scene->SetSpriteVisible(m_ID, visible);
 }
 
+bool GameObjectHandle::HasAnimation() const
+{
+    if (!IsValid())
+        return false;
+
+    return m_Scene->HasAnimation(m_ID);
+}
+
+void GameObjectHandle::EnsureAnimation() const
+{
+    if (IsValid())
+        m_Scene->EnsureAnimation(m_ID);
+}
+
+void GameObjectHandle::RemoveAnimation() const
+{
+    if (IsValid())
+        m_Scene->RemoveAnimation(m_ID);
+}
+
+std::string GameObjectHandle::GetAnimationSetPath() const
+{
+    if (!IsValid())
+        return {};
+
+    return m_Scene->GetAnimationSetPath(m_ID);
+}
+
+std::string GameObjectHandle::GetAnimationClipName() const
+{
+    if (!IsValid())
+        return {};
+
+    return m_Scene->GetAnimationClipName(m_ID);
+}
+
+void GameObjectHandle::SetAnimationSetPath(const std::string& path) const
+{
+    if (IsValid())
+        m_Scene->SetAnimationSetPath(m_ID, path);
+}
+
+void GameObjectHandle::PlayAnimation(const std::string& clipName, bool restartIfSame) const
+{
+    if (IsValid())
+        m_Scene->PlayAnimation(m_ID, clipName, restartIfSame);
+}
+
+void GameObjectHandle::StopAnimation() const
+{
+    if (IsValid())
+        m_Scene->StopAnimation(m_ID);
+}
+
+void GameObjectHandle::ResetAnimation() const
+{
+    if (IsValid())
+        m_Scene->ResetAnimation(m_ID);
+}
+
+bool GameObjectHandle::IsAnimationPlaying() const
+{
+    if (!IsValid())
+        return false;
+
+    return m_Scene->IsAnimationPlaying(m_ID);
+}
+
+bool GameObjectHandle::HasAnimationFinished() const
+{
+    if (!IsValid())
+        return false;
+
+    return m_Scene->HasAnimationFinished(m_ID);
+}
+
+bool GameObjectHandle::IsPlayingAnimationClip(const std::string& clipName) const
+{
+    if (!IsValid())
+        return false;
+
+    return m_Scene->IsPlayingAnimationClip(m_ID, clipName);
+}
+
 std::string GameObjectHandle::GetName() const
 {
     if (!IsValid())
