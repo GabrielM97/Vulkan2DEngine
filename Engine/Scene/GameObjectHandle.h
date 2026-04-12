@@ -1,9 +1,12 @@
 #pragma once
 
-#include "GameObject.h"
-
 #include <string>
+#include <entt/entity/entity.hpp>
+
+#include <entt/entity/fwd.hpp>
 #include <glm/glm.hpp>
+
+#include "SceneComponents.h"
 
 class Scene;
 
@@ -11,24 +14,26 @@ class GameObjectHandle
 {
 public:
     GameObjectHandle() = default;
-    GameObjectHandle(Scene* scene, GameObjectID id)
-        : m_Scene(scene), m_ID(id)
+    GameObjectHandle(Scene* scene, entt::entity entity, GameObjectID id)
+        : m_Scene(scene), m_Entity(entity), m_ID(id)
     {
     }
 
     bool IsValid() const;
     explicit operator bool() const { return IsValid(); }
+
     GameObjectID GetID() const { return m_ID; }
 
     bool IsActive() const;
     void SetActive(bool active) const;
     void Destroy() const;
+
     bool HasParent() const;
     GameObjectID GetParentID() const;
     void SetParent(GameObjectID parentID) const;
     void ClearParent() const;
 
-    Transform2D GetLocalTransform() const;
+    LocalTransformComponent GetLocalTransform() const;
     Transform2D GetWorldTransform() const;
 
     glm::vec2 GetLocalPosition() const;
@@ -40,7 +45,7 @@ public:
     glm::vec2 GetWorldPivot() const;
     float GetWorldRotation() const;
 
-    void SetLocalTransform(const Transform2D& transform) const;
+    void SetLocalTransform(const LocalTransformComponent& transform) const;
     void SetWorldTransform(const Transform2D& transform) const;
 
     void SetLocalPosition(const glm::vec2& position) const;
@@ -93,5 +98,6 @@ public:
 
 private:
     Scene* m_Scene = nullptr;
+    entt::entity m_Entity{entt::null};
     GameObjectID m_ID = 0;
 };

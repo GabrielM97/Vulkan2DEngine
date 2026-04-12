@@ -4,15 +4,12 @@
 
 bool GameObjectHandle::IsValid() const
 {
-    return m_Scene != nullptr && m_Scene->FindGameObjectByID(m_ID) != nullptr;
+    return m_Scene != nullptr && m_Scene->IsValidHandle(m_Entity, m_ID);
 }
 
 bool GameObjectHandle::IsActive() const
 {
-    if (const GameObject* object = IsValid() ? m_Scene->FindGameObjectByID(m_ID) : nullptr)
-        return object->isActive();
-
-    return false;
+    return IsValid() && m_Scene->IsGameObjectActive(m_ID);
 }
 
 void GameObjectHandle::SetActive(bool active) const
@@ -29,18 +26,12 @@ void GameObjectHandle::Destroy() const
 
 bool GameObjectHandle::HasParent() const
 {
-    if (const GameObject* object = IsValid() ? m_Scene->FindGameObjectByID(m_ID) : nullptr)
-        return object->HasParent();
-
-    return false;
+    return IsValid() && m_Scene->HasParent(m_ID);
 }
 
 GameObjectID GameObjectHandle::GetParentID() const
 {
-    if (const GameObject* object = IsValid() ? m_Scene->FindGameObjectByID(m_ID) : nullptr)
-        return object->GetParentID();
-
-    return 0;
+    return IsValid() ? m_Scene->GetParentID(m_ID) : 0;
 }
 
 void GameObjectHandle::SetParent(GameObjectID parentID) const
@@ -55,87 +46,57 @@ void GameObjectHandle::ClearParent() const
         m_Scene->ClearParent(m_ID);
 }
 
-Transform2D GameObjectHandle::GetLocalTransform() const
+LocalTransformComponent GameObjectHandle::GetLocalTransform() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetLocalTransform(m_ID);
+    return IsValid() ? m_Scene->GetLocalTransform(m_ID) : LocalTransformComponent{};
 }
 
 Transform2D GameObjectHandle::GetWorldTransform() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetWorldTransform(m_ID);
+    return IsValid() ? m_Scene->GetWorldTransform(m_ID) : Transform2D{};
 }
 
 glm::vec2 GameObjectHandle::GetLocalPosition() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetLocalPosition(m_ID);
-}
-
-glm::vec2 GameObjectHandle::GetWorldPosition() const
-{
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetWorldPosition(m_ID);
+    return IsValid() ? m_Scene->GetLocalPosition(m_ID) : glm::vec2{};
 }
 
 glm::vec2 GameObjectHandle::GetLocalScale() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetLocalScale(m_ID);
+    return IsValid() ? m_Scene->GetLocalScale(m_ID) : glm::vec2{};
 }
 
 glm::vec2 GameObjectHandle::GetLocalPivot() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetLocalPivot(m_ID);
+    return IsValid() ? m_Scene->GetLocalPivot(m_ID) : glm::vec2{};
 }
 
 float GameObjectHandle::GetLocalRotation() const
 {
-    if (!IsValid())
-        return 0.0f;
+    return IsValid() ? m_Scene->GetLocalRotation(m_ID) : 0.0f;
+}
 
-    return m_Scene->GetLocalRotation(m_ID);
+glm::vec2 GameObjectHandle::GetWorldPosition() const
+{
+    return IsValid() ? m_Scene->GetWorldPosition(m_ID) : glm::vec2{};
 }
 
 glm::vec2 GameObjectHandle::GetWorldScale() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetWorldScale(m_ID);
+    return IsValid() ? m_Scene->GetWorldScale(m_ID) : glm::vec2{};
 }
 
 glm::vec2 GameObjectHandle::GetWorldPivot() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetWorldPivot(m_ID);
+    return IsValid() ? m_Scene->GetWorldPivot(m_ID) : glm::vec2{};
 }
 
 float GameObjectHandle::GetWorldRotation() const
 {
-    if (!IsValid())
-        return 0.0f;
-
-    return m_Scene->GetWorldRotation(m_ID);
+    return IsValid() ? m_Scene->GetWorldRotation(m_ID) : 0.0f;
 }
 
-void GameObjectHandle::SetLocalTransform(const Transform2D& transform) const
+void GameObjectHandle::SetLocalTransform(const LocalTransformComponent& transform) const
 {
     if (IsValid())
         m_Scene->SetLocalTransform(m_ID, transform);
@@ -205,74 +166,47 @@ void GameObjectHandle::TranslateLocal(const glm::vec2& delta) const
 
 std::string GameObjectHandle::GetSpriteTexturePath() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetSpriteTexturePath(m_ID);
+    return IsValid() ? m_Scene->GetSpriteTexturePath(m_ID) : std::string{};
 }
 
 IntRect GameObjectHandle::GetSpriteSourceRect() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetSpriteSourceRect(m_ID);
+    return IsValid() ? m_Scene->GetSpriteSourceRect(m_ID) : IntRect{};
 }
 
 bool GameObjectHandle::SpriteUsesSourceRect() const
 {
-    if (!IsValid())
-        return false;
-
-    return m_Scene->SpriteUsesSourceRect(m_ID);
+    return IsValid() && m_Scene->SpriteUsesSourceRect(m_ID);
 }
 
 glm::vec2 GameObjectHandle::GetSpriteSize() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetSpriteSize(m_ID);
+    return IsValid() ? m_Scene->GetSpriteSize(m_ID) : glm::vec2{};
 }
 
 glm::vec4 GameObjectHandle::GetSpriteTint() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetSpriteTint(m_ID);
+    return IsValid() ? m_Scene->GetSpriteTint(m_ID) : glm::vec4{};
 }
 
 int GameObjectHandle::GetSpriteLayer() const
 {
-    if (!IsValid())
-        return 0;
-
-    return m_Scene->GetSpriteLayer(m_ID);
+    return IsValid() ? m_Scene->GetSpriteLayer(m_ID) : 0;
 }
 
 bool GameObjectHandle::IsSpriteVisible() const
 {
-    if (!IsValid())
-        return false;
-
-    return m_Scene->IsSpriteVisible(m_ID);
+    return IsValid() && m_Scene->IsSpriteVisible(m_ID);
 }
 
 bool GameObjectHandle::IsSpriteFlippedX() const
 {
-    if (!IsValid())
-        return false;
-
-    return m_Scene->IsSpriteFlippedX(m_ID);
+    return IsValid() && m_Scene->IsSpriteFlippedX(m_ID);
 }
 
 bool GameObjectHandle::IsSpriteFlippedY() const
 {
-    if (!IsValid())
-        return false;
-
-    return m_Scene->IsSpriteFlippedY(m_ID);
+    return IsValid() && m_Scene->IsSpriteFlippedY(m_ID);
 }
 
 void GameObjectHandle::SetSpriteTexturePath(const std::string& path) const
@@ -305,6 +239,24 @@ void GameObjectHandle::SetSpriteSize(const glm::vec2& size) const
         m_Scene->SetSpriteSize(m_ID, size);
 }
 
+void GameObjectHandle::SetSpriteTint(const glm::vec4& tint) const
+{
+    if (IsValid())
+        m_Scene->SetSpriteTint(m_ID, tint);
+}
+
+void GameObjectHandle::SetSpriteLayer(int layer) const
+{
+    if (IsValid())
+        m_Scene->SetSpriteLayer(m_ID, layer);
+}
+
+void GameObjectHandle::SetSpriteVisible(bool visible) const
+{
+    if (IsValid())
+        m_Scene->SetSpriteVisible(m_ID, visible);
+}
+
 void GameObjectHandle::SetSpriteFlipX(bool flip) const
 {
     if (IsValid())
@@ -317,30 +269,9 @@ void GameObjectHandle::SetSpriteFlipY(bool flip) const
         m_Scene->SetSpriteFlipY(m_ID, flip);
 }
 
-void GameObjectHandle::SetSpriteLayer(int layer) const
-{
-    if (IsValid())
-        m_Scene->SetSpriteLayer(m_ID, layer);
-}
-
-void GameObjectHandle::SetSpriteTint(const glm::vec4& tint) const
-{
-    if (IsValid())
-        m_Scene->SetSpriteTint(m_ID, tint);
-}
-
-void GameObjectHandle::SetSpriteVisible(bool visible) const
-{
-    if (IsValid())
-        m_Scene->SetSpriteVisible(m_ID, visible);
-}
-
 bool GameObjectHandle::HasAnimation() const
 {
-    if (!IsValid())
-        return false;
-
-    return m_Scene->HasAnimation(m_ID);
+    return IsValid() && m_Scene->HasAnimation(m_ID);
 }
 
 void GameObjectHandle::EnsureAnimation() const
@@ -357,18 +288,12 @@ void GameObjectHandle::RemoveAnimation() const
 
 std::string GameObjectHandle::GetAnimationSetPath() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetAnimationSetPath(m_ID);
+    return IsValid() ? m_Scene->GetAnimationSetPath(m_ID) : std::string{};
 }
 
 std::string GameObjectHandle::GetAnimationClipName() const
 {
-    if (!IsValid())
-        return {};
-
-    return m_Scene->GetAnimationClipName(m_ID);
+    return IsValid() ? m_Scene->GetAnimationClipName(m_ID) : std::string{};
 }
 
 void GameObjectHandle::SetAnimationSetPath(const std::string& path) const
@@ -397,37 +322,22 @@ void GameObjectHandle::ResetAnimation() const
 
 bool GameObjectHandle::IsAnimationPlaying() const
 {
-    if (!IsValid())
-        return false;
-
-    return m_Scene->IsAnimationPlaying(m_ID);
+    return IsValid() && m_Scene->IsAnimationPlaying(m_ID);
 }
 
 bool GameObjectHandle::HasAnimationFinished() const
 {
-    if (!IsValid())
-        return false;
-
-    return m_Scene->HasAnimationFinished(m_ID);
+    return IsValid() && m_Scene->HasAnimationFinished(m_ID);
 }
 
 bool GameObjectHandle::IsPlayingAnimationClip(const std::string& clipName) const
 {
-    if (!IsValid())
-        return false;
-
-    return m_Scene->IsPlayingAnimationClip(m_ID, clipName);
+    return IsValid() && m_Scene->IsPlayingAnimationClip(m_ID, clipName);
 }
 
 std::string GameObjectHandle::GetName() const
 {
-    if (!IsValid())
-        return {};
-
-    if (const GameObject* object = m_Scene->FindGameObjectByID(m_ID))
-        return object->GetName();
-
-    return {};
+    return IsValid() ? m_Scene->GetGameObjectName(m_ID) : std::string{};
 }
 
 void GameObjectHandle::SetName(const std::string& name) const

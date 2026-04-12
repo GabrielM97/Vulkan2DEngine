@@ -72,6 +72,7 @@ set(SCENE_SRC
     Scene/GameObjectHandle.h
     Scene/Scene.cpp
     Scene/Scene.h
+    Scene/SceneComponents.h
     Scene/SpriteAnimation.cpp
     Scene/SpriteAnimation.h
     Scene/SpriteAnimationSet.cpp

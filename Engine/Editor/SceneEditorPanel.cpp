@@ -1,11 +1,12 @@
 #include "Editor/SceneEditorPanel.h"
 
-#include "Math/Transform2D.h"
-#include "Scene/Scene.h"
-
-#include <imgui.h>
 #include <cstdio>
 #include <string>
+
+#include <imgui.h>
+
+#include "Math/Transform2D.h"
+#include "Scene/Scene.h"
 
 void SceneEditorPanel::Draw(Scene& scene)
 {
@@ -23,11 +24,12 @@ void SceneEditorPanel::SyncInspectorFromSelection(Scene& scene)
 {
     m_InspectorObjectID = m_SelectedObjectID;
 
-    GameObject* selected = scene.FindGameObjectByID(m_InspectorObjectID);
-    if (selected == nullptr)
+    if (!scene.IsValidGameObject(m_InspectorObjectID))
     {
         m_NameBuffer[0] = '\0';
         m_TexturePathBuffer[0] = '\0';
+        m_AnimationSetPathBuffer[0] = '\0';
+        m_AnimationClipBuffer[0] = '\0';
         m_ReparentTargetID = 0;
         m_SourceRectValues[0] = 0;
         m_SourceRectValues[1] = 0;
@@ -36,12 +38,24 @@ void SceneEditorPanel::SyncInspectorFromSelection(Scene& scene)
         return;
     }
 
-    std::snprintf(m_NameBuffer.data(), m_NameBuffer.size(), "%s", selected->GetName().c_str());
+    std::snprintf(m_NameBuffer.data(), m_NameBuffer.size(), "%s", scene.GetGameObjectName(m_InspectorObjectID).c_str());
     std::snprintf(
         m_TexturePathBuffer.data(),
         m_TexturePathBuffer.size(),
         "%s",
         scene.GetSpriteTexturePath(m_InspectorObjectID).c_str()
+    );
+    std::snprintf(
+        m_AnimationSetPathBuffer.data(),
+        m_AnimationSetPathBuffer.size(),
+        "%s",
+        scene.GetAnimationSetPath(m_InspectorObjectID).c_str()
+    );
+    std::snprintf(
+        m_AnimationClipBuffer.data(),
+        m_AnimationClipBuffer.size(),
+        "%s",
+        scene.GetAnimationClipName(m_InspectorObjectID).c_str()
     );
 
     const IntRect sourceRect = scene.GetSpriteSourceRect(m_InspectorObjectID);
@@ -49,8 +63,8 @@ void SceneEditorPanel::SyncInspectorFromSelection(Scene& scene)
     m_SourceRectValues[1] = sourceRect.y;
     m_SourceRectValues[2] = sourceRect.width;
     m_SourceRectValues[3] = sourceRect.height;
-    m_ReparentTargetID = selected->HasParent()
-        ? static_cast<int>(selected->GetParentID())
+    m_ReparentTargetID = scene.HasParent(m_InspectorObjectID)
+        ? static_cast<int>(scene.GetParentID(m_InspectorObjectID))
         : 0;
 }
 
@@ -58,19 +72,15 @@ void SceneEditorPanel::DrawHierarchyPanel(Scene& scene)
 {
     ImGui::Begin("Hierarchy");
 
-    const std::vector<const GameObject*> roots = scene.GetRootGameObjects();
-    for (const GameObject* object : roots)
-    {
-        if (object != nullptr)
-            DrawHierarchyNode(scene, *object);
-    }
+    const std::vector<GameObjectID> roots = scene.GetRootGameObjects();
+    for (GameObjectID id : roots)
+        DrawHierarchyNode(scene, id);
 
     ImGui::End();
 }
 
-void SceneEditorPanel::DrawHierarchyNode(Scene& scene, const GameObject& object)
+void SceneEditorPanel::DrawHierarchyNode(Scene& scene, GameObjectID id)
 {
-    const GameObjectID id = object.GetID();
     const bool isSelected = (m_SelectedObjectID == id);
     const bool hasChildren = scene.HasChildren(id);
 
@@ -80,7 +90,7 @@ void SceneEditorPanel::DrawHierarchyNode(Scene& scene, const GameObject& object)
     if (isSelected)
         flags |= ImGuiTreeNodeFlags_Selected;
 
-    const std::string label = object.GetName() + "##" + std::to_string(id);
+    const std::string label = scene.GetGameObjectName(id) + "##" + std::to_string(id);
 
     const bool opened = ImGui::TreeNodeEx(
         reinterpret_cast<void*>(static_cast<uintptr_t>(id)),
@@ -97,12 +107,9 @@ void SceneEditorPanel::DrawHierarchyNode(Scene& scene, const GameObject& object)
 
     if (opened)
     {
-        const std::vector<const GameObject*> children = scene.GetChildGameObjects(id);
-        for (const GameObject* child : children)
-        {
-            if (child != nullptr)
-                DrawHierarchyNode(scene, *child);
-        }
+        const std::vector<GameObjectID> children = scene.GetChildGameObjects(id);
+        for (GameObjectID childID : children)
+            DrawHierarchyNode(scene, childID);
 
         ImGui::TreePop();
     }
@@ -112,8 +119,7 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
 {
     ImGui::Begin("Inspector");
 
-    GameObject* selected = scene.FindGameObjectByID(m_SelectedObjectID);
-    if (selected == nullptr)
+    if (!scene.IsValidGameObject(m_SelectedObjectID))
     {
         if (m_SelectedObjectID != 0)
             SelectObject(scene, 0);
@@ -126,65 +132,77 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
     if (m_InspectorObjectID != m_SelectedObjectID)
         SyncInspectorFromSelection(scene);
 
-    ImGui::Text("Selected: %s", selected->GetName().c_str());
-    ImGui::Text("ID: %llu", static_cast<unsigned long long>(selected->GetID()));
+    const GameObjectID selectedID = m_SelectedObjectID;
+
+    ImGui::Text("Selected: %s", scene.GetGameObjectName(selectedID).c_str());
+    ImGui::Text("ID: %llu", static_cast<unsigned long long>(selectedID));
     ImGui::Separator();
 
     if (ImGui::InputText("Name", m_NameBuffer.data(), m_NameBuffer.size()))
-        scene.SetGameObjectName(selected->GetID(), m_NameBuffer.data());
+        scene.SetGameObjectName(selectedID, m_NameBuffer.data());
 
-    bool active = selected->isActive();
+    bool active = scene.IsGameObjectActive(selectedID);
     if (ImGui::Checkbox("Active", &active))
-        scene.SetGameObjectActive(selected->GetID(), active);
+        scene.SetGameObjectActive(selectedID, active);
 
-    Transform2D worldTransform = scene.GetWorldTransform(selected->GetID());
-    bool transformChanged = false; 
-    
+    Transform2D localTransform = scene.GetLocalTransform(selectedID);
+    bool localChanged = false;
+    localChanged |= ImGui::DragFloat2("Local Position", &localTransform.position.x, 1.0f);
+    localChanged |= ImGui::DragFloat2("Local Scale", &localTransform.scale.x, 0.01f, 0.0f, 1000.0f);
+    localChanged |= ImGui::DragFloat2("Local Pivot", &localTransform.pivot.x, 0.01f, 0.0f, 1.0f);
+    localChanged |= ImGui::DragFloat("Local Rotation", &localTransform.rotationDegrees, 1.0f);
+
+    if (localChanged)
+        scene.SetLocalTransform(selectedID, localTransform);
+
+    Transform2D worldTransform = scene.GetWorldTransform(selectedID);
+    bool worldChanged = false;
+
     ImGui::SeparatorText("World Transform");
-    transformChanged |= ImGui::DragFloat2("Position", &worldTransform.position.x, 1.0f);
-    transformChanged |= ImGui::DragFloat2("Scale", &worldTransform.scale.x, 0.01f, 0.0f, 1000.0f);
-    transformChanged |= ImGui::DragFloat2("Pivot", &worldTransform.pivot.x, 0.01f, 0.0f, 1.0f);
-    transformChanged |= ImGui::DragFloat("Rotation", &worldTransform.rotationDegrees, 1.0f);
+    worldChanged |= ImGui::DragFloat2("World Position", &worldTransform.position.x, 1.0f);
+    worldChanged |= ImGui::DragFloat2("World Scale", &worldTransform.scale.x, 0.01f, 0.0f, 1000.0f);
+    worldChanged |= ImGui::DragFloat2("World Pivot", &worldTransform.pivot.x, 0.01f, 0.0f, 1.0f);
+    worldChanged |= ImGui::DragFloat("World Rotation", &worldTransform.rotationDegrees, 1.0f);
 
-    if (transformChanged)
-        scene.SetLocalTransform(selected->GetID(), worldTransform);
+    if (worldChanged)
+        scene.SetWorldTransform(selectedID, worldTransform);
 
     ImGui::SeparatorText("Sprite");
 
     if (ImGui::InputText("Texture Path", m_TexturePathBuffer.data(), m_TexturePathBuffer.size()))
-        scene.SetSpriteTexturePath(selected->GetID(), m_TexturePathBuffer.data());
+        scene.SetSpriteTexturePath(selectedID, m_TexturePathBuffer.data());
 
-    glm::vec2 spriteSize = scene.GetSpriteSize(selected->GetID());
+    glm::vec2 spriteSize = scene.GetSpriteSize(selectedID);
     if (ImGui::DragFloat2("Sprite Size", &spriteSize.x, 1.0f, 0.0f, 4096.0f))
-        scene.SetSpriteSize(selected->GetID(), spriteSize);
+        scene.SetSpriteSize(selectedID, spriteSize);
 
-    glm::vec4 tint = scene.GetSpriteTint(selected->GetID());
+    glm::vec4 tint = scene.GetSpriteTint(selectedID);
     if (ImGui::ColorEdit4("Tint", &tint.x))
-        scene.SetSpriteTint(selected->GetID(), tint);
+        scene.SetSpriteTint(selectedID, tint);
 
-    int layer = scene.GetSpriteLayer(selected->GetID());
+    int layer = scene.GetSpriteLayer(selectedID);
     if (ImGui::DragInt("Layer", &layer, 1.0f))
-        scene.SetSpriteLayer(selected->GetID(), layer);
+        scene.SetSpriteLayer(selectedID, layer);
 
-    bool visible = scene.IsSpriteVisible(selected->GetID());
+    bool visible = scene.IsSpriteVisible(selectedID);
     if (ImGui::Checkbox("Visible", &visible))
-        scene.SetSpriteVisible(selected->GetID(), visible);
+        scene.SetSpriteVisible(selectedID, visible);
 
-    bool flipX = scene.IsSpriteFlippedX(selected->GetID());
+    bool flipX = scene.IsSpriteFlippedX(selectedID);
     if (ImGui::Checkbox("Flip X", &flipX))
-        scene.SetSpriteFlipX(selected->GetID(), flipX);
+        scene.SetSpriteFlipX(selectedID, flipX);
 
-    bool flipY = scene.IsSpriteFlippedY(selected->GetID());
+    bool flipY = scene.IsSpriteFlippedY(selectedID);
     if (ImGui::Checkbox("Flip Y", &flipY))
-        scene.SetSpriteFlipY(selected->GetID(), flipY);
+        scene.SetSpriteFlipY(selectedID, flipY);
 
-    bool usesSourceRect = scene.SpriteUsesSourceRect(selected->GetID());
+    bool usesSourceRect = scene.SpriteUsesSourceRect(selectedID);
     if (ImGui::Checkbox("Use Source Rect", &usesSourceRect))
     {
         if (usesSourceRect)
         {
             scene.SetSpriteSourceRect(
-                selected->GetID(),
+                selectedID,
                 m_SourceRectValues[0],
                 m_SourceRectValues[1],
                 m_SourceRectValues[2],
@@ -193,14 +211,14 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
         }
         else
         {
-            scene.ClearSpriteSourceRect(selected->GetID());
+            scene.ClearSpriteSourceRect(selectedID);
         }
     }
 
     if (usesSourceRect && ImGui::InputInt4("Source Rect", m_SourceRectValues))
     {
         scene.SetSpriteSourceRect(
-            selected->GetID(),
+            selectedID,
             m_SourceRectValues[0],
             m_SourceRectValues[1],
             m_SourceRectValues[2],
@@ -216,38 +234,73 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
     if (ImGui::Button("Apply Grid Frame"))
     {
         scene.SetSpriteSourceRectFromGrid(
-            selected->GetID(),
+            selectedID,
             m_SourceGridValues[0],
             m_SourceGridValues[1],
             m_SourceGridValues[2],
             m_SourceGridValues[3]
         );
 
-        const IntRect sourceRect = scene.GetSpriteSourceRect(selected->GetID());
+        const IntRect sourceRect = scene.GetSpriteSourceRect(selectedID);
         m_SourceRectValues[0] = sourceRect.x;
         m_SourceRectValues[1] = sourceRect.y;
         m_SourceRectValues[2] = sourceRect.width;
         m_SourceRectValues[3] = sourceRect.height;
     }
 
+    ImGui::SeparatorText("Animation");
+
+    bool hasAnimation = scene.HasAnimation(selectedID);
+    if (ImGui::Checkbox("Has Animation", &hasAnimation))
+    {
+        if (hasAnimation)
+            scene.EnsureAnimation(selectedID);
+        else
+            scene.RemoveAnimation(selectedID);
+    }
+
+    if (hasAnimation)
+    {
+        if (ImGui::InputText("Animation Set Path", m_AnimationSetPathBuffer.data(), m_AnimationSetPathBuffer.size()))
+            scene.SetAnimationSetPath(selectedID, m_AnimationSetPathBuffer.data());
+
+        ImGui::InputText("Clip Name", m_AnimationClipBuffer.data(), m_AnimationClipBuffer.size());
+
+        if (ImGui::Button("Play Clip"))
+            scene.PlayAnimation(selectedID, m_AnimationClipBuffer.data(), true);
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Stop Clip"))
+            scene.StopAnimation(selectedID);
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Reset Clip"))
+            scene.ResetAnimation(selectedID);
+
+        ImGui::Text("Playing: %s", scene.IsAnimationPlaying(selectedID) ? "Yes" : "No");
+        ImGui::Text("Finished: %s", scene.HasAnimationFinished(selectedID) ? "Yes" : "No");
+    }
+
     ImGui::SeparatorText("Hierarchy");
 
-    if (selected->HasParent())
+    if (scene.HasParent(selectedID))
     {
-        const GameObject* parent = scene.FindGameObjectByID(selected->GetParentID());
-        if (parent != nullptr)
+        const GameObjectID parentID = scene.GetParentID(selectedID);
+        if (scene.IsValidGameObject(parentID))
         {
             ImGui::Text(
                 "Parent: %s (%llu)",
-                parent->GetName().c_str(),
-                static_cast<unsigned long long>(parent->GetID())
+                scene.GetGameObjectName(parentID).c_str(),
+                static_cast<unsigned long long>(parentID)
             );
         }
         else
         {
             ImGui::Text(
                 "Parent: Missing (%llu)",
-                static_cast<unsigned long long>(selected->GetParentID())
+                static_cast<unsigned long long>(parentID)
             );
         }
     }
@@ -266,18 +319,17 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
         if (ImGui::Selectable("None", noParentSelected))
             m_ReparentTargetID = 0;
 
-        for (const auto& objectPtr : scene.GetGameObjects())
+        for (GameObjectID candidateID : scene.GetGameObjectIDs())
         {
-            const GameObject& candidate = *objectPtr;
-            if (candidate.GetID() == selected->GetID())
+            if (candidateID == selectedID)
                 continue;
 
-            const bool candidateSelected = (m_ReparentTargetID == static_cast<int>(candidate.GetID()));
+            const bool candidateSelected = (m_ReparentTargetID == static_cast<int>(candidateID));
             const std::string candidateLabel =
-                candidate.GetName() + " (" + std::to_string(candidate.GetID()) + ")";
+                scene.GetGameObjectName(candidateID) + " (" + std::to_string(candidateID) + ")";
 
             if (ImGui::Selectable(candidateLabel.c_str(), candidateSelected))
-                m_ReparentTargetID = static_cast<int>(candidate.GetID());
+                m_ReparentTargetID = static_cast<int>(candidateID);
         }
 
         ImGui::EndCombo();
@@ -286,16 +338,16 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
     if (ImGui::Button("Set Parent"))
     {
         if (m_ReparentTargetID == 0)
-            scene.ClearParent(selected->GetID());
+            scene.ClearParent(selectedID);
         else
-            scene.SetParent(selected->GetID(), static_cast<GameObjectID>(m_ReparentTargetID));
+            scene.SetParent(selectedID, static_cast<GameObjectID>(m_ReparentTargetID));
     }
 
     ImGui::SameLine();
 
     if (ImGui::Button("Clear Parent"))
     {
-        scene.ClearParent(selected->GetID());
+        scene.ClearParent(selectedID);
         m_ReparentTargetID = 0;
     }
 
