@@ -1,9 +1,21 @@
 cmake_minimum_required(VERSION 3.20)
+
+# Disable vcpkg's POST_BUILD applocal copy step. We manage runtime assets
+# explicitly below, and keeping this off avoids an extra PowerShell hook on
+# every executable build.
+set(VCPKG_APPLOCAL_DEPS OFF CACHE BOOL "Disable vcpkg applocal post-build dependency copying" FORCE)
+
 project(Vulkan2DEngine LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+find_program(SCCACHE_PROGRAM sccache)
+if(SCCACHE_PROGRAM)
+    set(CMAKE_C_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}")
+endif()
 
 # --- Vulkan SDK check ---
 if (WIN32 AND NOT DEFINED ENV{VULKAN_SDK})
@@ -44,10 +56,10 @@ target_link_libraries(EngineDeps INTERFACE
 add_subdirectory(Engine)
 
 # --- Sandbox executable ---
-file(GLOB_RECURSE SANDBOX_SRC
-    CONFIGURE_DEPENDS
-    ${CMAKE_SOURCE_DIR}/Sandbox/*.cpp
-    ${CMAKE_SOURCE_DIR}/Sandbox/*.h
+set(SANDBOX_SRC
+    ${CMAKE_SOURCE_DIR}/Sandbox/Main.cpp
+    ${CMAKE_SOURCE_DIR}/Sandbox/SandboxApp.cpp
+    ${CMAKE_SOURCE_DIR}/Sandbox/SandboxApp.h
 )
 
 add_executable(Sandbox ${SANDBOX_SRC})
@@ -75,9 +87,10 @@ find_program(GLSLANG_VALIDATOR glslangValidator REQUIRED)
 
 set(SHADER_SRC_DIR ${CMAKE_SOURCE_DIR}/Assets/Shaders)
 set(SHADER_OUT_DIR ${CMAKE_BINARY_DIR}/Assets/Shaders)
-file(GLOB_RECURSE SHADERS CONFIGURE_DEPENDS
-    ${SHADER_SRC_DIR}/*.vert
-    ${SHADER_SRC_DIR}/*.frag
+set(SANDBOX_ASSET_DIR ${CMAKE_BINARY_DIR}/Assets)
+set(SHADERS
+    ${SHADER_SRC_DIR}/Vertex.vert
+    ${SHADER_SRC_DIR}/Fragment.frag
 )
 
 set(SPIRV_BINARIES "")
@@ -101,20 +114,56 @@ add_custom_target(Shaders ALL DEPENDS ${SPIRV_BINARIES})
 add_dependencies(Sandbox Shaders)
 
 # --- Copy runtime assets to executable folder ---
-add_custom_target(CopySandboxAssets ALL
-    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:Sandbox>/Assets/Shaders
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${SHADER_OUT_DIR}
-            $<TARGET_FILE_DIR:Sandbox>/Assets/Shaders
-    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:Sandbox>/Assets/Textures
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/Assets/Textures
-            $<TARGET_FILE_DIR:Sandbox>/Assets/Textures
-    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:Sandbox>/Assets/Animations
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/Assets/Animations
-            $<TARGET_FILE_DIR:Sandbox>/Assets/Animations
-    COMMENT "Copying shaders, textures, and animations to executable folder"
+set(TEXTURE_ASSETS
+    ${CMAKE_SOURCE_DIR}/Assets/Textures/character-spritesheet.png
+    ${CMAKE_SOURCE_DIR}/Assets/Textures/gen-ec38b683-9381-40bb-bd92-a077a7cd4dbb.png
+    ${CMAKE_SOURCE_DIR}/Assets/Textures/testspritesheet.png
+    ${CMAKE_SOURCE_DIR}/Assets/Textures/texture.jpg
+    ${CMAKE_SOURCE_DIR}/Assets/Textures/texture2.jpg
+)
+
+set(ANIMATION_ASSETS
+    ${CMAKE_SOURCE_DIR}/Assets/Animations/CharacterSpriteSheet.csv
+)
+
+set(COPIED_TEXTURE_ASSETS "")
+foreach(TEXTURE ${TEXTURE_ASSETS})
+    get_filename_component(TEXTURE_NAME ${TEXTURE} NAME)
+    set(TEXTURE_OUT ${SANDBOX_ASSET_DIR}/Textures/${TEXTURE_NAME})
+
+    add_custom_command(
+        OUTPUT ${TEXTURE_OUT}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${SANDBOX_ASSET_DIR}/Textures
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${TEXTURE} ${TEXTURE_OUT}
+        DEPENDS ${TEXTURE}
+        COMMENT "Copying texture ${TEXTURE_NAME}"
+        VERBATIM
+    )
+
+    list(APPEND COPIED_TEXTURE_ASSETS ${TEXTURE_OUT})
+endforeach()
+
+set(COPIED_ANIMATION_ASSETS "")
+foreach(ANIMATION ${ANIMATION_ASSETS})
+    get_filename_component(ANIMATION_NAME ${ANIMATION} NAME)
+    set(ANIMATION_OUT ${SANDBOX_ASSET_DIR}/Animations/${ANIMATION_NAME})
+
+    add_custom_command(
+        OUTPUT ${ANIMATION_OUT}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${SANDBOX_ASSET_DIR}/Animations
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ANIMATION} ${ANIMATION_OUT}
+        DEPENDS ${ANIMATION}
+        COMMENT "Copying animation ${ANIMATION_NAME}"
+        VERBATIM
+    )
+
+    list(APPEND COPIED_ANIMATION_ASSETS ${ANIMATION_OUT})
+endforeach()
+
+add_custom_target(CopySandboxAssets
+    DEPENDS
+        ${COPIED_TEXTURE_ASSETS}
+        ${COPIED_ANIMATION_ASSETS}
 )
 
 add_dependencies(CopySandboxAssets Shaders)
