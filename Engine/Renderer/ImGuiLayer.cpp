@@ -82,6 +82,11 @@ void ImGuiLayer::Shutdown()
 
     vkDeviceWaitIdle(m_Device);
 
+    // Docking/multi-viewport builds expect platform windows to be torn down
+    // before the ImGui context is destroyed.
+    if (ImGui::GetCurrentContext() != nullptr)
+        ImGui::DestroyPlatformWindows();
+
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
