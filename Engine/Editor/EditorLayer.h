@@ -14,5 +14,7 @@ public:
     void Draw(Scene* scene);
 
 private:
+    void DrawDockspace();
+
     std::unique_ptr<SceneEditorPanel> m_SceneEditorPanel;
 };
