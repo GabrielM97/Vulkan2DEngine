@@ -82,6 +82,7 @@ void SandboxApp::OnImGuiUpdate()
         ImGui::Text("Player");
         ImGui::DragFloat2("Position", &player->transform.position.x, 1.0f);
         ImGui::DragFloat2("Scale", &player->transform.scale.x, 0.01f, 0.0f, 100.0f);
+        ImGui::DragFloat2("Pivot", &player->transform.pivot.x, 0.01f, 0.0f, 1.0f);
         ImGui::DragFloat("Rotation", &player->transform.rotationDegrees, 1.0f);
     }
 

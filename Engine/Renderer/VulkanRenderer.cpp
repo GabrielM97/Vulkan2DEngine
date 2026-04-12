@@ -8,6 +8,7 @@
 #include <Scene/SpriteRenderer.h>
 
 #include "VulkanVertexBuffer.h"
+#include "Math/Transform2D.h"
 
 class SpriteRenderer;
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
@@ -85,13 +86,13 @@ void VulkanRenderer::SetCamera(const Camera2D& camera)
     m_CameraDirty = true;
 }
 
-void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec2 origin, const glm::vec2 uvMin, const glm::vec2 uvMax, const glm::vec4 tint, uint32_t textureIndex)
+void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec2 pivot, const glm::vec2 uvMin, const glm::vec2 uvMax, const glm::vec4 tint, uint32_t textureIndex)
 {
     QuadCommand command{};
     command.position = position;
     command.size = size;
     command.rotation = glm::radians(rotationDegrees);
-    command.origin = origin;
+    command.pivot = pivot;
     command.uvMin = uvMin;
     command.uvMax = uvMax;
     command.tint = tint;
@@ -124,7 +125,7 @@ void VulkanRenderer::EndFrame()
         instance.position = quad.position;
         instance.size = quad.size;
         instance.rotation = quad.rotation;
-        instance.origin = quad.origin;
+        instance.pivot = quad.pivot;
         instance.textureIndex = static_cast<float>(quad.textureIndex);
         instance.uvMin = quad.uvMin;
         instance.uvMax = quad.uvMax;
@@ -575,7 +576,7 @@ void VulkanRenderer::DrawSprite(const Transform2D& transform, const SpriteRender
         transform.position,
         finalSize,
         transform.rotationDegrees,
-        sprite.GetOrigin(),
+        transform.pivot,
         uvMin,
         uvMax,
         sprite.GetTint(),

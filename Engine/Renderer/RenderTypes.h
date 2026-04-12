@@ -15,7 +15,7 @@ struct QuadCommand
     glm::vec2 position{0.0f};
     glm::vec2 size{1.0f};
     float rotation = 0.0f;
-    glm::vec2 origin{0.5f, 0.5f};
+    glm::vec2 pivot{0.5f, 0.5f};
     glm::vec2 uvMin{0.0f};
     glm::vec2 uvMax{1.0f};
     glm::vec4 tint{1.0f};
@@ -32,7 +32,7 @@ struct QuadInstanceData
     glm::vec2 position{0.0f};
     glm::vec2 size{1.0f};
     float rotation = 0.0f;
-    glm::vec2 origin{0.5f, 0.5f};
+    glm::vec2 pivot{0.5f, 0.5f};
     glm::vec2 uvMin{0.0f};
     glm::vec2 uvMax{1.0f};
     float textureIndex = 0.0f;
@@ -69,7 +69,7 @@ struct QuadInstanceData
         attributes[3].binding = 1;
         attributes[3].location = 5;
         attributes[3].format = VK_FORMAT_R32G32_SFLOAT;
-        attributes[3].offset = offsetof(QuadInstanceData, origin);
+        attributes[3].offset = offsetof(QuadInstanceData, pivot);
 
         attributes[4].binding = 1;
         attributes[4].location = 6;

@@ -60,7 +60,7 @@ public:
     uint32_t GetImageCount() const { return static_cast<uint32_t>(m_swapchain.GetImageViews().size()); }
 
 private:
-    void DrawQuad(glm::vec2 position, glm::vec2 size, float rotationDegrees, glm::vec2 origin, glm::vec2 uvMin, glm::vec2 uvMax, 
+    void DrawQuad(glm::vec2 position, glm::vec2 size, float rotationDegrees, glm::vec2 pivot, glm::vec2 uvMin, glm::vec2 uvMax, 
                     glm::vec4 tint =glm::vec4(1.0f), uint32_t textureIndex = 0);
     
     void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Scene/Camera2D.h"
-#include "Scene/Components.h"
 #include "Scene/SpriteRenderer.h"
 
 struct Transform2D;

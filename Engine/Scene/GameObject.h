@@ -3,11 +3,12 @@
 #include <cstdint>
 #include <optional>
 
-#include "Components.h"
 #include "SpriteRenderer.h"
 #include "SpriteAnimation.h"
 
 #include <string>
+
+#include "Math/Transform2D.h"
 
 using GameObjectID = uint64_t;
 

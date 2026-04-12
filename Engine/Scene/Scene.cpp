@@ -1,37 +1,11 @@
 #include "Scene.h"
 
+#include "Math/TransformMath2D.h"
 #include "Renderer/IRenderer2D.h"
 #include "Camera2D.h"
 
 #include <algorithm>
 #include <iostream>
-
-namespace
-{
-    glm::vec2 RotateVector(const glm::vec2& value, float degrees)
-    {
-        const float radians = glm::radians(degrees);
-        const float c = std::cos(radians);
-        const float s = std::sin(radians);
-
-        return {
-            value.x * c - value.y * s,
-            value.x * s + value.y * c
-        };
-    }
-
-    glm::vec2 SafeDivide(const glm::vec2& value, const glm::vec2& divisor)
-    {
-        glm::vec2 result = value;
-
-        if (divisor.x != 0.0f)
-            result.x /= divisor.x;
-        if (divisor.y != 0.0f)
-            result.y /= divisor.y;
-
-        return result;
-    }
-}
 
 GameObject& Scene::CreateGameObject(const std::string& name, GameObjectID parentID)
 {
@@ -39,11 +13,12 @@ GameObject& Scene::CreateGameObject(const std::string& name, GameObjectID parent
     object->SetID(m_NextGameObjectID++);
     object->SetName(name);
     
-    if (parentID != 0 && FindGameObjectByID(parentID) != nullptr)
-        object->SetParentID(parentID);
-
     GameObject& reference = *object;
     m_GameObjects.push_back(std::move(object));
+    
+    if (parentID != 0 && FindGameObjectByID(parentID) != nullptr)
+        SetParent(reference.GetID(), parentID);
+    
     return reference;
 }
 
@@ -281,18 +256,16 @@ bool Scene::SetParent(GameObjectID childID, GameObjectID parentID)
     if (child == nullptr || parent == nullptr)
         return false;
 
-    Transform2D childWorld = GetWorldTransform(childID);
-    Transform2D parentWorld = GetWorldTransform(parentID);
+    const Transform2D childWorld = GetWorldTransform(childID);
+    const Transform2D parentWorld = GetWorldTransform(parentID);
 
     child->SetParentID(parentID);
-
-    glm::vec2 localPosition = childWorld.position - parentWorld.position;
-    localPosition = RotateVector(localPosition, -parentWorld.rotationDegrees);
-    localPosition = SafeDivide(localPosition, parentWorld.scale);
-
-    child->transform.position = localPosition;
-    child->transform.rotationDegrees = childWorld.rotationDegrees - parentWorld.rotationDegrees;
-    child->transform.scale = SafeDivide(childWorld.scale, parentWorld.scale);
+    child->transform = TransformMath2D::ToLocalTransform(
+        childWorld,
+        child->sprite.GetSize(),
+        parentWorld,
+        parent->sprite.GetSize()
+    );
     return true;
 }
 
@@ -303,7 +276,7 @@ bool Scene::ClearParent(GameObjectID childID)
     if (child == nullptr)
         return false;
 
-    Transform2D world = GetWorldTransform(childID);
+    const Transform2D world = GetWorldTransform(childID);
 
     child->ClearParent();
     child->transform.position = world.position;
@@ -315,7 +288,7 @@ bool Scene::ClearParent(GameObjectID childID)
 
 Transform2D Scene::GetWorldTransform(GameObjectID id) const
 {
-      const GameObject* object = FindGameObjectByID(id);
+    const GameObject* object = FindGameObjectByID(id);
     if (object == nullptr)
         return {};
 
@@ -328,12 +301,12 @@ Transform2D Scene::GetWorldTransform(GameObjectID id) const
         if (parent == nullptr)
             break;
 
-        glm::vec2 scaledLocal = world.position * parent->transform.scale;
-        glm::vec2 rotatedLocal = RotateVector(scaledLocal, parent->transform.rotationDegrees);
-
-        world.position = parent->transform.position + rotatedLocal;
-        world.rotationDegrees += parent->transform.rotationDegrees;
-        world.scale *= parent->transform.scale;
+        world = TransformMath2D::CombineTransforms(
+            parent->transform,
+            parent->sprite.GetSize(),
+            world,
+            object->sprite.GetSize()
+        );
 
         currentParentID = parent->GetParentID();
     }

@@ -6,7 +6,7 @@ layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec2 inInstancePosition;
 layout(location = 3) in vec2 inInstanceSize;
 layout(location = 4) in float inInstanceRotation;
-layout(location = 5) in vec2 inInstanceOrigin;
+layout(location = 5) in vec2 inInstancePivot;
 layout(location = 6) in float inTextureIndex;
 layout(location = 7) in vec2 inInstanceUVMin;
 layout(location = 8) in vec2 inInstanceUVMax;
@@ -22,9 +22,9 @@ layout(set = 0, binding = 0) uniform GlobalUBO
 
 void main()
 {
-    vec2 origin = inInstanceOrigin;
+    vec2 pivot = inInstancePivot;
 
-    vec2 local = inPosition.xy - origin;
+    vec2 local = inPosition.xy - pivot;
     local *= inInstanceSize;
 
     float c = cos(inInstanceRotation);
@@ -34,7 +34,7 @@ void main()
     rotated.x = local.x * c - local.y * s;
     rotated.y = local.x * s + local.y * c;
 
-    vec2 worldPosition = rotated + inInstancePosition + origin * inInstanceSize;
+    vec2 worldPosition = rotated + inInstancePosition + pivot * inInstanceSize;
 
     gl_Position = ubo.viewProjection * vec4(worldPosition, inPosition.z, 1.0);
 
