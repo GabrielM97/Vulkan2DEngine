@@ -31,6 +31,7 @@ void SandboxApp::OnInit()
     weapon2.SetSpriteSize({16.f, 16.f});
     weapon2.SetSpriteTexturePath("Assets/Textures/texture.jpg");
     weapon2.SetSpriteLayer(1);
+    SelectObject(m_Player.GetID());
 }
 
 void SandboxApp::OnUpdate(float deltaTime)
