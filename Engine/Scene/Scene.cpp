@@ -229,6 +229,44 @@ const std::vector<std::unique_ptr<GameObject>>& Scene::GetGameObjects() const
     return m_GameObjects;
 }
 
+std::vector<const GameObject*> Scene::GetRootGameObjects() const
+{
+    std::vector<const GameObject*> roots;
+    roots.reserve(m_GameObjects.size());
+
+    for (const auto& object : m_GameObjects)
+    {
+        if (!object->HasParent())
+            roots.push_back(object.get());
+    }
+
+    return roots;
+}
+
+std::vector<const GameObject*> Scene::GetChildGameObjects(GameObjectID parentID) const
+{
+    std::vector<const GameObject*> children;
+
+    for (const auto& object : m_GameObjects)
+    {
+        if (object->GetParentID() == parentID)
+            children.push_back(object.get());
+    }
+
+    return children;
+}
+
+bool Scene::HasChildren(GameObjectID parentID) const
+{
+    for (const auto& object : m_GameObjects)
+    {
+        if (object->GetParentID() == parentID)
+            return true;
+    }
+
+    return false;
+}
+
 bool Scene::SetParent(GameObjectID childID, GameObjectID parentID)
 {
     if (childID == 0 || parentID == 0 || childID == parentID)

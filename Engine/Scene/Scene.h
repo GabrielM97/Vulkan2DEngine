@@ -37,6 +37,11 @@ public:
     const GameObject* FindGameObjectByID(GameObjectID id) const;
     GameObject* FindGameObjectByName(const std::string& name);
     const GameObject* FindGameObjectByName(const std::string& name) const;
+    std::vector<const GameObject*> GetRootGameObjects() const;
+    std::vector<const GameObject*> GetChildGameObjects(GameObjectID parentID) const;
+    bool HasChildren(GameObjectID parentID) const;
+    bool SetParent(GameObjectID childID, GameObjectID parentID);
+    bool ClearParent(GameObjectID childID);
     
     std::vector<std::unique_ptr<GameObject>>& GetGameObjects();
     const std::vector<std::unique_ptr<GameObject>>& GetGameObjects() const;
@@ -44,8 +49,6 @@ public:
     Camera2D& GetCamera() { return m_Camera; }
     const Camera2D& GetCamera() const { return m_Camera; }
     
-    bool SetParent(GameObjectID childID, GameObjectID parentID);
-    bool ClearParent(GameObjectID childID);
     Transform2D GetWorldTransform(GameObjectID id) const;
 
 private:
