@@ -71,6 +71,11 @@ target_link_libraries(Sandbox
 )
 target_include_directories(Sandbox PUBLIC Engine)
 
+add_custom_command(TARGET Sandbox POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:Sandbox> $<TARGET_RUNTIME_DLLS:Sandbox>
+    COMMAND_EXPAND_LISTS
+)
+
 target_sources(Renderer PUBLIC
     ${CMAKE_SOURCE_DIR}/External/stb/stb_image.cpp
     ${CMAKE_SOURCE_DIR}/External/imgui/backends/imgui_impl_glfw.cpp
