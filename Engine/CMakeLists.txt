@@ -83,3 +83,15 @@ set(SCENE_SRC
 add_library(Scene STATIC ${SCENE_SRC})
 target_include_directories(Scene PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(Scene PUBLIC Renderer EngineDeps)
+
+# --- Editor ---
+set(EDITOR_SRC
+    Editor/EditorLayer.cpp
+    Editor/EditorLayer.h
+    Editor/SceneEditorPanel.cpp
+    Editor/SceneEditorPanel.h
+)
+
+add_library(Editor STATIC ${EDITOR_SRC})
+target_include_directories(Editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(Editor PUBLIC Scene EngineDeps)

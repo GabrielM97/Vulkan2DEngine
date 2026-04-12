@@ -6,6 +6,9 @@
 #include "Renderer/VulkanRenderer.h"
 #include "Renderer/ImGuiLayer.h"
 
+class EditorLayer;
+class Scene;
+
 class Application
 {
 public:
@@ -21,15 +24,16 @@ protected:
     virtual void OnUpdate(float deltaTime) {}
     virtual void OnRender(VulkanRenderer& renderer) {}
     virtual void OnShutdown() {}
-
-    virtual void OnImGuiUpdate() {}
+    virtual Scene* GetEditorScene() { return nullptr; }
 
     VulkanRenderer& GetRenderer() { return vulkanRenderer; }
 
     bool IsKeyDown(int key) const;
+    bool IsKeyboardCapturedByUI() const;
 
 private:
     std::unique_ptr<Window> window = nullptr;
+    std::unique_ptr<EditorLayer> editorLayer = nullptr;
     VulkanRenderer vulkanRenderer;
     ImGuiLayer imguiLayer;
     

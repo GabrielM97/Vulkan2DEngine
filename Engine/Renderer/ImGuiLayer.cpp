@@ -106,3 +106,8 @@ void ImGuiLayer::Render(VkCommandBuffer commandBuffer)
 {
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
+
+bool ImGuiLayer::WantsKeyboardCapture() const
+{
+    return ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().WantCaptureKeyboard;
+}

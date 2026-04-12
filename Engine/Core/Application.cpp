@@ -3,9 +3,12 @@
 #include <GLFW/glfw3.h>
 #include <chrono>
 
+#include "Editor/EditorLayer.h"
+
 Application::Application()
 {
     window = std::make_unique<Window>(800, 600, "Vulkan Engine Window");
+    editorLayer = std::make_unique<EditorLayer>();
 }
 
 Application::~Application()
@@ -45,6 +48,11 @@ bool Application::IsKeyDown(int key) const
     return glfwGetKey(window->GetNativeWindow(), key) == GLFW_PRESS;
 }
 
+bool Application::IsKeyboardCapturedByUI() const
+{
+    return imguiLayer.WantsKeyboardCapture();
+}
+
 void Application::Run()
 {
     auto lastTime = std::chrono::high_resolution_clock::now();
@@ -79,7 +87,7 @@ void Application::Run()
         vulkanRenderer.BeginFrame();
 
         OnRender(vulkanRenderer);
-        OnImGuiUpdate();
+        editorLayer->Draw(GetEditorScene());
 
         imguiLayer.EndFrame();
         vulkanRenderer.EndFrame();

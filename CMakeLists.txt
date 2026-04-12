@@ -65,6 +65,7 @@ set(SANDBOX_SRC
 add_executable(Sandbox ${SANDBOX_SRC})
 target_link_libraries(Sandbox
     Core
+    Editor
     Platform
     Renderer
     Scene

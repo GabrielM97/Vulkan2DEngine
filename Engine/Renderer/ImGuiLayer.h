@@ -14,6 +14,7 @@ public:
     void BeginFrame();
     void EndFrame();
     void Render(VkCommandBuffer commandBuffer);
+    bool WantsKeyboardCapture() const;
 
 private:
     void UploadFontTexture(VulkanRenderer& renderer);
