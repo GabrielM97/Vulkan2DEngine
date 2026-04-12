@@ -94,6 +94,19 @@ public:
     bool SetSpriteVisible(GameObjectID id, bool visible);
     bool SetSpriteFlipX(GameObjectID id, bool flip);
     bool SetSpriteFlipY(GameObjectID id, bool flip);
+
+    bool HasAnimation(GameObjectID id) const;
+    bool EnsureAnimation(GameObjectID id);
+    bool RemoveAnimation(GameObjectID id);
+    std::string GetAnimationSetPath(GameObjectID id) const;
+    std::string GetAnimationClipName(GameObjectID id) const;
+    bool SetAnimationSetPath(GameObjectID id, const std::string& path);
+    bool PlayAnimation(GameObjectID id, const std::string& clipName, bool restartIfSame = false);
+    bool StopAnimation(GameObjectID id);
+    bool ResetAnimation(GameObjectID id);
+    bool IsAnimationPlaying(GameObjectID id) const;
+    bool HasAnimationFinished(GameObjectID id) const;
+    bool IsPlayingAnimationClip(GameObjectID id, const std::string& clipName) const;
     
     GameObjectHandle GetGameObjectHandle(GameObjectID id);
     GameObjectHandle CreateGameObjectHandle(const std::string& name = "GameObject", GameObjectID parentID = 0);

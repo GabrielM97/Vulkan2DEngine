@@ -75,6 +75,19 @@ public:
     void SetSpriteFlipX(bool flip) const;
     void SetSpriteFlipY(bool flip) const;
 
+    bool HasAnimation() const;
+    void EnsureAnimation() const;
+    void RemoveAnimation() const;
+    std::string GetAnimationSetPath() const;
+    std::string GetAnimationClipName() const;
+    void SetAnimationSetPath(const std::string& path) const;
+    void PlayAnimation(const std::string& clipName, bool restartIfSame = false) const;
+    void StopAnimation() const;
+    void ResetAnimation() const;
+    bool IsAnimationPlaying() const;
+    bool HasAnimationFinished() const;
+    bool IsPlayingAnimationClip(const std::string& clipName) const;
+
     std::string GetName() const;
     void SetName(const std::string& name) const;
 

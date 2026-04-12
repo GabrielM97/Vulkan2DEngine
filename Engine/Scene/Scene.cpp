@@ -738,6 +738,128 @@ bool Scene::SetSpriteFlipY(GameObjectID id, bool flip)
     return true;
 }
 
+bool Scene::HasAnimation(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    return object->animation.has_value();
+}
+
+bool Scene::EnsureAnimation(GameObjectID id)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    if (!object->animation.has_value())
+        object->animation.emplace();
+
+    return true;
+}
+
+bool Scene::RemoveAnimation(GameObjectID id)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->animation.reset();
+    return true;
+}
+
+std::string Scene::GetAnimationSetPath(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr || !object->animation.has_value())
+        return {};
+
+    return object->animation->GetAnimationSetRef().path;
+}
+
+std::string Scene::GetAnimationClipName(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr || !object->animation.has_value())
+        return {};
+
+    return object->animation->GetRequestedClipName();
+}
+
+bool Scene::SetAnimationSetPath(GameObjectID id, const std::string& path)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    if (!object->animation.has_value())
+        object->animation.emplace();
+
+    object->animation->SetAnimationSetPath(path);
+    return true;
+}
+
+bool Scene::PlayAnimation(GameObjectID id, const std::string& clipName, bool restartIfSame)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    if (!object->animation.has_value())
+        object->animation.emplace();
+
+    object->animation->Play(clipName, restartIfSame);
+    return true;
+}
+
+bool Scene::StopAnimation(GameObjectID id)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr || !object->animation.has_value())
+        return false;
+
+    object->animation->Stop();
+    return true;
+}
+
+bool Scene::ResetAnimation(GameObjectID id)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr || !object->animation.has_value())
+        return false;
+
+    object->animation->Reset();
+    return true;
+}
+
+bool Scene::IsAnimationPlaying(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr || !object->animation.has_value())
+        return false;
+
+    return object->animation->IsPlaying();
+}
+
+bool Scene::HasAnimationFinished(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr || !object->animation.has_value())
+        return false;
+
+    return object->animation->HasFinished();
+}
+
+bool Scene::IsPlayingAnimationClip(GameObjectID id, const std::string& clipName) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr || !object->animation.has_value())
+        return false;
+
+    return object->animation->IsPlayingClip(clipName);
+}
+
 GameObjectHandle Scene::GetGameObjectHandle(GameObjectID id)
 {
     if (FindGameObjectByID(id) == nullptr)
