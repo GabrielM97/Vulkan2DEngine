@@ -33,13 +33,11 @@ find_package(EnTT CONFIG REQUIRED)
 add_library(EngineDeps INTERFACE)
 if(WIN32)
     target_include_directories(EngineDeps INTERFACE
-        $ENV{VCPKG_ROOT}/installed/x64-windows/include
         $ENV{VULKAN_SDK}/Include
         ${CMAKE_SOURCE_DIR}/External/stb
     )
 elseif(UNIX)
     target_include_directories(EngineDeps INTERFACE
-        $ENV{VCPKG_ROOT}/installed/x64-linux/include
         /usr/include
          ${CMAKE_SOURCE_DIR}/External/stb
     )

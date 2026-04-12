@@ -44,6 +44,12 @@ void ImGuiLayer::Init(GLFWwindow* window, VulkanRenderer& renderer)
 
     m_Device = renderer.GetDevice();
 
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+#ifdef IMGUI_HAS_DOCK
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+#endif
+
     ImGui::StyleColorsDark();
 
     m_DescriptorPool = CreateImGuiDescriptorPool(renderer.GetDevice());
