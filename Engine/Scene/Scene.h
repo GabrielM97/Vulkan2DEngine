@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "GameObjectHandle.h"
+
 struct CameraCommand
 {
     float moveX = 0.0f;
@@ -92,6 +94,9 @@ public:
     bool SetSpriteVisible(GameObjectID id, bool visible);
     bool SetSpriteFlipX(GameObjectID id, bool flip);
     bool SetSpriteFlipY(GameObjectID id, bool flip);
+    
+    GameObjectHandle GetGameObjectHandle(GameObjectID id);
+    GameObjectHandle CreateGameObjectHandle(const std::string& name = "GameObject", GameObjectID parentID = 0);
     
 
 private:

@@ -5,30 +5,32 @@
 
 void SandboxApp::OnInit()
 {
-    GameObject& Player = m_Scene.CreateGameObject("Player Sprite");
-    Player.transform.scale = {100.0f, 100.0f};
-    m_PlayerID = Player.GetID();
-    m_Scene.SetLocalPosition(m_PlayerID, {0.0f, 0.0f});
-    m_Scene.SetLocalRotation(m_PlayerID, 0.0f);
-    m_Scene.SetSpriteTexturePath(m_PlayerID, "Assets/Textures/character-spritesheet.png");
-    m_Scene.SetSpriteSourceRectFromGrid(m_PlayerID, 0, 10, 64, 64);
-    m_Scene.SetSpriteTint(m_PlayerID, glm::vec4(1.0f));
-    m_Scene.SetSpriteLayer(m_PlayerID, 0);
-    Player.animation.emplace();
-    Player.animation->SetAnimationSetPath("Assets/Animations/CharacterSpriteSheet.csv");
-    Player.animation->Play("Walk");
-    
-    GameObject& Weapon = m_Scene.CreateGameObject("Weapon", m_PlayerID);
-    m_Scene.SetLocalPosition(Weapon.GetID(), {50.f, 0.f});
-    m_Scene.SetSpriteSize(Weapon.GetID(), {16.f, 16.f});
-    m_Scene.SetSpriteTexturePath(Weapon.GetID(), "Assets/Textures/texture.jpg");
-    m_Scene.SetSpriteLayer(Weapon.GetID(), 1);
-    
-    GameObject& Weapon2 = m_Scene.CreateGameObject("Weapon", m_PlayerID);
-    m_Scene.SetLocalPosition(Weapon2.GetID(), {-25.f, 0.f});
-    m_Scene.SetSpriteSize(Weapon2.GetID(), {16.f, 16.f});
-    m_Scene.SetSpriteTexturePath(Weapon2.GetID(), "Assets/Textures/texture.jpg");
-    m_Scene.SetSpriteLayer(Weapon2.GetID(), 1);
+    m_Player = m_Scene.CreateGameObjectHandle("Player Sprite");
+    m_Player.SetLocalPosition({0.0f, 0.0f});
+    m_Player.SetLocalRotation(0.0f);
+    m_Player.SetSpriteTexturePath("Assets/Textures/character-spritesheet.png");
+    m_Player.SetSpriteSourceRectFromGrid(0, 10, 64, 64);
+    m_Player.SetSpriteTint(glm::vec4(1.0f));
+    m_Player.SetSpriteLayer(0);
+
+    if (GameObject* player = m_Scene.FindGameObjectByID(m_Player.GetID()))
+    {
+        player->animation.emplace();
+        player->animation->SetAnimationSetPath("Assets/Animations/CharacterSpriteSheet.csv");
+        player->animation->Play("Walk");
+    }
+
+    GameObjectHandle weapon = m_Scene.CreateGameObjectHandle("Weapon", m_Player.GetID());
+    weapon.SetLocalPosition({50.f, 0.f});
+    weapon.SetSpriteSize({16.f, 16.f});
+    weapon.SetSpriteTexturePath("Assets/Textures/texture.jpg");
+    weapon.SetSpriteLayer(1);
+
+    GameObjectHandle weapon2 = m_Scene.CreateGameObjectHandle("Weapon", m_Player.GetID());
+    weapon2.SetLocalPosition({-25.f, 0.f});
+    weapon2.SetSpriteSize({16.f, 16.f});
+    weapon2.SetSpriteTexturePath("Assets/Textures/texture.jpg");
+    weapon2.SetSpriteLayer(1);
 }
 
 void SandboxApp::OnUpdate(float deltaTime)
@@ -78,20 +80,20 @@ void SandboxApp::OnImGuiUpdate()
         GetRenderer().GetFramebufferWidth(),
         GetRenderer().GetFramebufferHeight());
 
-    if (m_Scene.FindGameObjectByID(m_PlayerID) != nullptr)
+    if (m_Player)
     {
         ImGui::Separator();
         ImGui::Text("Player");
-        Transform2D localTransform = m_Scene.GetLocalTransform(m_PlayerID);
+        Transform2D localTransform = m_Player.GetLocalTransform();
 
         bool transformChanged = false;
         transformChanged |= ImGui::DragFloat2("Position", &localTransform.position.x, 1.0f);
         transformChanged |= ImGui::DragFloat2("Scale", &localTransform.scale.x, 0.01f, 0.0f, 100.0f);
         transformChanged |= ImGui::DragFloat2("Pivot", &localTransform.pivot.x, 0.01f, 0.0f, 1.0f);
-        transformChanged |= ImGui::DragFloat("Rotation", &localTransform.rotationDegrees, 1.0f);
+        transformChanged |= ImGui::DragFloat("Rotation", &localTransform.rotationDegrees, 1.0f, -360.0f, 360.0f);
 
         if (transformChanged)
-            m_Scene.SetLocalTransform(m_PlayerID, localTransform);
+            m_Player.SetLocalTransform(localTransform);
     }
 
     ImGui::End();

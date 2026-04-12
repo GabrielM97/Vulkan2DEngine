@@ -738,6 +738,20 @@ bool Scene::SetSpriteFlipY(GameObjectID id, bool flip)
     return true;
 }
 
+GameObjectHandle Scene::GetGameObjectHandle(GameObjectID id)
+{
+    if (FindGameObjectByID(id) == nullptr)
+        return {};
+
+    return GameObjectHandle(this, id);
+}
+
+GameObjectHandle Scene::CreateGameObjectHandle(const std::string& name, GameObjectID parentID)
+{
+    GameObject& object = CreateGameObject(name, parentID);
+    return GameObjectHandle(this, object.GetID());
+}
+
 std::vector<const GameObject*> Scene::SortForRendering()
 {
     std::vector<const GameObject*> renderQueue;
