@@ -8,7 +8,6 @@ void SandboxApp::OnInit()
     GameObject& Player = m_Scene.CreateGameObject("Player Sprite");
     m_PlayerID = Player.GetID();
     Player.transform.position = {0.0f, 0.0f};
-    Player.transform.size = {64.0f, 64.0f};
     Player.transform.rotationDegrees = 0.0f;
     Player.sprite.SetTexturePath("Assets/Textures/character-spritesheet.png");
     Player.sprite.SetSourceRectFromGrid(0,10, 64, 64);
@@ -20,7 +19,7 @@ void SandboxApp::OnInit()
     
     GameObject& Weapon = m_Scene.CreateGameObject("Weapon", m_PlayerID);
     Weapon.transform.position = {50.f, 0.f};
-    Weapon.transform.size = {16.f, 16.f};
+    Weapon.sprite.SetSize(16.f, 16.f);
     Weapon.sprite.SetTexturePath("Assets/Textures/texture.jpg");
     Weapon.sprite.SetLayer(1);
 }
@@ -82,7 +81,7 @@ void SandboxApp::OnImGuiUpdate()
         ImGui::Separator();
         ImGui::Text("Player");
         ImGui::DragFloat2("Position", &player->transform.position.x, 1.0f);
-        ImGui::DragFloat2("Size", &player->transform.size.x, 1.0f);
+        ImGui::DragFloat2("Scale", &player->transform.scale.x, 0.01f, 0.0f, 100.0f);
         ImGui::DragFloat("Rotation", &player->transform.rotationDegrees, 1.0f);
     }
 

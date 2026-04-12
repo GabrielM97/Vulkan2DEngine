@@ -6,13 +6,40 @@
 #include <algorithm>
 #include <iostream>
 
+namespace
+{
+    glm::vec2 RotateVector(const glm::vec2& value, float degrees)
+    {
+        const float radians = glm::radians(degrees);
+        const float c = std::cos(radians);
+        const float s = std::sin(radians);
+
+        return {
+            value.x * c - value.y * s,
+            value.x * s + value.y * c
+        };
+    }
+
+    glm::vec2 SafeDivide(const glm::vec2& value, const glm::vec2& divisor)
+    {
+        glm::vec2 result = value;
+
+        if (divisor.x != 0.0f)
+            result.x /= divisor.x;
+        if (divisor.y != 0.0f)
+            result.y /= divisor.y;
+
+        return result;
+    }
+}
+
 GameObject& Scene::CreateGameObject(const std::string& name, GameObjectID parentID)
 {
     auto object = std::make_unique<GameObject>();
     object->SetID(m_NextGameObjectID++);
     object->SetName(name);
     
-    if (parentID != 0)
+    if (parentID != 0 && FindGameObjectByID(parentID) != nullptr)
         object->SetParentID(parentID);
 
     GameObject& reference = *object;
@@ -221,8 +248,13 @@ bool Scene::SetParent(GameObjectID childID, GameObjectID parentID)
 
     child->SetParentID(parentID);
 
-    child->transform.position = childWorld.position - parentWorld.position;
+    glm::vec2 localPosition = childWorld.position - parentWorld.position;
+    localPosition = RotateVector(localPosition, -parentWorld.rotationDegrees);
+    localPosition = SafeDivide(localPosition, parentWorld.scale);
+
+    child->transform.position = localPosition;
     child->transform.rotationDegrees = childWorld.rotationDegrees - parentWorld.rotationDegrees;
+    child->transform.scale = SafeDivide(childWorld.scale, parentWorld.scale);
     return true;
 }
 
@@ -238,18 +270,18 @@ bool Scene::ClearParent(GameObjectID childID)
     child->ClearParent();
     child->transform.position = world.position;
     child->transform.rotationDegrees = world.rotationDegrees;
+    child->transform.scale = world.scale;
 
     return true;
 }
 
 Transform2D Scene::GetWorldTransform(GameObjectID id) const
 {
-    const GameObject* object = FindGameObjectByID(id);
+      const GameObject* object = FindGameObjectByID(id);
     if (object == nullptr)
         return {};
 
     Transform2D world = object->transform;
-
     GameObjectID currentParentID = object->GetParentID();
 
     while (currentParentID != 0)
@@ -258,9 +290,12 @@ Transform2D Scene::GetWorldTransform(GameObjectID id) const
         if (parent == nullptr)
             break;
 
-        world.position += parent->transform.position;
+        glm::vec2 scaledLocal = world.position * parent->transform.scale;
+        glm::vec2 rotatedLocal = RotateVector(scaledLocal, parent->transform.rotationDegrees);
+
+        world.position = parent->transform.position + rotatedLocal;
         world.rotationDegrees += parent->transform.rotationDegrees;
-        //world.size *= parent->transform.size;
+        world.scale *= parent->transform.scale;
 
         currentParentID = parent->GetParentID();
     }

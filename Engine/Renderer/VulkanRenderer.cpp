@@ -568,10 +568,12 @@ void VulkanRenderer::DrawSprite(const Transform2D& transform, const SpriteRender
 
     if (sprite.IsFlippedY())
         std::swap(uvMin.y, uvMax.y);
+    
+    const glm::vec2 finalSize = sprite.GetSize() * transform.scale;
 
     DrawQuad(
         transform.position,
-        transform.size,
+        finalSize,
         transform.rotationDegrees,
         sprite.GetOrigin(),
         uvMin,

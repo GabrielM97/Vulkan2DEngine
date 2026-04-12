@@ -34,7 +34,9 @@ public:
     void SetSourceRect(int x, int y, int width, int height)
     {
         m_SourceRect = {x, y, width, height};
+        m_Size = {static_cast<float>(width), static_cast<float>(height)};
         m_UseSourceRect = true;
+        
     }
 
     void SetSourceRectFromGrid(int column, int row, int cellWidth, int cellHeight)
@@ -60,6 +62,10 @@ public:
     bool IsFlippedY() const { return m_FlipY; }
     void SetFlipX(bool flip) { m_FlipX = flip; }
     void SetFlipY(bool flip) { m_FlipY = flip; }
+    
+    const glm::vec2& GetSize() const { return m_Size; }
+    void SetSize(const glm::vec2& size) { m_Size = size; }
+    void SetSize(float width, float height) { m_Size = {width, height}; }
 
     const glm::vec2& GetOrigin() const { return m_Origin; }
     void SetOrigin(const glm::vec2& origin) { m_Origin = origin; }
@@ -74,4 +80,5 @@ private:
     bool m_FlipX = false;
     bool m_FlipY = false;
     glm::vec2 m_Origin{0.5f, 0.5f};
+    glm::vec2 m_Size{1.0f, 1.0f};
 };
