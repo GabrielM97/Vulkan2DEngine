@@ -4,10 +4,14 @@
 1. Install the Vulkan SDK and make sure `VULKAN_SDK` is set.
 2. Install or clone `vcpkg` and set `VCPKG_ROOT`.
    If you keep it at `C:\vcpkg`, the setup script will find it automatically.
-3. Run:
+3. Run one of these:
 
 ```powershell
 .\scripts\setup.ps1 -Build
+```
+
+```bat
+scripts\setup.bat -Build
 ```
 
 This project uses vcpkg manifest mode, so CMake will automatically install the
