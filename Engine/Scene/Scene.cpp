@@ -12,6 +12,7 @@ GameObject& Scene::CreateGameObject(const std::string& name, GameObjectID parent
     auto object = std::make_unique<GameObject>();
     object->SetID(m_NextGameObjectID++);
     object->SetName(name);
+    object->SetSiblingOrder(static_cast<int>(m_GameObjects.size()));
     
     GameObject& reference = *object;
     m_GameObjects.push_back(std::move(object));
@@ -144,6 +145,52 @@ const SpriteAnimationSet* Scene::GetOrLoadAnimationSet(const std::string& path)
     return &insertedIt->second;
 }
 
+void Scene::MarkTransformDirty(GameObjectID id)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return;
+
+    object->transformDirty = true;
+
+    for (const auto& candidate : m_GameObjects)
+    {
+        if (candidate->GetParentID() == id)
+            MarkTransformDirty(candidate->GetID());
+    }
+}
+
+Transform2D Scene::ResolveWorldTransform(GameObject& object)
+{
+    if (!object.transformDirty)
+        return object.cachedWorldTransform;
+
+    if (!object.HasParent())
+    {
+        object.cachedWorldTransform = object.transform;
+        object.transformDirty = false;
+        return object.cachedWorldTransform;
+    }
+
+    GameObject* parent = FindGameObjectByID(object.GetParentID());
+    if (parent == nullptr)
+    {
+        object.cachedWorldTransform = object.transform;
+        object.transformDirty = false;
+        return object.cachedWorldTransform;
+    }
+
+    const Transform2D parentWorld = ResolveWorldTransform(*parent);
+    object.cachedWorldTransform = TransformMath2D::CombineTransforms(
+        parentWorld,
+        parent->sprite.GetSize(),
+        object.transform,
+        object.sprite.GetSize()
+    );
+    object.transformDirty = false;
+    return object.cachedWorldTransform;
+}
+
 void Scene::Render(IRenderer2D& renderer)
 {
     renderer.SetCamera(m_Camera);
@@ -214,6 +261,14 @@ std::vector<const GameObject*> Scene::GetRootGameObjects() const
         if (!object->HasParent())
             roots.push_back(object.get());
     }
+    
+    std::stable_sort(
+    roots.begin(),
+    roots.end(),
+    [](const GameObject* a, const GameObject* b)
+    {
+        return a->GetSiblingOrder() < b->GetSiblingOrder();
+    });
 
     return roots;
 }
@@ -227,6 +282,14 @@ std::vector<const GameObject*> Scene::GetChildGameObjects(GameObjectID parentID)
         if (object->GetParentID() == parentID)
             children.push_back(object.get());
     }
+    
+    std::stable_sort(
+    children.begin(),
+    children.end(),
+    [](const GameObject* a, const GameObject* b)
+    {
+        return a->GetSiblingOrder() < b->GetSiblingOrder();
+    });
 
     return children;
 }
@@ -266,6 +329,7 @@ bool Scene::SetParent(GameObjectID childID, GameObjectID parentID)
         parentWorld,
         parent->sprite.GetSize()
     );
+    MarkTransformDirty(childID);
     return true;
 }
 
@@ -279,39 +343,399 @@ bool Scene::ClearParent(GameObjectID childID)
     const Transform2D world = GetWorldTransform(childID);
 
     child->ClearParent();
-    child->transform.position = world.position;
-    child->transform.rotationDegrees = world.rotationDegrees;
-    child->transform.scale = world.scale;
+    child->transform = world;
+    MarkTransformDirty(childID);
 
     return true;
 }
 
 Transform2D Scene::GetWorldTransform(GameObjectID id) const
 {
+    GameObject* object = const_cast<Scene*>(this)->FindGameObjectByID(id);
+    if (object == nullptr)
+        return {};
+
+    return const_cast<Scene*>(this)->ResolveWorldTransform(*object);
+}
+
+bool Scene::SetWorldTransform(GameObjectID id, const Transform2D& transform)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+    
+    if (!object->HasParent())
+    {
+        object->transform = transform;
+        MarkTransformDirty(id);
+        return true;
+    }
+    
+    const GameObject* parent = FindGameObjectByID(object->GetParentID());
+    if (parent == nullptr)
+    {
+        object->transform = transform;
+        MarkTransformDirty(id);
+        return true;
+    }
+
+    const Transform2D parentWorld = GetWorldTransform(parent->GetID());
+
+    object->transform = TransformMath2D::ToLocalTransform(
+        transform,
+        object->sprite.GetSize(),
+        parentWorld,
+        parent->sprite.GetSize()
+    );
+    MarkTransformDirty(id);
+
+    return true;   
+}
+
+Transform2D Scene::GetLocalTransform(GameObjectID id) const
+{
     const GameObject* object = FindGameObjectByID(id);
     if (object == nullptr)
         return {};
 
-    Transform2D world = object->transform;
-    GameObjectID currentParentID = object->GetParentID();
+    return object->transform;
+}
 
-    while (currentParentID != 0)
-    {
-        const GameObject* parent = FindGameObjectByID(currentParentID);
-        if (parent == nullptr)
-            break;
+glm::vec2 Scene::GetLocalPosition(GameObjectID id) const
+{
+    return GetLocalTransform(id).position;
+}
 
-        world = TransformMath2D::CombineTransforms(
-            parent->transform,
-            parent->sprite.GetSize(),
-            world,
-            object->sprite.GetSize()
-        );
+glm::vec2 Scene::GetLocalScale(GameObjectID id) const
+{
+    return GetLocalTransform(id).scale;
+}
 
-        currentParentID = parent->GetParentID();
-    }
+glm::vec2 Scene::GetLocalPivot(GameObjectID id) const
+{
+    return GetLocalTransform(id).pivot;
+}
 
-    return world;
+float Scene::GetLocalRotation(GameObjectID id) const
+{
+    return GetLocalTransform(id).rotationDegrees;
+}
+
+glm::vec2 Scene::GetWorldPosition(GameObjectID id) const
+{
+    return GetWorldTransform(id).position;
+}
+
+glm::vec2 Scene::GetWorldScale(GameObjectID id) const
+{
+    return GetWorldTransform(id).scale;
+}
+
+glm::vec2 Scene::GetWorldPivot(GameObjectID id) const
+{
+    return GetWorldTransform(id).pivot;
+}
+
+float Scene::GetWorldRotation(GameObjectID id) const
+{
+    return GetWorldTransform(id).rotationDegrees;
+}
+
+bool Scene::SetLocalTransform(GameObjectID id, const Transform2D& transform)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->transform = transform;
+    MarkTransformDirty(id);
+    return true;
+}
+
+bool Scene::SetLocalPosition(GameObjectID id, const glm::vec2& position)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->transform.position = position;
+    MarkTransformDirty(id);
+    return true;
+}
+
+bool Scene::SetLocalScale(GameObjectID id, const glm::vec2& scale)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->transform.scale = scale;
+    MarkTransformDirty(id);
+    return true;
+}
+
+bool Scene::SetLocalPivot(GameObjectID id, const glm::vec2& pivot)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->transform.pivot = pivot;
+    MarkTransformDirty(id);
+    return true;
+}
+
+bool Scene::SetLocalRotation(GameObjectID id, float rotationDegrees)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->transform.rotationDegrees = rotationDegrees;
+    MarkTransformDirty(id);
+    return true;
+}
+
+bool Scene::SetWorldPosition(GameObjectID id, const glm::vec2& position)
+{
+    Transform2D worldTransform = GetWorldTransform(id);
+    worldTransform.position = position;
+    return SetWorldTransform(id, worldTransform);
+}
+
+bool Scene::SetWorldScale(GameObjectID id, const glm::vec2& scale)
+{
+    Transform2D worldTransform = GetWorldTransform(id);
+    worldTransform.scale = scale;
+    return SetWorldTransform(id, worldTransform);
+}
+
+bool Scene::SetWorldPivot(GameObjectID id, const glm::vec2& pivot)
+{
+    Transform2D worldTransform = GetWorldTransform(id);
+    worldTransform.pivot = pivot;
+    return SetWorldTransform(id, worldTransform);
+}
+
+bool Scene::SetWorldRotation(GameObjectID id, float rotationDegrees)
+{
+    Transform2D worldTransform = GetWorldTransform(id);
+    worldTransform.rotationDegrees = rotationDegrees;
+    return SetWorldTransform(id, worldTransform);
+}
+
+bool Scene::SetSiblingOrder(GameObjectID id, int order)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->SetSiblingOrder(order);
+    return true;
+}
+
+bool Scene::SetGameObjectName(GameObjectID id, const std::string& name)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->SetName(name);
+    return true;
+}
+
+bool Scene::SetGameObjectActive(GameObjectID id, bool active)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->setActive(active);
+    return true;
+}
+
+std::string Scene::GetSpriteTexturePath(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return {};
+
+    return object->sprite.GetTexture().path;
+}
+
+IntRect Scene::GetSpriteSourceRect(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return {};
+
+    return object->sprite.GetSourceRect();
+}
+
+bool Scene::SpriteUsesSourceRect(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    return object->sprite.UsesSourceRect();
+}
+
+glm::vec2 Scene::GetSpriteSize(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return {};
+
+    return object->sprite.GetSize();
+}
+
+glm::vec4 Scene::GetSpriteTint(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return {};
+
+    return object->sprite.GetTint();
+}
+
+int Scene::GetSpriteLayer(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return 0;
+
+    return object->sprite.GetLayer();
+}
+
+bool Scene::IsSpriteVisible(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    return object->sprite.IsVisible();
+}
+
+bool Scene::IsSpriteFlippedX(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    return object->sprite.IsFlippedX();
+}
+
+bool Scene::IsSpriteFlippedY(GameObjectID id) const
+{
+    const GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    return object->sprite.IsFlippedY();
+}
+
+bool Scene::SetSpriteTexturePath(GameObjectID id, const std::string& path)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->sprite.SetTexturePath(path);
+    return true;
+}
+
+bool Scene::SetSpriteSourceRect(GameObjectID id, int x, int y, int width, int height)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->sprite.SetSourceRect(x, y, width, height);
+    MarkTransformDirty(id);
+    return true;
+}
+
+bool Scene::SetSpriteSourceRectFromGrid(GameObjectID id, int column, int row, int cellWidth, int cellHeight)
+{
+    return SetSpriteSourceRect(
+        id,
+        column * cellWidth,
+        row * cellHeight,
+        cellWidth,
+        cellHeight
+    );
+}
+
+bool Scene::ClearSpriteSourceRect(GameObjectID id)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->sprite.ClearSourceRect();
+    return true;
+}
+
+bool Scene::SetSpriteSize(GameObjectID id, const glm::vec2& size)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->sprite.SetSize(size);
+    MarkTransformDirty(id);
+    return true;
+}
+
+bool Scene::SetSpriteTint(GameObjectID id, const glm::vec4& tint)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->sprite.SetTint(tint);
+    return true;
+}
+
+bool Scene::SetSpriteLayer(GameObjectID id, int layer)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->sprite.SetLayer(layer);
+    return true;
+}
+
+bool Scene::SetSpriteVisible(GameObjectID id, bool visible)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->sprite.SetVisible(visible);
+    return true;
+}
+
+bool Scene::SetSpriteFlipX(GameObjectID id, bool flip)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->sprite.SetFlipX(flip);
+    return true;
+}
+
+bool Scene::SetSpriteFlipY(GameObjectID id, bool flip)
+{
+    GameObject* object = FindGameObjectByID(id);
+    if (object == nullptr)
+        return false;
+
+    object->sprite.SetFlipY(flip);
+    return true;
 }
 
 std::vector<const GameObject*> Scene::SortForRendering()

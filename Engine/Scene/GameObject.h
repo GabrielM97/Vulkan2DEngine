@@ -34,6 +34,8 @@ public:
     bool HasParent() const { return parentID != 0; }
     void ClearParent() { parentID = 0; }
 
+    int GetSiblingOrder() const { return siblingOrder; }
+    void SetSiblingOrder(int order) { siblingOrder = order; }
     
     Transform2D transform;
     SpriteRenderer sprite;
@@ -49,6 +51,9 @@ private:
     bool active = true;
     bool pendingDestroy = false;
     GameObjectID parentID = 0;
+    int siblingOrder = 0;
+    Transform2D cachedWorldTransform{};
+    bool transformDirty = true;
 
     friend class Scene;
 };
