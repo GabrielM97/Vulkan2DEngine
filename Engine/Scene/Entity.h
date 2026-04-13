@@ -35,16 +35,35 @@ public:
     GameObjectID GetParentID() const;
     void SetParent(GameObjectID parentID) const;
     void ClearParent() const;
+    
+    Transform2D GetTransform() const;
+    void SetTransform(const Transform2D& transform) const;
 
-    Transform2D GetWorldTransform() const;
-    LocalTransformComponent GetLocalTransform() const;
-    void SetWorldTransform(const Transform2D& transform) const;
-    void SetLocalTransform(const LocalTransformComponent& transform) const;
-
+    glm::vec2 GetPosition() const;
+    void SetPosition(const glm::vec2& position) const;
+    
+    float GetRotation() const;
+    void SetRotation(float rotationDegrees) const;
+    
+    glm::vec2 GetScale() const;
+    void SetScale(const glm::vec2& scale) const;
+    
     glm::vec2 GetLocalPosition() const;
     void SetLocalPosition(const glm::vec2& position) const;
+    
+    float GetLocalRotation() const;
     void SetLocalRotation(float rotationDegrees) const;
+    
+    glm::vec2 GetLocalScale() const;
+    void SetLocalScale(const glm::vec2& scale) const;
+    
+    Transform2D GetWorldTransform() const;
+    void SetWorldTransform(const Transform2D& transform) const;
 
+    LocalTransformComponent GetLocalTransform() const;
+    void SetLocalTransform(const LocalTransformComponent& transform) const;
+    
+    
     template<typename T, typename... Args>
     T& AddComponent(Args&&... args) const;
 
