@@ -38,33 +38,35 @@ void SceneEditorPanel::SyncInspectorFromSelection(Scene& scene)
         return;
     }
 
-    std::snprintf(m_NameBuffer.data(), m_NameBuffer.size(), "%s", scene.GetGameObjectName(m_InspectorObjectID).c_str());
+    const Entity selected = scene.GetEntity(m_InspectorObjectID);
+
+    std::snprintf(m_NameBuffer.data(), m_NameBuffer.size(), "%s", selected.GetName().c_str());
     std::snprintf(
         m_TexturePathBuffer.data(),
         m_TexturePathBuffer.size(),
         "%s",
-        scene.GetSpriteTexturePath(m_InspectorObjectID).c_str()
+        selected.GetSpriteTexturePath().c_str()
     );
     std::snprintf(
         m_AnimationSetPathBuffer.data(),
         m_AnimationSetPathBuffer.size(),
         "%s",
-        scene.GetAnimationSetPath(m_InspectorObjectID).c_str()
+        selected.GetAnimationSetPath().c_str()
     );
     std::snprintf(
         m_AnimationClipBuffer.data(),
         m_AnimationClipBuffer.size(),
         "%s",
-        scene.GetAnimationClipName(m_InspectorObjectID).c_str()
+        selected.GetAnimationClipName().c_str()
     );
 
-    const IntRect sourceRect = scene.GetSpriteSourceRect(m_InspectorObjectID);
+    const IntRect sourceRect = selected.GetSpriteSourceRect();
     m_SourceRectValues[0] = sourceRect.x;
     m_SourceRectValues[1] = sourceRect.y;
     m_SourceRectValues[2] = sourceRect.width;
     m_SourceRectValues[3] = sourceRect.height;
-    m_ReparentTargetID = scene.HasParent(m_InspectorObjectID)
-        ? static_cast<int>(scene.GetParentID(m_InspectorObjectID))
+    m_ReparentTargetID = selected.HasParent()
+        ? static_cast<int>(selected.GetParentID())
         : 0;
 }
 
@@ -133,19 +135,28 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
         SyncInspectorFromSelection(scene);
 
     const GameObjectID selectedID = m_SelectedObjectID;
+    Entity selected = scene.GetEntity(selectedID);
 
-    ImGui::Text("Selected: %s", scene.GetGameObjectName(selectedID).c_str());
+    ImGui::Text("Selected: %s", selected.GetName().c_str());
     ImGui::Text("ID: %llu", static_cast<unsigned long long>(selectedID));
     ImGui::Separator();
 
     if (ImGui::InputText("Name", m_NameBuffer.data(), m_NameBuffer.size()))
-        scene.SetGameObjectName(selectedID, m_NameBuffer.data());
+        selected.SetName(m_NameBuffer.data());
 
-    bool active = scene.IsGameObjectActive(selectedID);
+    bool active = selected.IsActive();
     if (ImGui::Checkbox("Active", &active))
-        scene.SetGameObjectActive(selectedID, active);
+        selected.SetActive(active);
 
-    Transform2D localTransform = scene.GetLocalTransform(selectedID);
+    if (ImGui::Button("Destroy Object"))
+    {
+        selected.Destroy();
+        SelectObject(scene, 0);
+        ImGui::End();
+        return;
+    }
+
+    Transform2D localTransform = selected.GetLocalTransform();
     bool localChanged = false;
     localChanged |= ImGui::DragFloat2("Local Position", &localTransform.position.x, 1.0f);
     localChanged |= ImGui::DragFloat2("Local Scale", &localTransform.scale.x, 0.01f, 0.0f, 1000.0f);
@@ -153,56 +164,55 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
     localChanged |= ImGui::DragFloat("Local Rotation", &localTransform.rotationDegrees, 1.0f);
 
     if (localChanged)
-        scene.SetLocalTransform(selectedID, localTransform);
+        selected.SetLocalTransform(localTransform);
 
-    Transform2D worldTransform = scene.GetWorldTransform(selectedID);
+    Transform2D worldTransform = selected.GetTransform();
     bool worldChanged = false;
 
-    ImGui::SeparatorText("World Transform");
-    worldChanged |= ImGui::DragFloat2("World Position", &worldTransform.position.x, 1.0f);
-    worldChanged |= ImGui::DragFloat2("World Scale", &worldTransform.scale.x, 0.01f, 0.0f, 1000.0f);
-    worldChanged |= ImGui::DragFloat2("World Pivot", &worldTransform.pivot.x, 0.01f, 0.0f, 1.0f);
-    worldChanged |= ImGui::DragFloat("World Rotation", &worldTransform.rotationDegrees, 1.0f);
+    ImGui::SeparatorText("Transform");
+    worldChanged |= ImGui::DragFloat2("Position", &worldTransform.position.x, 1.0f);
+    worldChanged |= ImGui::DragFloat2("Scale", &worldTransform.scale.x, 0.01f, 0.0f, 1000.0f);
+    worldChanged |= ImGui::DragFloat2("Pivot", &worldTransform.pivot.x, 0.01f, 0.0f, 1.0f);
+    worldChanged |= ImGui::DragFloat("Rotation", &worldTransform.rotationDegrees, 1.0f);
 
     if (worldChanged)
-        scene.SetWorldTransform(selectedID, worldTransform);
+        selected.SetTransform(worldTransform);
 
     ImGui::SeparatorText("Sprite");
 
     if (ImGui::InputText("Texture Path", m_TexturePathBuffer.data(), m_TexturePathBuffer.size()))
-        scene.SetSpriteTexturePath(selectedID, m_TexturePathBuffer.data());
+        selected.SetSpriteTexturePath(m_TexturePathBuffer.data());
 
-    glm::vec2 spriteSize = scene.GetSpriteSize(selectedID);
+    glm::vec2 spriteSize = selected.GetSpriteSize();
     if (ImGui::DragFloat2("Sprite Size", &spriteSize.x, 1.0f, 0.0f, 4096.0f))
-        scene.SetSpriteSize(selectedID, spriteSize);
+        selected.SetSpriteSize(spriteSize);
 
-    glm::vec4 tint = scene.GetSpriteTint(selectedID);
+    glm::vec4 tint = selected.GetSpriteTint();
     if (ImGui::ColorEdit4("Tint", &tint.x))
-        scene.SetSpriteTint(selectedID, tint);
+        selected.SetSpriteTint(tint);
 
-    int layer = scene.GetSpriteLayer(selectedID);
+    int layer = selected.GetSpriteLayer();
     if (ImGui::DragInt("Layer", &layer, 1.0f))
-        scene.SetSpriteLayer(selectedID, layer);
+        selected.SetSpriteLayer(layer);
 
-    bool visible = scene.IsSpriteVisible(selectedID);
+    bool visible = selected.IsSpriteVisible();
     if (ImGui::Checkbox("Visible", &visible))
-        scene.SetSpriteVisible(selectedID, visible);
+        selected.SetSpriteVisible(visible);
 
-    bool flipX = scene.IsSpriteFlippedX(selectedID);
+    bool flipX = selected.IsSpriteFlippedX();
     if (ImGui::Checkbox("Flip X", &flipX))
-        scene.SetSpriteFlipX(selectedID, flipX);
+        selected.SetSpriteFlipX(flipX);
 
-    bool flipY = scene.IsSpriteFlippedY(selectedID);
+    bool flipY = selected.IsSpriteFlippedY();
     if (ImGui::Checkbox("Flip Y", &flipY))
-        scene.SetSpriteFlipY(selectedID, flipY);
+        selected.SetSpriteFlipY(flipY);
 
-    bool usesSourceRect = scene.SpriteUsesSourceRect(selectedID);
+    bool usesSourceRect = selected.SpriteUsesSourceRect();
     if (ImGui::Checkbox("Use Source Rect", &usesSourceRect))
     {
         if (usesSourceRect)
         {
-            scene.SetSpriteSourceRect(
-                selectedID,
+            selected.SetSpriteSourceRect(
                 m_SourceRectValues[0],
                 m_SourceRectValues[1],
                 m_SourceRectValues[2],
@@ -211,14 +221,13 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
         }
         else
         {
-            scene.ClearSpriteSourceRect(selectedID);
+            selected.ClearSpriteSourceRect();
         }
     }
 
     if (usesSourceRect && ImGui::InputInt4("Source Rect", m_SourceRectValues))
     {
-        scene.SetSpriteSourceRect(
-            selectedID,
+        selected.SetSpriteSourceRect(
             m_SourceRectValues[0],
             m_SourceRectValues[1],
             m_SourceRectValues[2],
@@ -233,15 +242,14 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
 
     if (ImGui::Button("Apply Grid Frame"))
     {
-        scene.SetSpriteSourceRectFromGrid(
-            selectedID,
+        selected.SetSpriteSourceRectFromGrid(
             m_SourceGridValues[0],
             m_SourceGridValues[1],
             m_SourceGridValues[2],
             m_SourceGridValues[3]
         );
 
-        const IntRect sourceRect = scene.GetSpriteSourceRect(selectedID);
+        const IntRect sourceRect = selected.GetSpriteSourceRect();
         m_SourceRectValues[0] = sourceRect.x;
         m_SourceRectValues[1] = sourceRect.y;
         m_SourceRectValues[2] = sourceRect.width;
@@ -250,44 +258,44 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
 
     ImGui::SeparatorText("Animation");
 
-    bool hasAnimation = scene.HasAnimation(selectedID);
+    bool hasAnimation = selected.HasAnimation();
     if (ImGui::Checkbox("Has Animation", &hasAnimation))
     {
         if (hasAnimation)
-            scene.EnsureAnimation(selectedID);
+            selected.EnsureAnimation();
         else
-            scene.RemoveAnimation(selectedID);
+            selected.RemoveAnimation();
     }
 
     if (hasAnimation)
     {
         if (ImGui::InputText("Animation Set Path", m_AnimationSetPathBuffer.data(), m_AnimationSetPathBuffer.size()))
-            scene.SetAnimationSetPath(selectedID, m_AnimationSetPathBuffer.data());
+            selected.SetAnimationSetPath(m_AnimationSetPathBuffer.data());
 
         ImGui::InputText("Clip Name", m_AnimationClipBuffer.data(), m_AnimationClipBuffer.size());
 
         if (ImGui::Button("Play Clip"))
-            scene.PlayAnimation(selectedID, m_AnimationClipBuffer.data(), true);
+            selected.PlayAnimation(m_AnimationClipBuffer.data(), true);
 
         ImGui::SameLine();
 
         if (ImGui::Button("Stop Clip"))
-            scene.StopAnimation(selectedID);
+            selected.StopAnimation();
 
         ImGui::SameLine();
 
         if (ImGui::Button("Reset Clip"))
-            scene.ResetAnimation(selectedID);
+            selected.ResetAnimation();
 
-        ImGui::Text("Playing: %s", scene.IsAnimationPlaying(selectedID) ? "Yes" : "No");
-        ImGui::Text("Finished: %s", scene.HasAnimationFinished(selectedID) ? "Yes" : "No");
+        ImGui::Text("Playing: %s", selected.IsAnimationPlaying() ? "Yes" : "No");
+        ImGui::Text("Finished: %s", selected.HasAnimationFinished() ? "Yes" : "No");
     }
 
     ImGui::SeparatorText("Hierarchy");
 
-    if (scene.HasParent(selectedID))
+    if (selected.HasParent())
     {
-        const GameObjectID parentID = scene.GetParentID(selectedID);
+        const GameObjectID parentID = selected.GetParentID();
         if (scene.IsValidGameObject(parentID))
         {
             ImGui::Text(
@@ -307,6 +315,23 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
     else
     {
         ImGui::TextUnformatted("Parent: None");
+    }
+    
+    int destroyPolicyIndex =
+        selected.GetChildDestroyPolicy() == ChildDestroyPolicy::DestroyWithParent ? 1 : 0;
+
+    const char* destroyPolicyLabels[] = { "Detach To Root", "Destroy With Parent" };
+    if (ImGui::Combo(
+            "On Parent Destroy",
+            &destroyPolicyIndex,
+            destroyPolicyLabels,
+            IM_ARRAYSIZE(destroyPolicyLabels)))
+    {
+        selected.SetChildDestroyPolicy(
+            destroyPolicyIndex == 1
+                ? ChildDestroyPolicy::DestroyWithParent
+                : ChildDestroyPolicy::DetachToRoot
+        );
     }
 
     std::string comboLabel = "None";
@@ -338,16 +363,16 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
     if (ImGui::Button("Set Parent"))
     {
         if (m_ReparentTargetID == 0)
-            scene.ClearParent(selectedID);
+            selected.ClearParent();
         else
-            scene.SetParent(selectedID, static_cast<GameObjectID>(m_ReparentTargetID));
+            selected.SetParent(static_cast<GameObjectID>(m_ReparentTargetID));
     }
 
     ImGui::SameLine();
 
     if (ImGui::Button("Clear Parent"))
     {
-        scene.ClearParent(selectedID);
+        selected.ClearParent();
         m_ReparentTargetID = 0;
     }
 

@@ -66,10 +66,8 @@ target_link_libraries(Renderer PUBLIC Core Platform EngineDeps)
 set(SCENE_SRC
     Scene/Camera2D.cpp
     Scene/Camera2D.h
-    Scene/GameObject.cpp
-    Scene/GameObject.h
-    Scene/GameObjectHandle.cpp
-    Scene/GameObjectHandle.h
+    Scene/Entity.cpp
+    Scene/Entity.h
     Scene/Scene.cpp
     Scene/Scene.h
     Scene/SceneComponents.h
@@ -79,6 +77,11 @@ set(SCENE_SRC
     Scene/SpriteAnimationSet.h
     Scene/SpriteRenderer.cpp
     Scene/SpriteRenderer.h
+    Object/Object.h
+    Object/Actor.h
+    Object/Player.cpp
+    Object/Player.h
+    Gameplay/PlayerMovementComponent.h
 )
 
 add_library(Scene STATIC ${SCENE_SRC})
