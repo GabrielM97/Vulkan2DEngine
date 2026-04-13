@@ -1,24 +1,27 @@
 #include "Object/Player.h"
-#include "Scene/SceneComponents.h"
+
 #include "Gameplay/PlayerMovementComponent.h"
 
 void Player::Initialize()
 {
-    auto& sprite = GetEntity().GetComponent<SpriteComponent>();
-    auto& animation = GetEntity().AddComponent<SpriteAnimationComponent>();
     auto& movement = GetEntity().AddComponent<PlayerMovementComponent>();
 
     SetPosition({0.0f, 0.0f});
     SetRotation(0.0f);
     movement.moveSpeed = 250.0f;
 
-    sprite.SetTexturePath("Assets/Textures/character-spritesheet.png");
-    sprite.SetSourceRectFromGrid(0, 10, 64, 64);
-    sprite.SetTint(glm::vec4(1.0f));
-    sprite.SetLayer(0);
+    ConfigureSprite(
+        "Assets/Textures/character-spritesheet.png",
+        {64.0f, 64.0f},
+        glm::vec4(1.0f),
+        0
+    );
+    
+    SetSpriteSourceRectFromGrid(0, 10);
 
-    animation.SetAnimationSetPath("Assets/Animations/CharacterSpriteSheet.csv");
-    animation.Play("Walk");
+    EnsureAnimation();
+    SetAnimationSetPath("Assets/Animations/CharacterSpriteSheet.csv");
+    PlayAnimation("Walk");
 }
 
 void Player::Move(const glm::vec2& input, float deltaTime)

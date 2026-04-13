@@ -7,6 +7,7 @@
 void SandboxApp::OnInit()
 {
     m_Player = m_Scene.Spawn<Player>();
+    m_Player.SetPosition(glm::vec2{300.0f, 100.0f});
 
     Entity weapon = m_Scene.CreateEntity("Weapon", m_Player.GetID());
     weapon.GetComponent<LocalTransformComponent>().position = {50.f, 0.f};

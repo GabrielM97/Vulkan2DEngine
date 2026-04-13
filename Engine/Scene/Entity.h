@@ -35,6 +35,8 @@ public:
     GameObjectID GetParentID() const;
     void SetParent(GameObjectID parentID) const;
     void ClearParent() const;
+    ChildDestroyPolicy GetChildDestroyPolicy() const;
+    void SetChildDestroyPolicy(ChildDestroyPolicy policy) const;
     
     Transform2D GetTransform() const;
     void SetTransform(const Transform2D& transform) const;
@@ -62,6 +64,40 @@ public:
 
     LocalTransformComponent GetLocalTransform() const;
     void SetLocalTransform(const LocalTransformComponent& transform) const;
+
+    std::string GetSpriteTexturePath() const;
+    IntRect GetSpriteSourceRect() const;
+    bool SpriteUsesSourceRect() const;
+    glm::vec2 GetSpriteSize() const;
+    glm::vec4 GetSpriteTint() const;
+    int GetSpriteLayer() const;
+    bool IsSpriteVisible() const;
+    bool IsSpriteFlippedX() const;
+    bool IsSpriteFlippedY() const;
+    void SetSpriteTexturePath(const std::string& path);
+    void SetSpriteSourceRect(int x, int y, int width, int height);
+    void SetSpriteSourceRectFromGrid(int column, int row, int cellWidth, int cellHeight);
+    void SetSpriteSourceRectFromGrid(int column, int row);
+    void ClearSpriteSourceRect();
+    void SetSpriteSize(const glm::vec2& size);
+    void SetSpriteTint(const glm::vec4& tint);
+    void SetSpriteLayer(int layer);
+    void SetSpriteVisible(bool visible);
+    void SetSpriteFlipX(bool flip);
+    void SetSpriteFlipY(bool flip);
+
+    bool HasAnimation() const;
+    void EnsureAnimation() const;
+    void RemoveAnimation() const;
+    std::string GetAnimationSetPath() const;
+    std::string GetAnimationClipName() const;
+    void SetAnimationSetPath(const std::string& path) const;
+    void PlayAnimation(const std::string& clipName, bool restartIfSame = false) const;
+    void StopAnimation();
+    void ResetAnimation();
+    bool IsAnimationPlaying() const;
+    bool HasAnimationFinished() const;
+    bool IsPlayingAnimationClip(const std::string& clipName) const;
     
     
     template<typename T, typename... Args>

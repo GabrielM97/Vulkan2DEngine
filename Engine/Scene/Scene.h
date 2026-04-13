@@ -82,43 +82,12 @@ public:
     bool SetWorldPivot(GameObjectID id, const glm::vec2& pivot);
     bool SetWorldRotation(GameObjectID id, float rotationDegrees);
 
-    std::string GetSpriteTexturePath(GameObjectID id) const;
-    IntRect GetSpriteSourceRect(GameObjectID id) const;
-    bool SpriteUsesSourceRect(GameObjectID id) const;
-    glm::vec2 GetSpriteSize(GameObjectID id) const;
-    glm::vec4 GetSpriteTint(GameObjectID id) const;
-    int GetSpriteLayer(GameObjectID id) const;
-    bool IsSpriteVisible(GameObjectID id) const;
-    bool IsSpriteFlippedX(GameObjectID id) const;
-    bool IsSpriteFlippedY(GameObjectID id) const;
-    bool SetSpriteTexturePath(GameObjectID id, const std::string& path);
-    bool SetSpriteSourceRect(GameObjectID id, int x, int y, int width, int height);
-    bool SetSpriteSourceRectFromGrid(GameObjectID id, int column, int row, int cellWidth, int cellHeight);
-    bool ClearSpriteSourceRect(GameObjectID id);
-    bool SetSpriteSize(GameObjectID id, const glm::vec2& size);
-    bool SetSpriteTint(GameObjectID id, const glm::vec4& tint);
-    bool SetSpriteLayer(GameObjectID id, int layer);
-    bool SetSpriteVisible(GameObjectID id, bool visible);
-    bool SetSpriteFlipX(GameObjectID id, bool flip);
-    bool SetSpriteFlipY(GameObjectID id, bool flip);
-
-    bool HasAnimation(GameObjectID id) const;
-    bool EnsureAnimation(GameObjectID id);
-    bool RemoveAnimation(GameObjectID id);
-    std::string GetAnimationSetPath(GameObjectID id) const;
-    std::string GetAnimationClipName(GameObjectID id) const;
-    bool SetAnimationSetPath(GameObjectID id, const std::string& path);
-    bool PlayAnimation(GameObjectID id, const std::string& clipName, bool restartIfSame = false);
-    bool StopAnimation(GameObjectID id);
-    bool ResetAnimation(GameObjectID id);
-    bool IsAnimationPlaying(GameObjectID id) const;
-    bool HasAnimationFinished(GameObjectID id) const;
-    bool IsPlayingAnimationClip(GameObjectID id, const std::string& clipName) const;
-
     Camera2D& GetCamera() { return m_Camera; }
     const Camera2D& GetCamera() const { return m_Camera; }
 
 private:
+    friend class Entity;
+
     entt::entity CreateEntityInternal(const std::string& name);
     entt::entity FindEntityByID(GameObjectID id) const;
 

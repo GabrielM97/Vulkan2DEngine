@@ -57,6 +57,17 @@ void Entity::ClearParent() const
         m_Scene->ClearParent(m_ID);
 }
 
+ChildDestroyPolicy Entity::GetChildDestroyPolicy() const
+{
+    return IsValid() ? m_Scene->GetChildDestroyPolicy(m_ID) : ChildDestroyPolicy::DetachToRoot;
+}
+
+void Entity::SetChildDestroyPolicy(ChildDestroyPolicy policy) const
+{
+    if (IsValid())
+        m_Scene->SetChildDestroyPolicy(m_ID, policy);
+}
+
 Transform2D Entity::GetTransform() const
 {
     return GetWorldTransform();
@@ -156,4 +167,196 @@ void Entity::SetLocalTransform(const LocalTransformComponent& transform) const
 {
     if (IsValid())
         m_Scene->SetLocalTransform(m_ID, transform);
+}
+
+std::string Entity::GetSpriteTexturePath() const
+{
+    return IsValid() ? GetComponent<SpriteComponent>().GetTexture().path : std::string{};
+}
+
+IntRect Entity::GetSpriteSourceRect() const
+{
+    return IsValid() ? GetComponent<SpriteComponent>().GetSourceRect() : IntRect{};
+}
+
+bool Entity::SpriteUsesSourceRect() const
+{
+    return IsValid() && GetComponent<SpriteComponent>().UsesSourceRect();
+}
+
+glm::vec2 Entity::GetSpriteSize() const
+{
+    return IsValid() ? GetComponent<SpriteComponent>().GetSize() : glm::vec2{};
+}
+
+glm::vec4 Entity::GetSpriteTint() const
+{
+    return IsValid() ? GetComponent<SpriteComponent>().GetTint() : glm::vec4{};
+}
+
+int Entity::GetSpriteLayer() const
+{
+    return IsValid() ? GetComponent<SpriteComponent>().GetLayer() : 0;
+}
+
+bool Entity::IsSpriteVisible() const
+{
+    return IsValid() && GetComponent<SpriteComponent>().IsVisible();
+}
+
+bool Entity::IsSpriteFlippedX() const
+{
+    return IsValid() && GetComponent<SpriteComponent>().IsFlippedX();
+}
+
+bool Entity::IsSpriteFlippedY() const
+{
+    return IsValid() && GetComponent<SpriteComponent>().IsFlippedY();
+}
+
+void Entity::SetSpriteTexturePath(const std::string& path)
+{
+    if (IsValid())
+        GetComponent<SpriteComponent>().SetTexturePath(path);
+}
+
+void Entity::SetSpriteSourceRect(int x, int y, int width, int height)
+{
+    if (IsValid())
+    {
+        GetComponent<SpriteComponent>().SetSourceRect(x, y, width, height);
+        m_Scene->MarkTransformDirty(m_ID);
+    }
+}
+
+void Entity::SetSpriteSourceRectFromGrid(int column, int row, int cellWidth, int cellHeight)
+{
+    if (IsValid())
+        SetSpriteSourceRect(column * cellWidth, row * cellHeight, cellWidth, cellHeight);
+}
+
+void Entity::SetSpriteSourceRectFromGrid(int column, int row)
+{
+    glm::vec2 cellSize = GetSpriteSize();
+    
+    if (IsValid())
+        SetSpriteSourceRect(column * static_cast<int>(cellSize.x), row * static_cast<int>(cellSize.y), 
+                        static_cast<int>(cellSize.x), static_cast<int>(cellSize.y));
+}
+
+void Entity::ClearSpriteSourceRect()
+{
+    if (IsValid())
+        GetComponent<SpriteComponent>().ClearSourceRect();
+}
+
+void Entity::SetSpriteSize(const glm::vec2& size)
+{
+    if (IsValid())
+    {
+        GetComponent<SpriteComponent>().SetSize(size);
+        m_Scene->MarkTransformDirty(m_ID);
+    }
+}
+
+void Entity::SetSpriteTint(const glm::vec4& tint)
+{
+    if (IsValid())
+        GetComponent<SpriteComponent>().SetTint(tint);
+}
+
+void Entity::SetSpriteLayer(int layer)
+{
+    if (IsValid())
+        GetComponent<SpriteComponent>().SetLayer(layer);
+}
+
+void Entity::SetSpriteVisible(bool visible)
+{
+    if (IsValid())
+        GetComponent<SpriteComponent>().SetVisible(visible);
+}
+
+void Entity::SetSpriteFlipX(bool flip)
+{
+    if (IsValid())
+        GetComponent<SpriteComponent>().SetFlipX(flip);
+}
+
+void Entity::SetSpriteFlipY(bool flip)
+{
+    if (IsValid())
+        GetComponent<SpriteComponent>().SetFlipY(flip);
+}
+
+bool Entity::HasAnimation() const
+{
+    return IsValid() && HasComponent<SpriteAnimationComponent>();
+}
+
+void Entity::EnsureAnimation() const
+{
+    if (IsValid())
+        AddComponent<SpriteAnimationComponent>();
+}
+
+void Entity::RemoveAnimation() const
+{
+    if (IsValid())
+        RemoveComponent<SpriteAnimationComponent>();
+}
+
+std::string Entity::GetAnimationSetPath() const
+{
+    if (!IsValid() || !HasAnimation())
+        return {};
+
+    return GetComponent<SpriteAnimationComponent>().GetAnimationSetRef().path;
+}
+
+std::string Entity::GetAnimationClipName() const
+{
+    if (!IsValid() || !HasAnimation())
+        return {};
+
+    return GetComponent<SpriteAnimationComponent>().GetRequestedClipName();
+}
+
+void Entity::SetAnimationSetPath(const std::string& path) const
+{
+    if (IsValid())
+        AddComponent<SpriteAnimationComponent>().SetAnimationSetPath(path);
+}
+
+void Entity::PlayAnimation(const std::string& clipName, bool restartIfSame) const
+{
+    if (IsValid())
+        AddComponent<SpriteAnimationComponent>().Play(clipName, restartIfSame);
+}
+
+void Entity::StopAnimation()
+{
+    if (IsValid() && HasAnimation())
+        GetComponent<SpriteAnimationComponent>().Stop();
+}
+
+void Entity::ResetAnimation()
+{
+    if (IsValid() && HasAnimation())
+        GetComponent<SpriteAnimationComponent>().Reset();
+}
+
+bool Entity::IsAnimationPlaying() const
+{
+    return IsValid() && HasAnimation() && GetComponent<SpriteAnimationComponent>().IsPlaying();
+}
+
+bool Entity::HasAnimationFinished() const
+{
+    return IsValid() && HasAnimation() && GetComponent<SpriteAnimationComponent>().HasFinished();
+}
+
+bool Entity::IsPlayingAnimationClip(const std::string& clipName) const
+{
+    return IsValid() && HasAnimation() && GetComponent<SpriteAnimationComponent>().IsPlayingClip(clipName);
 }
