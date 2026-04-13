@@ -10,18 +10,16 @@ void SandboxApp::OnInit()
     m_Player.SetPosition(glm::vec2{300.0f, 100.0f});
 
     Entity weapon = m_Scene.CreateEntity("Weapon", m_Player.GetID());
-    weapon.GetComponent<LocalTransformComponent>().position = {50.f, 0.f};
-    weapon.GetComponent<SpriteComponent>().SetSize({16.f, 16.f});
-    weapon.GetComponent<SpriteComponent>().SetTexturePath("Assets/Textures/texture.jpg");
-    weapon.GetComponent<SpriteComponent>().SetLayer(1);
-    weapon.SetLocalTransform(weapon.GetComponent<LocalTransformComponent>());
+    weapon.SetPosition({300.0f, 0.0f});
+    weapon.SetSpriteSize({16.0f, 16.0f});
+    weapon.SetSpriteTexturePath("Assets/Textures/texture.jpg");
+    weapon.SetSpriteLayer(1);
 
     Entity weapon2 = m_Scene.CreateEntity("Weapon", m_Player.GetID());
-    weapon2.GetComponent<LocalTransformComponent>().position = {-25.f, 0.f};
-    weapon2.GetComponent<SpriteComponent>().SetSize({16.f, 16.f});
-    weapon2.GetComponent<SpriteComponent>().SetTexturePath("Assets/Textures/texture.jpg");
-    weapon2.GetComponent<SpriteComponent>().SetLayer(1);
-    weapon2.SetLocalTransform(weapon2.GetComponent<LocalTransformComponent>());
+    weapon2.SetLocalPosition({-25.0f, 0.0f});
+    weapon2.SetSpriteSize({16.0f, 16.0f});
+    weapon2.SetSpriteTexturePath("Assets/Textures/texture.jpg");
+    weapon2.SetSpriteLayer(1);
 }
 
 void SandboxApp::OnUpdate(float deltaTime)

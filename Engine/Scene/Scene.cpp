@@ -6,6 +6,25 @@
 #include "Math/TransformMath2D.h"
 #include "Renderer/IRenderer2D.h"
 
+Scene::Scene()
+{
+    ConnectRegistrySignals();
+}
+
+void Scene::ConnectRegistrySignals()
+{
+    m_Registry.on_update<LocalTransformComponent>().connect<&Scene::OnLocalTransformUpdated>(this);
+}
+
+void Scene::OnLocalTransformUpdated(entt::registry& registry, entt::entity entity)
+{
+    const IDComponent* idComponent = registry.try_get<IDComponent>(entity);
+    if (idComponent == nullptr)
+        return;
+
+    MarkTransformDirty(idComponent->id);
+}
+
 entt::entity Scene::FindEntityByID(GameObjectID id) const
 {
     auto it = m_EntityByID.find(id);
@@ -264,16 +283,18 @@ bool Scene::SetParent(GameObjectID childID, GameObjectID parentID)
     const Transform2D parentWorld = GetWorldTransform(parentID);
 
     auto& relationship = m_Registry.get<RelationshipComponent>(childEntity);
-    auto& local = m_Registry.get<LocalTransformComponent>(childEntity);
     const auto& childSprite = m_Registry.get<SpriteComponent>(childEntity);
     const auto& parentSprite = m_Registry.get<SpriteComponent>(parentEntity);
 
     relationship.parentID = parentID;
-    local = TransformMath2D::ToLocalTransform(
+    m_Registry.replace<LocalTransformComponent>(
+        childEntity,
+        TransformMath2D::ToLocalTransform(
         childWorld,
         childSprite.GetSize(),
         parentWorld,
         parentSprite.GetSize()
+        )
     );
 
     MarkTransformDirty(childID);
@@ -287,9 +308,7 @@ bool Scene::ClearParent(GameObjectID childID)
         return false;
 
     auto& relationship = m_Registry.get<RelationshipComponent>(childEntity);
-    auto& local = m_Registry.get<LocalTransformComponent>(childEntity);
-
-    local = GetWorldTransform(childID);
+    m_Registry.replace<LocalTransformComponent>(childEntity, GetWorldTransform(childID));
     relationship.parentID = 0;
 
     MarkTransformDirty(childID);
@@ -321,21 +340,18 @@ bool Scene::SetWorldTransform(GameObjectID id, const Transform2D& transform)
     if (entity == entt::null)
         return false;
 
-    auto& local = m_Registry.get<LocalTransformComponent>(entity);
     const auto& relationship = m_Registry.get<RelationshipComponent>(entity);
 
     if (relationship.parentID == 0)
     {
-        local = transform;
-        MarkTransformDirty(id);
+        m_Registry.replace<LocalTransformComponent>(entity, transform);
         return true;
     }
 
     const entt::entity parentEntity = FindEntityByID(relationship.parentID);
     if (parentEntity == entt::null)
     {
-        local = transform;
-        MarkTransformDirty(id);
+        m_Registry.replace<LocalTransformComponent>(entity, transform);
         return true;
     }
 
@@ -343,14 +359,15 @@ bool Scene::SetWorldTransform(GameObjectID id, const Transform2D& transform)
     const auto& parentSprite = m_Registry.get<SpriteComponent>(parentEntity);
     const Transform2D parentWorld = GetWorldTransform(relationship.parentID);
 
-    local = TransformMath2D::ToLocalTransform(
+    m_Registry.replace<LocalTransformComponent>(
+        entity,
+        TransformMath2D::ToLocalTransform(
         transform,
         sprite.GetSize(),
         parentWorld,
         parentSprite.GetSize()
+        )
     );
-
-    MarkTransformDirty(id);
     return true;
 }
 
@@ -369,8 +386,7 @@ bool Scene::SetLocalTransform(GameObjectID id, const LocalTransformComponent& tr
     if (entity == entt::null)
         return false;
 
-    m_Registry.get<LocalTransformComponent>(entity) = transform;
-    MarkTransformDirty(id);
+    m_Registry.replace<LocalTransformComponent>(entity, transform);
     return true;
 }
 

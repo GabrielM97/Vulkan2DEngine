@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <entt/entity/entity.hpp>
 #include <entt/entity/registry.hpp>
@@ -140,6 +141,18 @@ bool Entity::HasComponent() const
 template<typename T>
 T& Entity::GetComponent()
 {
+    static_assert(
+        !std::is_same_v<T, IDComponent> &&
+        !std::is_same_v<T, NameComponent> &&
+        !std::is_same_v<T, ActiveComponent> &&
+        !std::is_same_v<T, RelationshipComponent> &&
+        !std::is_same_v<T, LocalTransformComponent> &&
+        !std::is_same_v<T, WorldTransformComponent> &&
+        !std::is_same_v<T, SpriteComponent> &&
+        !std::is_same_v<T, SpriteAnimationComponent>,
+        "Use Scene or Entity APIs for engine-managed components."
+    );
+
     return m_Registry->get<T>(m_Entity);
 }
 

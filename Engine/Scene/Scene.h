@@ -24,6 +24,8 @@ class IRenderer2D;
 class Scene
 {
 public:
+    Scene();
+
     Entity CreateEntity(const std::string& name = "Entity", GameObjectID parentID = 0);
     Entity GetEntity(GameObjectID id);
 
@@ -99,6 +101,8 @@ private:
     bool WouldCreateCycle(GameObjectID childID, GameObjectID parentID) const;
     void HandleChildrenOnDestroy(GameObjectID parentID);
     void DestroyGameObjectRecursive(GameObjectID id);
+    void ConnectRegistrySignals();
+    void OnLocalTransformUpdated(entt::registry& registry, entt::entity entity);
 
     entt::registry m_Registry;
     std::unordered_map<GameObjectID, entt::entity> m_EntityByID;

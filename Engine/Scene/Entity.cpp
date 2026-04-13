@@ -217,14 +217,14 @@ bool Entity::IsSpriteFlippedY() const
 void Entity::SetSpriteTexturePath(const std::string& path)
 {
     if (IsValid())
-        GetComponent<SpriteComponent>().SetTexturePath(path);
+        m_Registry->get<SpriteComponent>(m_Entity).SetTexturePath(path);
 }
 
 void Entity::SetSpriteSourceRect(int x, int y, int width, int height)
 {
     if (IsValid())
     {
-        GetComponent<SpriteComponent>().SetSourceRect(x, y, width, height);
+        m_Registry->get<SpriteComponent>(m_Entity).SetSourceRect(x, y, width, height);
         m_Scene->MarkTransformDirty(m_ID);
     }
 }
@@ -247,14 +247,14 @@ void Entity::SetSpriteSourceRectFromGrid(int column, int row)
 void Entity::ClearSpriteSourceRect()
 {
     if (IsValid())
-        GetComponent<SpriteComponent>().ClearSourceRect();
+        m_Registry->get<SpriteComponent>(m_Entity).ClearSourceRect();
 }
 
 void Entity::SetSpriteSize(const glm::vec2& size)
 {
     if (IsValid())
     {
-        GetComponent<SpriteComponent>().SetSize(size);
+        m_Registry->get<SpriteComponent>(m_Entity).SetSize(size);
         m_Scene->MarkTransformDirty(m_ID);
     }
 }
@@ -262,31 +262,31 @@ void Entity::SetSpriteSize(const glm::vec2& size)
 void Entity::SetSpriteTint(const glm::vec4& tint)
 {
     if (IsValid())
-        GetComponent<SpriteComponent>().SetTint(tint);
+        m_Registry->get<SpriteComponent>(m_Entity).SetTint(tint);
 }
 
 void Entity::SetSpriteLayer(int layer)
 {
     if (IsValid())
-        GetComponent<SpriteComponent>().SetLayer(layer);
+        m_Registry->get<SpriteComponent>(m_Entity).SetLayer(layer);
 }
 
 void Entity::SetSpriteVisible(bool visible)
 {
     if (IsValid())
-        GetComponent<SpriteComponent>().SetVisible(visible);
+        m_Registry->get<SpriteComponent>(m_Entity).SetVisible(visible);
 }
 
 void Entity::SetSpriteFlipX(bool flip)
 {
     if (IsValid())
-        GetComponent<SpriteComponent>().SetFlipX(flip);
+        m_Registry->get<SpriteComponent>(m_Entity).SetFlipX(flip);
 }
 
 void Entity::SetSpriteFlipY(bool flip)
 {
     if (IsValid())
-        GetComponent<SpriteComponent>().SetFlipY(flip);
+        m_Registry->get<SpriteComponent>(m_Entity).SetFlipY(flip);
 }
 
 bool Entity::HasAnimation() const
@@ -337,13 +337,13 @@ void Entity::PlayAnimation(const std::string& clipName, bool restartIfSame) cons
 void Entity::StopAnimation()
 {
     if (IsValid() && HasAnimation())
-        GetComponent<SpriteAnimationComponent>().Stop();
+        m_Registry->get<SpriteAnimationComponent>(m_Entity).Stop();
 }
 
 void Entity::ResetAnimation()
 {
     if (IsValid() && HasAnimation())
-        GetComponent<SpriteAnimationComponent>().Reset();
+        m_Registry->get<SpriteAnimationComponent>(m_Entity).Reset();
 }
 
 bool Entity::IsAnimationPlaying() const
