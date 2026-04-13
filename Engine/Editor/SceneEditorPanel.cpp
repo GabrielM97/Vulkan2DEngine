@@ -145,6 +145,14 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
     if (ImGui::Checkbox("Active", &active))
         scene.SetGameObjectActive(selectedID, active);
 
+    if (ImGui::Button("Destroy Object"))
+    {
+        scene.DestroyGameObject(selectedID);
+        SelectObject(scene, 0);
+        ImGui::End();
+        return;
+    }
+
     Transform2D localTransform = scene.GetLocalTransform(selectedID);
     bool localChanged = false;
     localChanged |= ImGui::DragFloat2("Local Position", &localTransform.position.x, 1.0f);
@@ -307,6 +315,24 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
     else
     {
         ImGui::TextUnformatted("Parent: None");
+    }
+    
+    int destroyPolicyIndex =
+    scene.GetChildDestroyPolicy(selectedID) == ChildDestroyPolicy::DestroyWithParent ? 1 : 0;
+
+    const char* destroyPolicyLabels[] = { "Detach To Root", "Destroy With Parent" };
+    if (ImGui::Combo(
+            "On Parent Destroy",
+            &destroyPolicyIndex,
+            destroyPolicyLabels,
+            IM_ARRAYSIZE(destroyPolicyLabels)))
+    {
+        scene.SetChildDestroyPolicy(
+            selectedID,
+            destroyPolicyIndex == 1
+                ? ChildDestroyPolicy::DestroyWithParent
+                : ChildDestroyPolicy::DetachToRoot
+        );
     }
 
     std::string comboLabel = "None";

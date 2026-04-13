@@ -2,12 +2,13 @@
 
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <entt/entt.hpp>
 
 #include "Camera2D.h"
-#include "GameObjectHandle.h"
+#include "Entity.h"
 #include "SceneComponents.h"
 #include "SpriteAnimationSet.h"
 
@@ -23,10 +24,11 @@ class IRenderer2D;
 class Scene
 {
 public:
-    GameObjectHandle CreateGameObject(const std::string& name = "GameObject", GameObjectID parentID = 0);
-    GameObjectHandle GetGameObject(GameObjectID id);
-    GameObjectHandle GetGameObjectHandle(GameObjectID id);
-    GameObjectHandle CreateGameObjectHandle(const std::string& name = "GameObject", GameObjectID parentID = 0);
+    Entity CreateEntity(const std::string& name = "Entity", GameObjectID parentID = 0);
+    Entity GetEntity(GameObjectID id);
+
+    template<typename TObject, typename... Args>
+    TObject Spawn(Args&&... args);
 
     bool IsValidGameObject(GameObjectID id) const;
     bool IsValidHandle(entt::entity entity, GameObjectID id) const;
@@ -54,12 +56,14 @@ public:
     bool ClearParent(GameObjectID childID);
     bool SetSiblingOrder(GameObjectID id, int order);
 
+    ChildDestroyPolicy GetChildDestroyPolicy(GameObjectID id) const;
+    bool SetChildDestroyPolicy(GameObjectID id, ChildDestroyPolicy policy);
+
     Transform2D GetWorldTransform(GameObjectID id) const;
     bool SetWorldTransform(GameObjectID id, const Transform2D& transform);
 
     LocalTransformComponent GetLocalTransform(GameObjectID id) const;
     bool SetLocalTransform(GameObjectID id, const LocalTransformComponent& transform);
-
     glm::vec2 GetLocalPosition(GameObjectID id) const;
     glm::vec2 GetLocalScale(GameObjectID id) const;
     glm::vec2 GetLocalPivot(GameObjectID id) const;
@@ -115,7 +119,7 @@ public:
     const Camera2D& GetCamera() const { return m_Camera; }
 
 private:
-    entt::entity CreateGameObjectEntity(const std::string& name);
+    entt::entity CreateEntityInternal(const std::string& name);
     entt::entity FindEntityByID(GameObjectID id) const;
 
     const SpriteAnimationSet* GetOrLoadAnimationSet(const std::string& path);
@@ -124,6 +128,8 @@ private:
     std::vector<entt::entity> SortForRendering() const;
     void DestroyPendingGameObjects();
     bool WouldCreateCycle(GameObjectID childID, GameObjectID parentID) const;
+    void HandleChildrenOnDestroy(GameObjectID parentID);
+    void DestroyGameObjectRecursive(GameObjectID id);
 
     entt::registry m_Registry;
     std::unordered_map<GameObjectID, entt::entity> m_EntityByID;
@@ -131,3 +137,12 @@ private:
     std::unordered_map<std::string, SpriteAnimationSet> m_AnimationSetCache;
     GameObjectID m_NextGameObjectID = 1;
 };
+
+template<typename TObject, typename... Args>
+TObject Scene::Spawn(Args&&... args)
+{
+    Entity entity = CreateEntity(TObject::StaticName());
+    TObject object(entity);
+    object.Initialize(std::forward<Args>(args)...);
+    return object;
+}

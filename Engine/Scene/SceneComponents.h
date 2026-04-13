@@ -12,6 +12,12 @@ using LocalTransformComponent = Transform2D;
 using SpriteComponent = SpriteRenderer;
 using SpriteAnimationComponent = SpriteAnimation;
 
+enum class ChildDestroyPolicy
+{
+    DetachToRoot,
+    DestroyWithParent
+};
+
 struct IDComponent
 {
     GameObjectID id = 0;
@@ -32,6 +38,7 @@ struct RelationshipComponent
 {
     GameObjectID parentID = 0;
     int siblingOrder = 0;
+    ChildDestroyPolicy childDestroyPolicy = ChildDestroyPolicy::DetachToRoot;
 };
 
 struct WorldTransformComponent

@@ -6,64 +6,47 @@
 #include "Math/TransformMath2D.h"
 #include "Renderer/IRenderer2D.h"
 
-entt::entity Scene::CreateGameObjectEntity(const std::string& name)
-{
-    const entt::entity entity = m_Registry.create();
-    const GameObjectID id = m_NextGameObjectID++;
-
-    auto& idComponent = m_Registry.emplace<IDComponent>(entity);
-    idComponent.id = id;
-
-    auto& nameComponent = m_Registry.emplace<NameComponent>(entity);
-    nameComponent.name = name;
-
-    m_Registry.emplace<ActiveComponent>(entity);
-    auto& relationship = m_Registry.emplace<RelationshipComponent>(entity);
-    relationship.parentID = 0;
-    relationship.siblingOrder = static_cast<int>(m_EntityByID.size());
-
-    m_Registry.emplace<LocalTransformComponent>(entity);
-    m_Registry.emplace<WorldTransformComponent>(entity);
-    m_Registry.emplace<SpriteComponent>(entity);
-
-    m_EntityByID.emplace(id, entity);
-    return entity;
-}
-
 entt::entity Scene::FindEntityByID(GameObjectID id) const
 {
     auto it = m_EntityByID.find(id);
     return it != m_EntityByID.end() ? it->second : entt::null;
 }
 
-GameObjectHandle Scene::CreateGameObject(const std::string& name, GameObjectID parentID)
+Entity Scene::CreateEntity(const std::string& name, GameObjectID parentID)
 {
-    const entt::entity entity = CreateGameObjectEntity(name);
+    const entt::entity entity = CreateEntityInternal(name);
     const GameObjectID id = m_Registry.get<IDComponent>(entity).id;
 
     if (parentID != 0)
         SetParent(id, parentID);
 
-    return GameObjectHandle(this, entity, id);
+    return Entity(this, &m_Registry, entity, id);
 }
 
-GameObjectHandle Scene::GetGameObject(GameObjectID id)
+Entity Scene::GetEntity(GameObjectID id)
 {
     const entt::entity entity = FindEntityByID(id);
     if (entity == entt::null)
         return {};
 
-    return GameObjectHandle(this, entity, id);
+    return Entity(this, &m_Registry, entity, id);
 }
 
-GameObjectHandle Scene::GetGameObjectHandle(GameObjectID id)
+entt::entity Scene::CreateEntityInternal(const std::string& name)
 {
-    return GetGameObject(id);
-}
+    const entt::entity entity = m_Registry.create();
+    const GameObjectID id = m_NextGameObjectID++;
 
-GameObjectHandle Scene::CreateGameObjectHandle(const std::string& name, GameObjectID parentID)
-{
-    return CreateGameObject(name, parentID);
+    m_Registry.emplace<IDComponent>(entity, id);
+    m_Registry.emplace<NameComponent>(entity, name);
+    m_Registry.emplace<ActiveComponent>(entity);
+    m_Registry.emplace<RelationshipComponent>(entity,RelationshipComponent{GameObjectID{0},static_cast<int>(m_EntityByID.size()),ChildDestroyPolicy::DetachToRoot});
+    m_Registry.emplace<LocalTransformComponent>(entity);
+    m_Registry.emplace<WorldTransformComponent>(entity);
+    m_Registry.emplace<SpriteComponent>(entity);
+
+    m_EntityByID.emplace(id, entity);
+    return entity;
 }
 
 bool Scene::IsValidGameObject(GameObjectID id) const
@@ -83,13 +66,7 @@ bool Scene::IsValidHandle(entt::entity entity, GameObjectID id) const
 
 void Scene::DestroyGameObject(GameObjectID id)
 {
-    const entt::entity entity = FindEntityByID(id);
-    if (entity == entt::null)
-        return;
-
-    auto& active = m_Registry.get<ActiveComponent>(entity);
-    active.pendingDestroy = true;
-    active.active = false;
+    DestroyGameObjectRecursive(id);
 }
 
 size_t Scene::GetGameObjectCount() const
@@ -722,6 +699,61 @@ bool Scene::IsPlayingAnimationClip(GameObjectID id, const std::string& clipName)
         return false;
 
     return m_Registry.get<SpriteAnimationComponent>(entity).IsPlayingClip(clipName);
+}
+
+ChildDestroyPolicy Scene::GetChildDestroyPolicy(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return ChildDestroyPolicy::DetachToRoot;
+
+    return m_Registry.get<RelationshipComponent>(entity).childDestroyPolicy;
+}
+
+bool Scene::SetChildDestroyPolicy(GameObjectID id, ChildDestroyPolicy policy)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return false;
+
+    m_Registry.get<RelationshipComponent>(entity).childDestroyPolicy = policy;
+    return true;
+}
+
+void Scene::HandleChildrenOnDestroy(GameObjectID parentID)
+{
+    const std::vector<GameObjectID> children = GetChildGameObjects(parentID);
+
+    for (GameObjectID childID : children)
+    {
+        const entt::entity childEntity = FindEntityByID(childID);
+        if (childEntity == entt::null)
+            continue;
+
+        const ChildDestroyPolicy policy =
+            m_Registry.get<RelationshipComponent>(childEntity).childDestroyPolicy;
+
+        if (policy == ChildDestroyPolicy::DestroyWithParent)
+        {
+            DestroyGameObjectRecursive(childID);
+            continue;
+        }
+
+        ClearParent(childID);
+    }
+}
+
+void Scene::DestroyGameObjectRecursive(GameObjectID id)
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return;
+
+    HandleChildrenOnDestroy(id);
+
+    auto& active = m_Registry.get<ActiveComponent>(entity);
+    active.pendingDestroy = true;
+    active.active = false;
 }
 
 const SpriteAnimationSet* Scene::GetOrLoadAnimationSet(const std::string& path)

@@ -2,52 +2,60 @@
 
 #include <GLFW/glfw3.h>
 
+#include "Gameplay/PlayerMovementComponent.h"
+
 void SandboxApp::OnInit()
 {
-    m_Player = m_Scene.CreateGameObject("Player Sprite");
-    m_Player.SetLocalPosition({0.0f, 0.0f});
-    m_Player.SetLocalRotation(0.0f);
-    m_Player.SetSpriteTexturePath("Assets/Textures/character-spritesheet.png");
-    m_Player.SetSpriteSourceRectFromGrid(0, 10, 64, 64);
-    m_Player.SetSpriteTint(glm::vec4(1.0f));
-    m_Player.SetSpriteLayer(0);
-    m_Player.EnsureAnimation();
-    m_Player.SetAnimationSetPath("Assets/Animations/CharacterSpriteSheet.csv");
-    m_Player.PlayAnimation("Walk");
+    m_Player = m_Scene.Spawn<Player>();
 
-    GameObjectHandle weapon = m_Scene.CreateGameObject("Weapon", m_Player.GetID());
-    weapon.SetLocalPosition({50.f, 0.f});
-    weapon.SetSpriteSize({16.f, 16.f});
-    weapon.SetSpriteTexturePath("Assets/Textures/texture.jpg");
-    weapon.SetSpriteLayer(1);
+    Entity weapon = m_Scene.CreateEntity("Weapon", m_Player.GetID());
+    weapon.GetComponent<LocalTransformComponent>().position = {50.f, 0.f};
+    weapon.GetComponent<SpriteComponent>().SetSize({16.f, 16.f});
+    weapon.GetComponent<SpriteComponent>().SetTexturePath("Assets/Textures/texture.jpg");
+    weapon.GetComponent<SpriteComponent>().SetLayer(1);
+    weapon.SetLocalTransform(weapon.GetComponent<LocalTransformComponent>());
 
-    GameObjectHandle weapon2 = m_Scene.CreateGameObject("Weapon", m_Player.GetID());
-    weapon2.SetLocalPosition({-25.f, 0.f});
-    weapon2.SetSpriteSize({16.f, 16.f});
-    weapon2.SetSpriteTexturePath("Assets/Textures/texture.jpg");
-    weapon2.SetSpriteLayer(1);
+    Entity weapon2 = m_Scene.CreateEntity("Weapon", m_Player.GetID());
+    weapon2.GetComponent<LocalTransformComponent>().position = {-25.f, 0.f};
+    weapon2.GetComponent<SpriteComponent>().SetSize({16.f, 16.f});
+    weapon2.GetComponent<SpriteComponent>().SetTexturePath("Assets/Textures/texture.jpg");
+    weapon2.GetComponent<SpriteComponent>().SetLayer(1);
+    weapon2.SetLocalTransform(weapon2.GetComponent<LocalTransformComponent>());
 }
 
 void SandboxApp::OnUpdate(float deltaTime)
 {
     CameraCommand command{};
+    glm::vec2 playerInput{0.0f, 0.0f};
 
     if (!IsKeyboardCapturedByUI())
     {
         if (IsKeyDown(GLFW_KEY_A))
-            command.moveX -= 1.0f;
+        {
+            playerInput.x -= 1.0f;
+        }
         if (IsKeyDown(GLFW_KEY_D))
-            command.moveX += 1.0f;
+        {
+            playerInput.x += 1.0f;
+        }
         if (IsKeyDown(GLFW_KEY_W))
-            command.moveY -= 1.0f;
+        {
+            playerInput.y -= 1.0f;
+        }
         if (IsKeyDown(GLFW_KEY_S))
-            command.moveY += 1.0f;
+        {
+            playerInput.y += 1.0f;
+        }
 
         if (IsKeyDown(GLFW_KEY_Q))
             command.zoomDelta -= 1.0f;
         if (IsKeyDown(GLFW_KEY_E))
             command.zoomDelta += 1.0f;
+        
     }
+
+    if (m_Player.IsValid())
+        m_Player.Move(playerInput, deltaTime);
 
     m_Scene.UpdateCamera(
         command,

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Application.h"
+#include "Object/Player.h"
 #include "Scene/Scene.h"
 
 class SandboxApp : public Application
@@ -13,5 +14,5 @@ protected:
 
 private:
     Scene m_Scene;
-    GameObjectHandle m_Player;
+    Player m_Player;
 };
