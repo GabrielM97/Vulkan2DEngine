@@ -2,11 +2,13 @@
 
 #include <imgui.h>
 
+#include "Editor/SceneViewportPanel.h"
 #include "Editor/SceneEditorPanel.h"
 #include "Scene/Scene.h"
 
 EditorLayer::EditorLayer()
-    : m_SceneEditorPanel(std::make_unique<SceneEditorPanel>())
+    : m_SceneViewportPanel(std::make_unique<SceneViewportPanel>())
+    , m_SceneEditorPanel(std::make_unique<SceneEditorPanel>())
 {
 }
 
@@ -19,6 +21,7 @@ void EditorLayer::Draw(Scene* scene)
     if (scene == nullptr)
         return;
 
+    m_SceneViewportPanel->Draw();
     m_SceneEditorPanel->Draw(*scene);
 }
 

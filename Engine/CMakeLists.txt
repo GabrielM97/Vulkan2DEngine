@@ -144,7 +144,12 @@ target_link_libraries(Scene PUBLIC Renderer EngineDeps)
 
 # --- Editor ---
 set(EDITOR_SRC
-    ${EDITOR_FOLDER_SRC}
+    Editor/EditorLayer.cpp
+    Editor/EditorLayer.h
+    Editor/SceneEditorPanel.cpp
+    Editor/SceneEditorPanel.h
+    Editor/SceneViewportPanel.h
+    Editor/SceneViewportPanel.cpp
 )
 
 add_library(Editor STATIC ${EDITOR_SRC})
