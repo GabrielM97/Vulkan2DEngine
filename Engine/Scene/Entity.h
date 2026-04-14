@@ -7,6 +7,7 @@
 #include <entt/entity/registry.hpp>
 
 #include "SceneComponents.h"
+#include "Component/SceneComponentTraits.h"
 
 class Scene;
 
@@ -115,10 +116,12 @@ public:
 
     template<typename T>
     void RemoveComponent() const;
+    
+    const std::vector<ComponentTypeID>& GetTrackedComponentIDs() const;
 
 private:
-    void RegisterTrackedComponent(RequiredComponentID componentID) const;
-    void UnregisterTrackedComponent(RequiredComponentID componentID) const;
+    void RegisterTrackedComponent(ComponentTypeID componentID) const;
+    void UnregisterTrackedComponent(ComponentTypeID componentID) const;
 
     Scene* m_Scene = nullptr;
     entt::registry* m_Registry = nullptr;
@@ -129,8 +132,8 @@ private:
 template<typename T, typename... Args>
 T& Entity::AddComponent(Args&&... args) const
 {
-    if constexpr (RequiredComponentTraits<T>::Trackable)
-        RegisterTrackedComponent(RequiredComponentTraits<T>::ID);
+    if constexpr (SceneComponentTraits<T>::Trackable)
+        RegisterTrackedComponent(SceneComponentTraits<T>::ID);
 
     if (m_Registry->all_of<T>(m_Entity))
         return m_Registry->get<T>(m_Entity);
@@ -172,8 +175,8 @@ const T& Entity::GetComponent() const
 template<typename T>
 void Entity::RemoveComponent() const
 {
-    if constexpr (RequiredComponentTraits<T>::Trackable)
-        UnregisterTrackedComponent(RequiredComponentTraits<T>::ID);
+    if constexpr (SceneComponentTraits<T>::Trackable)
+        UnregisterTrackedComponent(SceneComponentTraits<T>::ID);
 
     if (m_Registry->all_of<T>(m_Entity))
         m_Registry->remove<T>(m_Entity);

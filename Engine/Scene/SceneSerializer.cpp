@@ -7,8 +7,9 @@
 
 #include <nlohmann/json.hpp>
 
-#include "Gameplay/PlayerMovementComponent.h"
+#include "Reflection/PropertySerialization.h"
 #include "Scene.h"
+#include "Component/SceneComponentRegistry.h"
 
 using json = nlohmann::json;
 
@@ -128,22 +129,22 @@ namespace
     {
         json value = json::array();
 
-        for (RequiredComponentID componentID : requiredComponents.componentIDs)
+        for (ComponentTypeID componentID : requiredComponents.componentIDs)
             value.push_back(static_cast<uint32_t>(componentID));
 
         return value;
     }
 
-    std::vector<RequiredComponentID> DeserializeRequiredComponents(const json& value)
+    std::vector<ComponentTypeID> DeserializeRequiredComponents(const json& value)
     {
-        std::vector<RequiredComponentID> requiredComponents;
+        std::vector<ComponentTypeID> requiredComponents;
 
         if (!value.is_array())
             return requiredComponents;
 
         requiredComponents.reserve(value.size());
         for (const json& entry : value)
-            requiredComponents.push_back(static_cast<RequiredComponentID>(entry.get<uint32_t>()));
+            requiredComponents.push_back(static_cast<ComponentTypeID>(entry.get<uint32_t>()));
 
         return requiredComponents;
     }
@@ -179,24 +180,24 @@ bool SceneSerializer::SaveToFile(const Scene& scene, const std::string& path)
             {"requiredComponents", SerializeRequiredComponents(requiredComponents)}
         };
 
-        if (scene.m_Registry.all_of<SpriteAnimationComponent>(entity))
+        Entity wrapped = scene.GetEntity(id);
+        json componentsJson = json::object();
+
+        for (ComponentTypeID componentID : wrapped.GetTrackedComponentIDs())
         {
-            const auto& animation = scene.m_Registry.get<SpriteAnimationComponent>(entity);
-            entityJson["animation"] = {
-                {"animationSetPath", animation.GetAnimationSetRef().path},
-                {"clipName", animation.GetRequestedClipName()},
-                {"playing", animation.IsPlaying()}
-            };
+            const SceneComponent* component = SceneComponentRegistry::Get().Find(componentID);
+            if (component == nullptr)
+                continue;
+
+            if (!component->Has(wrapped))
+                continue;
+
+            json componentJson;
+            component->Serialize(wrapped, componentJson);
+            componentsJson[std::to_string(componentID)] = std::move(componentJson);
         }
 
-        if (scene.m_Registry.all_of<PlayerMovementComponent>(entity))
-        {
-            const auto& movement = scene.m_Registry.get<PlayerMovementComponent>(entity);
-            entityJson["playerMovement"] = {
-                {"moveSpeed", movement.moveSpeed}
-            };
-        }
-
+        entityJson["components"] = std::move(componentsJson);
         root["entities"].push_back(std::move(entityJson));
     }
 
@@ -261,29 +262,24 @@ bool SceneSerializer::LoadFromFile(Scene& scene, const std::string& path)
         DeserializeSprite(entityJson.at("sprite"), sprite);
         scene.MarkTransformDirty(id);
 
-        if (entityJson.contains("animation"))
+        Entity wrapped = scene.GetEntity(id);
+
+        if (entityJson.contains("components"))
         {
-            auto& animation = scene.m_Registry.emplace<SpriteAnimationComponent>(entity);
-            const json& animationJson = entityJson.at("animation");
+            const json& componentsJson = entityJson.at("components");
 
-            scene.RegisterRequiredComponent(entity, RequiredComponentID::SpriteAnimation);
-
-            animation.SetAnimationSetPath(animationJson.value("animationSetPath", ""));
-            const std::string clipName = animationJson.value("clipName", "");
-            if (!clipName.empty())
+            for (ComponentTypeID componentID : wrapped.GetTrackedComponentIDs())
             {
-                animation.Play(clipName, true);
-                if (!animationJson.value("playing", true))
-                    animation.Stop();
-            }
-        }
+                const SceneComponent* component = SceneComponentRegistry::Get().Find(componentID);
+                if (component == nullptr)
+                    continue;
 
-        if (entityJson.contains("playerMovement"))
-        {
-            auto& movement = scene.m_Registry.emplace<PlayerMovementComponent>(entity);
-            const json& movementJson = entityJson.at("playerMovement");
-            scene.RegisterRequiredComponent(entity, RequiredComponentID::PlayerMovement);
-            movement.moveSpeed = movementJson.value("moveSpeed", movement.moveSpeed);
+                const std::string key = std::to_string(componentID);
+                if (!componentsJson.contains(key))
+                    continue;
+
+                component->Deserialize(wrapped, componentsJson.at(key));
+            }
         }
 
         scene.ResolveRequiredComponents(entity);

@@ -1,10 +1,12 @@
 #include "Object/Player.h"
 
+#include "Gameplay/DebugSettingsComponent.h"
 #include "Gameplay/PlayerMovementComponent.h"
 
 void Player::Initialize()
 {
     auto& movement = GetEntity().AddComponent<PlayerMovementComponent>();
+    GetEntity().AddComponent<DebugSettingsComponent>();
 
     SetPosition({0.0f, 0.0f});
     SetRotation(0.0f);

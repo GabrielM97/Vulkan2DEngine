@@ -5,6 +5,13 @@ set(CORE_SRC
     Math/Transform2D.h
     Math/TransformMath2D.cpp
     Math/TransformMath2D.h
+        Component/EntityComponent.h
+        Component/SceneComponent.h
+        Component/SceneComponentTraits.h
+        Gameplay/DebugSettingsComponent.h
+        Component/SceneComponentRegistry.h
+        Component/RegisterSceneComponents.cpp
+        Component/RegisterSceneComponents.h
 )
 
 add_library(Core STATIC ${CORE_SRC})
@@ -84,6 +91,9 @@ set(SCENE_SRC
     Object/Player.cpp
     Object/Player.h
     Gameplay/PlayerMovementComponent.h
+        Reflection/Property.h
+        Reflection/PropertySerialization.h
+        Reflection/PropertyTypeTraits.h
 )
 
 add_library(Scene STATIC ${SCENE_SRC})

@@ -2,13 +2,23 @@
 
 #include "Scene.h"
 
-void Entity::RegisterTrackedComponent(RequiredComponentID componentID) const
+const std::vector<ComponentTypeID>& Entity::GetTrackedComponentIDs() const
+{
+    static const std::vector<ComponentTypeID> empty;
+
+    if (!IsValid() || !m_Registry->all_of<RequiredComponentsComponent>(m_Entity))
+        return empty;
+
+    return m_Registry->get<RequiredComponentsComponent>(m_Entity).componentIDs;
+}
+
+void Entity::RegisterTrackedComponent(ComponentTypeID componentID) const
 {
     if (IsValid())
         m_Scene->RegisterRequiredComponent(m_Entity, componentID);
 }
 
-void Entity::UnregisterTrackedComponent(RequiredComponentID componentID) const
+void Entity::UnregisterTrackedComponent(ComponentTypeID componentID) const
 {
     if (IsValid())
         m_Scene->UnregisterRequiredComponent(m_Entity, componentID);

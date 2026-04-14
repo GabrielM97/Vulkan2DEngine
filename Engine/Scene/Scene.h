@@ -29,6 +29,7 @@ public:
 
     Entity CreateEntity(const std::string& name = "Entity", GameObjectID parentID = 0);
     Entity GetEntity(GameObjectID id);
+    Entity GetEntity(GameObjectID id) const;
 
     template<typename TObject, typename... Args>
     TObject Spawn(Args&&... args);
@@ -109,10 +110,9 @@ private:
     void DestroyGameObjectRecursive(GameObjectID id);
     void ConnectRegistrySignals();
     void OnLocalTransformUpdated(entt::registry& registry, entt::entity entity);
-    void RegisterRequiredComponent(entt::entity entity, RequiredComponentID componentID);
-    void UnregisterRequiredComponent(entt::entity entity, RequiredComponentID componentID);
+    void RegisterRequiredComponent(entt::entity entity, ComponentTypeID componentID);
+    void UnregisterRequiredComponent(entt::entity entity, ComponentTypeID componentID);
     void ResolveRequiredComponents(entt::entity entity);
-    void ResolveRequiredComponent(entt::entity entity, RequiredComponentID componentID);
 
     entt::registry m_Registry;
     std::unordered_map<GameObjectID, entt::entity> m_EntityByID;

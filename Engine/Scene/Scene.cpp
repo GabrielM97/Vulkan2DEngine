@@ -6,9 +6,14 @@
 #include "Math/TransformMath2D.h"
 #include "Renderer/IRenderer2D.h"
 #include "SceneSerializer.h"
+#include "Component/RegisterSceneComponents.h"
+#include "Component/SceneComponentRegistry.h"
+#include "Component/SceneComponentTraits.h"
+#include "Gameplay/DebugSettingsComponent.h"
 
 Scene::Scene()
 {
+    RegisterSceneComponents();
     ConnectRegistrySignals();
 }
 
@@ -26,7 +31,7 @@ void Scene::OnLocalTransformUpdated(entt::registry& registry, entt::entity entit
     MarkTransformDirty(idComponent->id);
 }
 
-void Scene::RegisterRequiredComponent(entt::entity entity, RequiredComponentID componentID)
+void Scene::RegisterRequiredComponent(entt::entity entity, ComponentTypeID componentID)
 {
     if (entity == entt::null || !m_Registry.valid(entity))
         return;
@@ -36,7 +41,7 @@ void Scene::RegisterRequiredComponent(entt::entity entity, RequiredComponentID c
         required.push_back(componentID);
 }
 
-void Scene::UnregisterRequiredComponent(entt::entity entity, RequiredComponentID componentID)
+void Scene::UnregisterRequiredComponent(entt::entity entity, ComponentTypeID componentID)
 {
     if (entity == entt::null || !m_Registry.valid(entity))
         return;
@@ -53,27 +58,18 @@ void Scene::ResolveRequiredComponents(entt::entity entity)
     if (entity == entt::null || !m_Registry.valid(entity))
         return;
 
+    const auto& idComponent = m_Registry.get<IDComponent>(entity);
     const auto componentIDs = m_Registry.get<RequiredComponentsComponent>(entity).componentIDs;
-    for (RequiredComponentID componentID : componentIDs)
-        ResolveRequiredComponent(entity, componentID);
-}
 
-void Scene::ResolveRequiredComponent(entt::entity entity, RequiredComponentID componentID)
-{
-    switch (componentID)
+    Entity wrapped(this, &m_Registry, entity, idComponent.id);
+
+    for (ComponentTypeID componentID : componentIDs)
     {
-    case RequiredComponentID::SpriteAnimation:
-        if (!m_Registry.all_of<SpriteAnimationComponent>(entity))
-            m_Registry.emplace<SpriteAnimationComponent>(entity);
-        break;
+        const SceneComponent* component = SceneComponentRegistry::Get().Find(componentID);
+        if (component == nullptr)
+            continue;
 
-    case RequiredComponentID::PlayerMovement:
-        if (!m_Registry.all_of<PlayerMovementComponent>(entity))
-            m_Registry.emplace<PlayerMovementComponent>(entity);
-        break;
-
-    default:
-        break;
+        component->Ensure(wrapped);
     }
 }
 
@@ -111,6 +107,15 @@ Entity Scene::GetEntity(GameObjectID id)
         return {};
 
     return Entity(this, &m_Registry, entity, id);
+}
+
+Entity Scene::GetEntity(GameObjectID id) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return {};
+
+    return Entity(const_cast<Scene*>(this), const_cast<entt::registry*>(&m_Registry), entity, id);
 }
 
 entt::entity Scene::CreateEntityInternal(const std::string& name)
