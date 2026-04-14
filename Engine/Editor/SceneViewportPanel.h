@@ -1,0 +1,22 @@
+﻿#pragma once
+
+#include <cstdint>
+
+struct SceneViewportState
+{
+    uint32_t width = 0;
+    uint32_t height = 0;
+    bool hovered = false;
+    bool focused = false;
+    bool visible = false;
+};
+
+class SceneViewportPanel
+{
+public:
+    void Draw();
+    const SceneViewportState& GetState() const { return m_State; }
+
+private:
+    SceneViewportState m_State;
+};

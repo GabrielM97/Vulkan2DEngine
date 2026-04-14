@@ -3,6 +3,7 @@
 #include <memory>
 
 class Scene;
+class SceneViewportPanel;
 class SceneEditorPanel;
 
 class EditorLayer
@@ -16,5 +17,6 @@ public:
 private:
     void DrawDockspace();
 
+    std::unique_ptr<SceneViewportPanel> m_SceneViewportPanel;
     std::unique_ptr<SceneEditorPanel> m_SceneEditorPanel;
 };
