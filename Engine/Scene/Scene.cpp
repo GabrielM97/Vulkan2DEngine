@@ -5,6 +5,7 @@
 
 #include "Math/TransformMath2D.h"
 #include "Renderer/IRenderer2D.h"
+#include "SceneSerializer.h"
 
 Scene::Scene()
 {
@@ -25,6 +26,57 @@ void Scene::OnLocalTransformUpdated(entt::registry& registry, entt::entity entit
     MarkTransformDirty(idComponent->id);
 }
 
+void Scene::RegisterRequiredComponent(entt::entity entity, RequiredComponentID componentID)
+{
+    if (entity == entt::null || !m_Registry.valid(entity))
+        return;
+
+    auto& required = m_Registry.get<RequiredComponentsComponent>(entity).componentIDs;
+    if (std::find(required.begin(), required.end(), componentID) == required.end())
+        required.push_back(componentID);
+}
+
+void Scene::UnregisterRequiredComponent(entt::entity entity, RequiredComponentID componentID)
+{
+    if (entity == entt::null || !m_Registry.valid(entity))
+        return;
+
+    auto& required = m_Registry.get<RequiredComponentsComponent>(entity).componentIDs;
+    required.erase(
+        std::remove(required.begin(), required.end(), componentID),
+        required.end()
+    );
+}
+
+void Scene::ResolveRequiredComponents(entt::entity entity)
+{
+    if (entity == entt::null || !m_Registry.valid(entity))
+        return;
+
+    const auto componentIDs = m_Registry.get<RequiredComponentsComponent>(entity).componentIDs;
+    for (RequiredComponentID componentID : componentIDs)
+        ResolveRequiredComponent(entity, componentID);
+}
+
+void Scene::ResolveRequiredComponent(entt::entity entity, RequiredComponentID componentID)
+{
+    switch (componentID)
+    {
+    case RequiredComponentID::SpriteAnimation:
+        if (!m_Registry.all_of<SpriteAnimationComponent>(entity))
+            m_Registry.emplace<SpriteAnimationComponent>(entity);
+        break;
+
+    case RequiredComponentID::PlayerMovement:
+        if (!m_Registry.all_of<PlayerMovementComponent>(entity))
+            m_Registry.emplace<PlayerMovementComponent>(entity);
+        break;
+
+    default:
+        break;
+    }
+}
+
 entt::entity Scene::FindEntityByID(GameObjectID id) const
 {
     auto it = m_EntityByID.find(id);
@@ -40,6 +92,16 @@ Entity Scene::CreateEntity(const std::string& name, GameObjectID parentID)
         SetParent(id, parentID);
 
     return Entity(this, &m_Registry, entity, id);
+}
+
+bool Scene::SaveToFile(const std::string& path) const
+{
+    return SceneSerializer::SaveToFile(*this, path);
+}
+
+bool Scene::LoadFromFile(const std::string& path)
+{
+    return SceneSerializer::LoadFromFile(*this, path);
 }
 
 Entity Scene::GetEntity(GameObjectID id)
@@ -62,10 +124,44 @@ entt::entity Scene::CreateEntityInternal(const std::string& name)
     m_Registry.emplace<RelationshipComponent>(entity,RelationshipComponent{GameObjectID{0},static_cast<int>(m_EntityByID.size()),ChildDestroyPolicy::DetachToRoot});
     m_Registry.emplace<LocalTransformComponent>(entity);
     m_Registry.emplace<WorldTransformComponent>(entity);
+    m_Registry.emplace<RequiredComponentsComponent>(entity);
     m_Registry.emplace<SpriteComponent>(entity);
 
     m_EntityByID.emplace(id, entity);
     return entity;
+}
+
+entt::entity Scene::CreateEntityWithID(const std::string& name, GameObjectID id)
+{
+    const entt::entity entity = m_Registry.create();
+
+    m_Registry.emplace<IDComponent>(entity, id);
+    m_Registry.emplace<NameComponent>(entity, name);
+    m_Registry.emplace<ActiveComponent>(entity);
+    m_Registry.emplace<RelationshipComponent>(
+        entity,
+        RelationshipComponent{
+            GameObjectID{0},
+            static_cast<int>(m_EntityByID.size()),
+            ChildDestroyPolicy::DetachToRoot
+        }
+    );
+    m_Registry.emplace<LocalTransformComponent>(entity);
+    m_Registry.emplace<WorldTransformComponent>(entity);
+    m_Registry.emplace<RequiredComponentsComponent>(entity);
+    m_Registry.emplace<SpriteComponent>(entity);
+
+    m_EntityByID.emplace(id, entity);
+    m_NextGameObjectID = std::max(m_NextGameObjectID, id + 1);
+    return entity;
+}
+
+void Scene::Clear()
+{
+    m_Registry.clear();
+    m_EntityByID.clear();
+    m_AnimationSetCache.clear();
+    m_NextGameObjectID = 1;
 }
 
 bool Scene::IsValidGameObject(GameObjectID id) const

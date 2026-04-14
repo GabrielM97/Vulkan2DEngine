@@ -2,6 +2,18 @@
 
 #include "Scene.h"
 
+void Entity::RegisterTrackedComponent(RequiredComponentID componentID) const
+{
+    if (IsValid())
+        m_Scene->RegisterRequiredComponent(m_Entity, componentID);
+}
+
+void Entity::UnregisterTrackedComponent(RequiredComponentID componentID) const
+{
+    if (IsValid())
+        m_Scene->UnregisterRequiredComponent(m_Entity, componentID);
+}
+
 bool Entity::IsValid() const
 {
     return m_Scene != nullptr && m_Scene->IsValidHandle(m_Entity, m_ID);

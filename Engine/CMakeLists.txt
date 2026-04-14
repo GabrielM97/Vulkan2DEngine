@@ -70,6 +70,8 @@ set(SCENE_SRC
     Scene/Entity.h
     Scene/Scene.cpp
     Scene/Scene.h
+    Scene/SceneSerializer.cpp
+    Scene/SceneSerializer.h
     Scene/SceneComponents.h
     Scene/SpriteAnimation.cpp
     Scene/SpriteAnimation.h

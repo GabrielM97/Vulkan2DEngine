@@ -28,6 +28,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 # --- Engine dependencies ---
 add_library(EngineDeps INTERFACE)
@@ -48,6 +49,7 @@ target_link_libraries(EngineDeps INTERFACE
     glm::glm
     imgui::imgui
     EnTT::EnTT
+    nlohmann_json::nlohmann_json
 )
 
 # --- Add engine modules ---

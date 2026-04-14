@@ -2,8 +2,10 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "Math/Transform2D.h"
+#include "Gameplay/PlayerMovementComponent.h"
 #include "SpriteAnimation.h"
 #include "SpriteRenderer.h"
 
@@ -11,6 +13,32 @@ using GameObjectID = uint64_t;
 using LocalTransformComponent = Transform2D;
 using SpriteComponent = SpriteRenderer;
 using SpriteAnimationComponent = SpriteAnimation;
+
+enum class RequiredComponentID : uint32_t
+{
+    SpriteAnimation = 1,
+    PlayerMovement = 2
+};
+
+template<typename T>
+struct RequiredComponentTraits
+{
+    static constexpr bool Trackable = false;
+};
+
+template<>
+struct RequiredComponentTraits<SpriteAnimationComponent>
+{
+    static constexpr bool Trackable = true;
+    static constexpr RequiredComponentID ID = RequiredComponentID::SpriteAnimation;
+};
+
+template<>
+struct RequiredComponentTraits<PlayerMovementComponent>
+{
+    static constexpr bool Trackable = true;
+    static constexpr RequiredComponentID ID = RequiredComponentID::PlayerMovement;
+};
 
 enum class ChildDestroyPolicy
 {
@@ -45,4 +73,9 @@ struct WorldTransformComponent
 {
     Transform2D world{};
     bool dirty = true;
+};
+
+struct RequiredComponentsComponent
+{
+    std::vector<RequiredComponentID> componentIDs;
 };

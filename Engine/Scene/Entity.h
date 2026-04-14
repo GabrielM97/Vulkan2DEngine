@@ -117,6 +117,9 @@ public:
     void RemoveComponent() const;
 
 private:
+    void RegisterTrackedComponent(RequiredComponentID componentID) const;
+    void UnregisterTrackedComponent(RequiredComponentID componentID) const;
+
     Scene* m_Scene = nullptr;
     entt::registry* m_Registry = nullptr;
     entt::entity m_Entity{entt::null};
@@ -126,6 +129,9 @@ private:
 template<typename T, typename... Args>
 T& Entity::AddComponent(Args&&... args) const
 {
+    if constexpr (RequiredComponentTraits<T>::Trackable)
+        RegisterTrackedComponent(RequiredComponentTraits<T>::ID);
+
     if (m_Registry->all_of<T>(m_Entity))
         return m_Registry->get<T>(m_Entity);
 
@@ -148,6 +154,7 @@ T& Entity::GetComponent()
         !std::is_same_v<T, RelationshipComponent> &&
         !std::is_same_v<T, LocalTransformComponent> &&
         !std::is_same_v<T, WorldTransformComponent> &&
+        !std::is_same_v<T, RequiredComponentsComponent> &&
         !std::is_same_v<T, SpriteComponent> &&
         !std::is_same_v<T, SpriteAnimationComponent>,
         "Use Scene or Entity APIs for engine-managed components."
@@ -165,6 +172,9 @@ const T& Entity::GetComponent() const
 template<typename T>
 void Entity::RemoveComponent() const
 {
+    if constexpr (RequiredComponentTraits<T>::Trackable)
+        UnregisterTrackedComponent(RequiredComponentTraits<T>::ID);
+
     if (m_Registry->all_of<T>(m_Entity))
         m_Registry->remove<T>(m_Entity);
 }
