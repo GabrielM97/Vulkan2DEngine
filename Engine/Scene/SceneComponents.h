@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "Math/Transform2D.h"
 #include "SpriteAnimation.h"
+#include "Math/Transform2D.h"
 #include "SpriteRenderer.h"
 #include "Component/EntityComponent.h"
 

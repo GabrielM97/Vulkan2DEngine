@@ -7,9 +7,18 @@
 #include <entt/entity/registry.hpp>
 
 #include "SceneComponents.h"
-#include "Component/SceneComponentTraits.h"
 
 class Scene;
+
+template<typename T, typename = void>
+struct HasStaticSceneComponentID : std::false_type
+{
+};
+
+template<typename T>
+struct HasStaticSceneComponentID<T, std::void_t<decltype(T::StaticComponentID)>> : std::true_type
+{
+};
 
 class Entity
 {
@@ -132,8 +141,8 @@ private:
 template<typename T, typename... Args>
 T& Entity::AddComponent(Args&&... args) const
 {
-    if constexpr (SceneComponentTraits<T>::Trackable)
-        RegisterTrackedComponent(SceneComponentTraits<T>::ID);
+    if constexpr (HasStaticSceneComponentID<T>::value)
+        RegisterTrackedComponent(T::StaticComponentID);
 
     if (m_Registry->all_of<T>(m_Entity))
         return m_Registry->get<T>(m_Entity);
@@ -175,8 +184,8 @@ const T& Entity::GetComponent() const
 template<typename T>
 void Entity::RemoveComponent() const
 {
-    if constexpr (SceneComponentTraits<T>::Trackable)
-        UnregisterTrackedComponent(SceneComponentTraits<T>::ID);
+    if constexpr (HasStaticSceneComponentID<T>::value)
+        UnregisterTrackedComponent(T::StaticComponentID);
 
     if (m_Registry->all_of<T>(m_Entity))
         m_Registry->remove<T>(m_Entity);

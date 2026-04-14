@@ -5,13 +5,10 @@ set(CORE_SRC
     Math/Transform2D.h
     Math/TransformMath2D.cpp
     Math/TransformMath2D.h
-        Component/EntityComponent.h
-        Component/SceneComponent.h
-        Component/SceneComponentTraits.h
-        Gameplay/DebugSettingsComponent.h
-        Component/SceneComponentRegistry.h
-        Component/RegisterSceneComponents.cpp
-        Component/RegisterSceneComponents.h
+    Component/EntityComponent.h
+    Component/SceneComponent.h
+    Component/SceneComponentRegistry.h
+    Gameplay/DebugSettingsComponent.h
 )
 
 add_library(Core STATIC ${CORE_SRC})

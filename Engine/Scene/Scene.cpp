@@ -6,14 +6,11 @@
 #include "Math/TransformMath2D.h"
 #include "Renderer/IRenderer2D.h"
 #include "SceneSerializer.h"
-#include "Component/RegisterSceneComponents.h"
+#include "SpriteAnimation.h"
 #include "Component/SceneComponentRegistry.h"
-#include "Component/SceneComponentTraits.h"
-#include "Gameplay/DebugSettingsComponent.h"
 
 Scene::Scene()
 {
-    RegisterSceneComponents();
     ConnectRegistrySignals();
 }
 

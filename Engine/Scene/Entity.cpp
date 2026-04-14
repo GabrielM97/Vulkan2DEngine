@@ -1,5 +1,6 @@
 #include "Entity.h"
 
+#include "SpriteAnimation.h"
 #include "Scene.h"
 
 const std::vector<ComponentTypeID>& Entity::GetTrackedComponentIDs() const

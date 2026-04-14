@@ -180,6 +180,16 @@ bool SceneSerializer::SaveToFile(const Scene& scene, const std::string& path)
             {"requiredComponents", SerializeRequiredComponents(requiredComponents)}
         };
 
+        if (scene.m_Registry.all_of<SpriteAnimationComponent>(entity))
+        {
+            const auto& animation = scene.m_Registry.get<SpriteAnimationComponent>(entity);
+            entityJson["animation"] = {
+                {"animationSetPath", animation.GetAnimationSetRef().path},
+                {"clipName", animation.GetRequestedClipName()},
+                {"playing", animation.IsPlaying()}
+            };
+        }
+
         Entity wrapped = scene.GetEntity(id);
         json componentsJson = json::object();
 
@@ -261,6 +271,21 @@ bool SceneSerializer::LoadFromFile(Scene& scene, const std::string& path)
         SpriteComponent& sprite = scene.m_Registry.get<SpriteComponent>(entity);
         DeserializeSprite(entityJson.at("sprite"), sprite);
         scene.MarkTransformDirty(id);
+
+        if (entityJson.contains("animation"))
+        {
+            auto& animation = scene.m_Registry.emplace<SpriteAnimationComponent>(entity);
+            const json& animationJson = entityJson.at("animation");
+
+            animation.SetAnimationSetPath(animationJson.value("animationSetPath", ""));
+            const std::string clipName = animationJson.value("clipName", "");
+            if (!clipName.empty())
+            {
+                animation.Play(clipName, true);
+                if (!animationJson.value("playing", true))
+                    animation.Stop();
+            }
+        }
 
         Entity wrapped = scene.GetEntity(id);
 
