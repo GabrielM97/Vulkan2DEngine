@@ -6,8 +6,9 @@
 #include "Reflection/Property.h"
 #include "Reflection/PropertyTypeTraits.h"
 
-struct DebugSettingsComponent : public SceneComponent
+class DebugSettingsComponent : public SceneComponent
 {
+public:
     PROPERTY_FIELD(bool, showBounds, EditAnywhere | Save, true);
     PROPERTY_FIELD(float, moveSpeedMultiplier, EditAnywhere | Save, 1.0f);
     PROPERTY_FIELD(glm::vec2, spawnOffset, EditAnywhere | Save, glm::vec2{0.0f, 0.0f});

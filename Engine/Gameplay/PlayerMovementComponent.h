@@ -4,8 +4,9 @@
 #include "Reflection/Property.h"
 #include "Reflection/PropertyTypeTraits.h"
 
-struct PlayerMovementComponent : public SceneComponent
+class PlayerMovementComponent : public SceneComponent
 {
+public:
     PROPERTY_FIELD(float, moveSpeed, EditAnywhere | Save, 250.0f);
     float runtimeVelocity = 0.0f;
 

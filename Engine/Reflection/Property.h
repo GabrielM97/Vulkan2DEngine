@@ -58,9 +58,9 @@ PropertyTypeTraits<decltype(OwnerType::Name)>::Type \
 template<> \
 struct PropertyRegistry<Type> \
 { \
-static constexpr auto Properties = std::to_array<Property>({ __VA_ARGS__ }); \
+static constexpr Property Properties[] = { __VA_ARGS__ }; \
 static constexpr std::span<const Property> Get() \
 { \
-return Properties; \
+return std::span<const Property>(Properties, sizeof(Properties) / sizeof(Property)); \
 } \
 }
