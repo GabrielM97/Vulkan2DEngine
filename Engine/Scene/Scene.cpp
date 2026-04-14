@@ -28,28 +28,6 @@ void Scene::OnLocalTransformUpdated(entt::registry& registry, entt::entity entit
     MarkTransformDirty(idComponent->id);
 }
 
-void Scene::RegisterRequiredComponent(entt::entity entity, ComponentTypeID componentID)
-{
-    if (entity == entt::null || !m_Registry.valid(entity))
-        return;
-
-    auto& required = m_Registry.get<RequiredComponentsComponent>(entity).componentIDs;
-    if (std::find(required.begin(), required.end(), componentID) == required.end())
-        required.push_back(componentID);
-}
-
-void Scene::UnregisterRequiredComponent(entt::entity entity, ComponentTypeID componentID)
-{
-    if (entity == entt::null || !m_Registry.valid(entity))
-        return;
-
-    auto& required = m_Registry.get<RequiredComponentsComponent>(entity).componentIDs;
-    required.erase(
-        std::remove(required.begin(), required.end(), componentID),
-        required.end()
-    );
-}
-
 void Scene::ResolveRequiredComponents(entt::entity entity)
 {
     if (entity == entt::null || !m_Registry.valid(entity))

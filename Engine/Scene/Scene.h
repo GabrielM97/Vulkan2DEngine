@@ -110,8 +110,6 @@ private:
     void DestroyGameObjectRecursive(GameObjectID id);
     void ConnectRegistrySignals();
     void OnLocalTransformUpdated(entt::registry& registry, entt::entity entity);
-    void RegisterRequiredComponent(entt::entity entity, ComponentTypeID componentID);
-    void UnregisterRequiredComponent(entt::entity entity, ComponentTypeID componentID);
     void ResolveRequiredComponents(entt::entity entity);
 
     entt::registry m_Registry;

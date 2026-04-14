@@ -3,8 +3,6 @@
 #include <nlohmann/json.hpp>
 
 #include "EntityComponent.h"
-#include "Reflection/PropertySerialization.h"
-#include "Scene/Entity.h"
 
 class Entity;
 

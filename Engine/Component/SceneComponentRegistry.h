@@ -5,6 +5,8 @@
 #include <unordered_map>
 
 #include "EntityComponent.h"
+#include "Reflection/PropertySerialization.h"
+#include "Scene/Entity.h"
 #include "SceneComponent.h"
 
 class SceneComponentRegistry
@@ -34,6 +36,38 @@ private:
     std::unordered_map<ComponentTypeID, std::unique_ptr<SceneComponent>> m_Components;
 };
 
+namespace SceneComponentDetail
+{
+    template<typename TComponent>
+    void Ensure(Entity& entity)
+    {
+        if (!entity.HasComponent<TComponent>())
+            entity.AddComponent<TComponent>();
+    }
+
+    template<typename TComponent>
+    bool Has(const Entity& entity)
+    {
+        return entity.HasComponent<TComponent>();
+    }
+
+    template<typename TComponent>
+    void Serialize(const Entity& entity, nlohmann::json& out)
+    {
+        if (!entity.HasComponent<TComponent>())
+            return;
+
+        SerializeProperties(entity.GetComponent<TComponent>(), out);
+    }
+
+    template<typename TComponent>
+    void Deserialize(Entity& entity, const nlohmann::json& in)
+    {
+        auto& component = entity.AddComponent<TComponent>();
+        DeserializeProperties(component, in);
+    }
+}
+
 template<typename TComponent>
 struct SceneComponentAutoRegistrar
 {
@@ -52,26 +86,10 @@ public: \
     static constexpr const char* StaticComponentName = NameValue; \
     ComponentTypeID GetID() const override { return StaticComponentID; } \
     const char* GetTypeName() const override { return StaticComponentName; } \
-    void Ensure(Entity& entity) const override \
-    { \
-        if (!entity.HasComponent<Type>()) \
-            entity.AddComponent<Type>(); \
-    } \
-    bool Has(const Entity& entity) const override \
-    { \
-        return entity.HasComponent<Type>(); \
-    } \
-    void Serialize(const Entity& entity, nlohmann::json& out) const override \
-    { \
-        if (!entity.HasComponent<Type>()) \
-            return; \
-        SerializeProperties(entity.GetComponent<Type>(), out); \
-    } \
-    void Deserialize(Entity& entity, const nlohmann::json& in) const override \
-    { \
-        auto& component = entity.AddComponent<Type>(); \
-        DeserializeProperties(component, in); \
-    } \
+    void Ensure(Entity& entity) const override { SceneComponentDetail::Ensure<Type>(entity); } \
+    bool Has(const Entity& entity) const override { return SceneComponentDetail::Has<Type>(entity); } \
+    void Serialize(const Entity& entity, nlohmann::json& out) const override { SceneComponentDetail::Serialize<Type>(entity, out); } \
+    void Deserialize(Entity& entity, const nlohmann::json& in) const override { SceneComponentDetail::Deserialize<Type>(entity, in); } \
 private: \
     inline static const SceneComponentAutoRegistrar<Type> s_AutoRegistrar{}; \
 public:
