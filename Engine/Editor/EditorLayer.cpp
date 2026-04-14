@@ -25,6 +25,11 @@ void EditorLayer::Draw(Scene* scene)
     m_SceneEditorPanel->Draw(*scene);
 }
 
+const SceneViewportState& EditorLayer::GetSceneViewportState() const
+{
+    return m_SceneViewportPanel->GetState();
+}
+
 void EditorLayer::DrawDockspace()
 {
 #ifdef IMGUI_HAS_DOCK

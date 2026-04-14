@@ -81,14 +81,13 @@ void Application::Run()
 
             window->ResetResizeFlag();
         }
-
-        OnUpdate(deltaTime);
-
-        vulkanRenderer.BeginFrame();
-
-        OnRender(vulkanRenderer);
+        
         editorLayer->Draw(GetEditorScene());
-
+        OnUpdate(deltaTime);
+        
+        vulkanRenderer.BeginFrame();
+        OnRender(vulkanRenderer);
+        
         imguiLayer.EndFrame();
         vulkanRenderer.EndFrame();
     }
@@ -107,4 +106,9 @@ void Application::Shutdown()
     vulkanRenderer.Cleanup();
 
     isShutdown = true;
+}
+
+const SceneViewportState& Application::GetSceneViewportState() const
+{
+    return editorLayer->GetSceneViewportState();
 }

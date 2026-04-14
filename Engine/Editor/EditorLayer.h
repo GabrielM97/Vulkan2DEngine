@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include "Editor/SceneViewportPanel.h"
+
 class Scene;
 class SceneViewportPanel;
 class SceneEditorPanel;
@@ -13,6 +15,7 @@ public:
     ~EditorLayer();
 
     void Draw(Scene* scene);
+    const SceneViewportState& GetSceneViewportState() const;
 
 private:
     void DrawDockspace();

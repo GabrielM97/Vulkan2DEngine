@@ -44,8 +44,13 @@ void SandboxApp::OnUpdate(float deltaTime)
 {
     CameraCommand command{};
     glm::vec2 playerInput{0.0f, 0.0f};
+    
+    const SceneViewportState& viewportState = GetSceneViewportState();
+    const bool allowSceneInput = viewportState.visible
+        && viewportState.focused
+        && IsKeyboardCapturedByUI();
 
-    if (!IsKeyboardCapturedByUI())
+    if (allowSceneInput)
     {
         if (IsKeyDown(GLFW_KEY_A))
         {
@@ -89,12 +94,15 @@ void SandboxApp::OnUpdate(float deltaTime)
     if (m_Player.IsValid())
         m_Player.Move(playerInput, deltaTime);
 
-    m_Scene.UpdateCamera(
-        command,
-        deltaTime,
-        static_cast<float>(GetRenderer().GetFramebufferWidth()),
-        static_cast<float>(GetRenderer().GetFramebufferHeight())
-    );
+    if (viewportState.visible)
+    {
+        m_Scene.UpdateCamera(
+            command,
+            deltaTime,
+            static_cast<float>(viewportState.width),
+            static_cast<float>(viewportState.height)
+        );
+    }
 
     m_Scene.Update(deltaTime);
 }

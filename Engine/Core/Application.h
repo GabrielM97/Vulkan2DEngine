@@ -5,6 +5,7 @@
 #include "Platform/Window.h"
 #include "Renderer/VulkanRenderer.h"
 #include "Renderer/ImGuiLayer.h"
+#include "Editor/SceneViewportPanel.h"
 
 class EditorLayer;
 class Scene;
@@ -18,6 +19,8 @@ public:
     bool Init();
     void Run();
     void Shutdown();
+    
+    const SceneViewportState& GetSceneViewportState() const;
 
 protected:
     virtual void OnInit() {}
