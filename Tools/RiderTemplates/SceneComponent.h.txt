@@ -1,0 +1,13 @@
+#pragma once
+
+#include "Component/SceneComponentRegistry.h"
+#include "Reflection/Property.h"
+#include "Reflection/PropertyTypeTraits.h"
+
+class $NAME$ : public SceneComponent
+{
+public:
+    REGISTER_SCENE_COMPONENT($NAME$, $COMPONENT_ID$, "$NAME$")
+};
+
+REGISTER_PROPERTIES($NAME$);

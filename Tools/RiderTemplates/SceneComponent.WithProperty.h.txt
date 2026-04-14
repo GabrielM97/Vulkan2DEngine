@@ -1,0 +1,18 @@
+#pragma once
+
+#include "Component/SceneComponentRegistry.h"
+#include "Reflection/Property.h"
+#include "Reflection/PropertyTypeTraits.h"
+
+class $NAME$ : public SceneComponent
+{
+public:
+    PROPERTY_FIELD(float, ExampleValue, EditAnywhere | Save, 0.0f);
+
+    REGISTER_SCENE_COMPONENT($NAME$, $COMPONENT_ID$, "$NAME$")
+};
+
+REGISTER_PROPERTIES(
+    $NAME$,
+    PROPERTY_INFO($NAME$, ExampleValue, EditAnywhere | Save)
+);

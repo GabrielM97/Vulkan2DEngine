@@ -1,32 +1,33 @@
-# --- Core ---
-set(CORE_SRC
+# --- Folder Source Sets ---
+set(CORE_FOLDER_SRC
     Core/Application.cpp
     Core/Application.h
+)
+
+set(MATH_FOLDER_SRC
     Math/Transform2D.h
     Math/TransformMath2D.cpp
     Math/TransformMath2D.h
+)
+
+set(COMPONENT_FOLDER_SRC
     Component/EntityComponent.h
     Component/SceneComponent.h
     Component/SceneComponentRegistry.h
-    Gameplay/DebugSettingsComponent.h
 )
 
-add_library(Core STATIC ${CORE_SRC})
-target_include_directories(Core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(Core PUBLIC EngineDeps)
+set(REFLECTION_FOLDER_SRC
+    Reflection/Property.h
+    Reflection/PropertySerialization.h
+    Reflection/PropertyTypeTraits.h
+)
 
-# --- Platform ---
-set(PLATFORM_SRC
+set(PLATFORM_FOLDER_SRC
     Platform/Window.cpp
     Platform/Window.h
 )
 
-add_library(Platform STATIC ${PLATFORM_SRC})
-target_include_directories(Platform PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(Platform PUBLIC Core EngineDeps)
-
-# --- Renderer ---
-set(RENDERER_SRC
+set(RENDERER_FOLDER_SRC
     Renderer/ImGuiLayer.cpp
     Renderer/ImGuiLayer.h
     Renderer/IRenderer2D.cpp
@@ -62,35 +63,78 @@ set(RENDERER_SRC
     Renderer/VulkanVertexBuffer.h
 )
 
-add_library(Renderer STATIC ${RENDERER_SRC})
-target_include_directories(Renderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(Renderer PUBLIC Core Platform EngineDeps)
-
-# --- Scene ---
-set(SCENE_SRC
+set(SCENE_FOLDER_SRC
     Scene/Camera2D.cpp
     Scene/Camera2D.h
     Scene/Entity.cpp
     Scene/Entity.h
     Scene/Scene.cpp
     Scene/Scene.h
+    Scene/SceneComponents.h
     Scene/SceneSerializer.cpp
     Scene/SceneSerializer.h
-    Scene/SceneComponents.h
     Scene/SpriteAnimation.cpp
     Scene/SpriteAnimation.h
     Scene/SpriteAnimationSet.cpp
     Scene/SpriteAnimationSet.h
     Scene/SpriteRenderer.cpp
     Scene/SpriteRenderer.h
-    Object/Object.h
+)
+
+set(OBJECT_FOLDER_SRC
     Object/Actor.h
+    Object/Object.h
     Object/Player.cpp
     Object/Player.h
+)
+
+set(GAMEPLAY_FOLDER_SRC
+    Gameplay/DebugSettingsComponent.h
     Gameplay/PlayerMovementComponent.h
-        Reflection/Property.h
-        Reflection/PropertySerialization.h
-        Reflection/PropertyTypeTraits.h
+)
+
+set(EDITOR_FOLDER_SRC
+    Editor/EditorLayer.cpp
+    Editor/EditorLayer.h
+    Editor/SceneEditorPanel.cpp
+    Editor/SceneEditorPanel.h
+)
+
+# --- Core ---
+set(CORE_SRC
+    ${CORE_FOLDER_SRC}
+    ${MATH_FOLDER_SRC}
+    ${COMPONENT_FOLDER_SRC}
+    ${REFLECTION_FOLDER_SRC}
+)
+
+add_library(Core STATIC ${CORE_SRC})
+target_include_directories(Core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(Core PUBLIC EngineDeps)
+
+# --- Platform ---
+set(PLATFORM_SRC
+    ${PLATFORM_FOLDER_SRC}
+)
+
+add_library(Platform STATIC ${PLATFORM_SRC})
+target_include_directories(Platform PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(Platform PUBLIC Core EngineDeps)
+
+# --- Renderer ---
+set(RENDERER_SRC
+    ${RENDERER_FOLDER_SRC}
+)
+
+add_library(Renderer STATIC ${RENDERER_SRC})
+target_include_directories(Renderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(Renderer PUBLIC Core Platform EngineDeps)
+
+# --- Scene ---
+set(SCENE_SRC
+    ${SCENE_FOLDER_SRC}
+    ${OBJECT_FOLDER_SRC}
+    ${GAMEPLAY_FOLDER_SRC}
 )
 
 add_library(Scene STATIC ${SCENE_SRC})
@@ -99,10 +143,7 @@ target_link_libraries(Scene PUBLIC Renderer EngineDeps)
 
 # --- Editor ---
 set(EDITOR_SRC
-    Editor/EditorLayer.cpp
-    Editor/EditorLayer.h
-    Editor/SceneEditorPanel.cpp
-    Editor/SceneEditorPanel.h
+    ${EDITOR_FOLDER_SRC}
 )
 
 add_library(Editor STATIC ${EDITOR_SRC})
