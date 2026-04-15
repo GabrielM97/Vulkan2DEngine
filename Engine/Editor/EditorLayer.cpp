@@ -4,6 +4,7 @@
 
 #include "Editor/SceneViewportPanel.h"
 #include "Editor/SceneEditorPanel.h"
+#include "Renderer/VulkanRenderer.h"
 #include "Scene/Scene.h"
 
 EditorLayer::EditorLayer()
@@ -14,7 +15,7 @@ EditorLayer::EditorLayer()
 
 EditorLayer::~EditorLayer() = default;
 
-void EditorLayer::Draw(Scene* scene, ImTextureID sceneViewportTextureID, bool isPlaying)
+void EditorLayer::Draw(Scene* scene, VulkanRenderer& renderer, ImTextureID sceneViewportTextureID, bool isPlaying)
 {
     DrawDockspace();
     DrawTopBar(isPlaying);
@@ -24,7 +25,7 @@ void EditorLayer::Draw(Scene* scene, ImTextureID sceneViewportTextureID, bool is
 
     m_SceneViewportPanel->Draw(sceneViewportTextureID);
     m_SceneEditorPanel->Draw(*scene);
-    m_TileMapEditorPanel.Draw(*scene, m_SceneEditorPanel->GetSelectedObjectID());
+    m_TileMapEditorPanel.Draw(*scene, renderer, m_SceneEditorPanel->GetSelectedObjectID());
 }
 
 const SceneViewportState& EditorLayer::GetSceneViewportState() const

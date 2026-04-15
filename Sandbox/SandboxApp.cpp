@@ -1,5 +1,6 @@
 #include "SandboxApp.h"
 
+#include <iostream>
 #include <GLFW/glfw3.h>
 
 #include "Component/Gameplay/PlayerMovementComponent.h"
@@ -153,10 +154,11 @@ void SandboxApp::OnUpdate(float deltaTime)
             tileMapPanel.SetHoveredTile(hoveredTile);
 
             if (input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT) && tileMapPanel.IsPaintModeEnabled())
+            {
                 selected.SetTile(hoveredTile.x, hoveredTile.y, tileMapPanel.GetSelectedTileID());
-
-            if (
-                input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT) ||
+            }
+             
+            if (input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT) ||
                 (tileMapPanel.IsEraseModeEnabled() && input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT))
             )
                 selected.SetTile(hoveredTile.x, hoveredTile.y, -1);

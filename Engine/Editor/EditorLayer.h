@@ -9,6 +9,7 @@
 class Scene;
 class SceneViewportPanel;
 class SceneEditorPanel;
+class VulkanRenderer;
 
 class EditorLayer
 {
@@ -16,7 +17,7 @@ public:
     EditorLayer();
     ~EditorLayer();
 
-    void Draw(Scene* scene, ImTextureID sceneViewportTextureID, bool isPlaying);
+    void Draw(Scene* scene, VulkanRenderer& renderer, ImTextureID sceneViewportTextureID, bool isPlaying);
     const SceneViewportState& GetSceneViewportState() const;
     bool ConsumePlayRequest();
     bool ConsumeStopRequest();

@@ -47,6 +47,16 @@ void VulkanRenderer::Init(GLFWwindow* window, int width, int height)
 void VulkanRenderer::Cleanup()
 {
     vkDeviceWaitIdle(device.GetDevice());
+
+    if (m_ImGuiLayer != nullptr)
+    {
+        for (const auto& [path, textureID] : m_ImGuiTextureCache)
+        {
+            (void)path;
+            m_ImGuiLayer->UnregisterTexture(textureID);
+        }
+    }
+    m_ImGuiTextureCache.clear();
     
     if (m_ImGuiLayer != nullptr && m_SceneViewportTextureID != NULL)
     {
@@ -93,6 +103,30 @@ void VulkanRenderer::SetCamera(const Camera2D& camera)
 {
     m_Camera = camera;
     m_CameraDirty = true;
+}
+
+ImTextureID VulkanRenderer::GetOrCreateImGuiTextureID(const std::string& path)
+{
+    if (path.empty() || m_ImGuiLayer == nullptr)
+        return NULL;
+
+    auto it = m_ImGuiTextureCache.find(path);
+    if (it != m_ImGuiTextureCache.end())
+        return it->second;
+
+    const uint32_t textureIndex = GetOrLoadTexture(path);
+    const VulkanTexture* texture = GetTexture(textureIndex);
+    if (texture == nullptr)
+        return NULL;
+
+    ImTextureID textureID = m_ImGuiLayer->RegisterTexture(
+        texture->GetSampler(),
+        texture->GetImageView(),
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    );
+
+    m_ImGuiTextureCache.emplace(path, textureID);
+    return textureID;
 }
 
 void VulkanRenderer::EnsureSceneViewportTarget(uint32_t width, uint32_t height)
@@ -433,6 +467,16 @@ void VulkanRenderer::CreateGlobalResources(int width, int height)
 
 void VulkanRenderer::DestroyGlobalResources()
 {
+    if (m_ImGuiLayer != nullptr)
+    {
+        for (const auto& [path, textureID] : m_ImGuiTextureCache)
+        {
+            (void)path;
+            m_ImGuiLayer->UnregisterTexture(textureID);
+        }
+    }
+    m_ImGuiTextureCache.clear();
+
     if (m_DescriptorPool != VK_NULL_HANDLE)
     {
         vkDestroyDescriptorPool(device.GetDevice(), m_DescriptorPool, nullptr);

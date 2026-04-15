@@ -53,6 +53,7 @@ public:
 
     uint32_t GetOrLoadTexture(const std::string& path);
     const VulkanTexture* GetTexture(uint32_t index) const;
+    ImTextureID GetOrCreateImGuiTextureID(const std::string& path);
     VkInstance GetInstance() const { return context.GetInstance(); }
     VkPhysicalDevice GetPhysicalDevice() const { return device.GetPhysicalDevice(); }
     VkDevice GetDevice() const { return device.GetDevice(); }
@@ -146,6 +147,7 @@ private:
     std::vector<QuadCommand> m_QuadCommands;
     
     std::unordered_map<std::string, uint32_t> m_TextureCache;
+    std::unordered_map<std::string, ImTextureID> m_ImGuiTextureCache;
     uint32_t m_FallbackTextureIndex = 0;
     bool m_HasFallbackTexture = false;
     
