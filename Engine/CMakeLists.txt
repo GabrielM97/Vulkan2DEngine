@@ -2,6 +2,8 @@
 set(CORE_FOLDER_SRC
     Core/Application.cpp
     Core/Application.h
+    Core/InputState.cpp
+    Core/InputState.h
 )
 
 set(MATH_FOLDER_SRC

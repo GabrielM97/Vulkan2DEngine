@@ -123,6 +123,11 @@ bool ImGuiLayer::WantsKeyboardCapture() const
     return ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().WantCaptureKeyboard;
 }
 
+bool ImGuiLayer::WantsTextInput() const
+{
+    return ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().WantTextInput;
+}
+
 ImTextureID ImGuiLayer::RegisterTexture(
     VkSampler sampler,
     VkImageView imageView,

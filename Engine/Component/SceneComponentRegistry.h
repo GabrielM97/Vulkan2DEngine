@@ -1,8 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <algorithm>
 #include <type_traits>
 #include <unordered_map>
+#include <vector>
 
 #include "EntityComponent.h"
 #include "Reflection/PropertySerialization.h"
@@ -32,6 +34,29 @@ public:
         return it != m_Components.end() ? it->second.get() : nullptr;
     }
 
+    std::vector<const SceneComponent*> GetAll() const
+    {
+        std::vector<const SceneComponent*> components;
+        components.reserve(m_Components.size());
+
+        for (const auto& [id, component] : m_Components)
+        {
+            (void)id;
+            components.push_back(component.get());
+        }
+
+        std::sort(
+            components.begin(),
+            components.end(),
+            [](const SceneComponent* lhs, const SceneComponent* rhs)
+            {
+                return lhs->GetID() < rhs->GetID();
+            }
+        );
+
+        return components;
+    }
+
 private:
     std::unordered_map<ComponentTypeID, std::unique_ptr<SceneComponent>> m_Components;
 };
@@ -43,6 +68,13 @@ namespace SceneComponentDetail
     {
         if (!entity.HasComponent<TComponent>())
             entity.AddComponent<TComponent>();
+    }
+
+    template<typename TComponent>
+    void Remove(Entity& entity)
+    {
+        if (entity.HasComponent<TComponent>())
+            entity.RemoveComponent<TComponent>();
     }
 
     template<typename TComponent>
@@ -66,6 +98,30 @@ namespace SceneComponentDetail
         auto& component = entity.AddComponent<TComponent>();
         DeserializeProperties(component, in);
     }
+
+    template<typename TComponent>
+    std::span<const Property> GetProperties()
+    {
+        return PropertyRegistry<TComponent>::Get();
+    }
+
+    template<typename TComponent>
+    void* GetMutableData(Entity& entity)
+    {
+        if (!entity.HasComponent<TComponent>())
+            return nullptr;
+
+        return &entity.GetComponent<TComponent>();
+    }
+
+    template<typename TComponent>
+    const void* GetData(const Entity& entity)
+    {
+        if (!entity.HasComponent<TComponent>())
+            return nullptr;
+
+        return &entity.GetComponent<TComponent>();
+    }
 }
 
 template<typename TComponent>
@@ -87,9 +143,13 @@ public: \
     ComponentTypeID GetID() const override { return StaticComponentID; } \
     const char* GetTypeName() const override { return StaticComponentName; } \
     void Ensure(Entity& entity) const override { SceneComponentDetail::Ensure<Type>(entity); } \
+    void Remove(Entity& entity) const override { SceneComponentDetail::Remove<Type>(entity); } \
     bool Has(const Entity& entity) const override { return SceneComponentDetail::Has<Type>(entity); } \
     void Serialize(const Entity& entity, nlohmann::json& out) const override { SceneComponentDetail::Serialize<Type>(entity, out); } \
     void Deserialize(Entity& entity, const nlohmann::json& in) const override { SceneComponentDetail::Deserialize<Type>(entity, in); } \
+    std::span<const Property> GetProperties() const override { return SceneComponentDetail::GetProperties<Type>(); } \
+    void* GetMutableData(Entity& entity) const override { return SceneComponentDetail::GetMutableData<Type>(entity); } \
+    const void* GetData(const Entity& entity) const override { return SceneComponentDetail::GetData<Type>(entity); } \
 private: \
     inline static const SceneComponentAutoRegistrar<Type> s_AutoRegistrar{}; \
 public:

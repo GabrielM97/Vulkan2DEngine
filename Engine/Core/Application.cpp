@@ -1,13 +1,12 @@
 ﻿#include "Application.h"
 
-#include <GLFW/glfw3.h>
 #include <chrono>
 
 #include "Editor/EditorLayer.h"
 
 Application::Application()
 {
-    window = std::make_unique<Window>(800, 600, "Vulkan Engine Window");
+    window = std::make_unique<Window>(1920, 1080, "Vulkan Engine Window");
     editorLayer = std::make_unique<EditorLayer>();
 }
 
@@ -44,16 +43,6 @@ bool Application::Init()
     return true;
 }
 
-bool Application::IsKeyDown(int key) const
-{
-    return glfwGetKey(window->GetNativeWindow(), key) == GLFW_PRESS;
-}
-
-bool Application::IsKeyboardCapturedByUI() const
-{
-    return imguiLayer.WantsKeyboardCapture();
-}
-
 void Application::Run()
 {
     auto lastTime = std::chrono::high_resolution_clock::now();
@@ -87,7 +76,25 @@ void Application::Run()
         if (viewportState.visible)
             vulkanRenderer.EnsureSceneViewportTarget(viewportState.width, viewportState.height);
 
-        editorLayer->Draw(GetEditorScene(), vulkanRenderer.GetSceneViewportTextureID());
+        editorLayer->Draw(
+            GetEditorScene(),
+            vulkanRenderer.GetSceneViewportTextureID(),
+            IsEditorPlaying()
+        );
+
+        if (editorLayer->ConsumePlayRequest())
+            OnEditorPlay();
+
+        if (editorLayer->ConsumeStopRequest())
+            OnEditorStop();
+
+        inputState.BeginFrame(
+            window->GetNativeWindow(),
+            viewportState.visible,
+            viewportState.focused,
+            imguiLayer.WantsTextInput(),
+            IsEditorPlaying()
+        );
 
         OnUpdate(deltaTime);
 

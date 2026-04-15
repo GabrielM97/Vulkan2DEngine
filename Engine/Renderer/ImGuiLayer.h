@@ -16,6 +16,7 @@ public:
     void EndFrame();
     void Render(VkCommandBuffer commandBuffer);
     bool WantsKeyboardCapture() const;
+    bool WantsTextInput() const;
     
     ImTextureID RegisterTexture(VkSampler sampler, VkImageView imageView, VkImageLayout layout);
     void UnregisterTexture(ImTextureID textureID);

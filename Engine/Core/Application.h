@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "Core/InputState.h"
 #include "Platform/Window.h"
 #include "Renderer/VulkanRenderer.h"
 #include "Renderer/ImGuiLayer.h"
@@ -28,17 +29,19 @@ protected:
     virtual void OnRender(VulkanRenderer& renderer) {}
     virtual void OnShutdown() {}
     virtual Scene* GetEditorScene() { return nullptr; }
+    virtual bool IsEditorPlaying() const { return false; }
+    virtual void OnEditorPlay() {}
+    virtual void OnEditorStop() {}
 
     VulkanRenderer& GetRenderer() { return vulkanRenderer; }
-
-    bool IsKeyDown(int key) const;
-    bool IsKeyboardCapturedByUI() const;
+    const InputState& GetInputState() const { return inputState; }
 
 private:
     std::unique_ptr<Window> window = nullptr;
     std::unique_ptr<EditorLayer> editorLayer = nullptr;
     VulkanRenderer vulkanRenderer;
     ImGuiLayer imguiLayer;
+    InputState inputState;
     
     bool isRunning = false;
     bool isShutdown = false;

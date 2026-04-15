@@ -7,7 +7,6 @@
 void SandboxApp::OnInit()
 {
     CreateDefaultScene();
-    m_Scene.BeginPlay();
 }
 
 void SandboxApp::CreateDefaultScene()
@@ -15,6 +14,8 @@ void SandboxApp::CreateDefaultScene()
     m_Player = m_Scene.Place<Player>();
     //m_Player.SetPosition(glm::vec2{300.0f, 100.0f});
 
+    m_Scene.Place<Player>();
+    
     Entity weapon = m_Scene.CreateEntity("Weapon", m_Player.GetID());
     weapon.SetPosition({300.0f, 0.0f});
     weapon.SetSpriteSize({16.0f, 16.0f});
@@ -40,58 +41,92 @@ void SandboxApp::RefreshRuntimeHandles()
     }
 }
 
+bool SandboxApp::IsEditorPlaying() const
+{
+    return m_EditorMode == EditorMode::Playing;
+}
+
+void SandboxApp::OnEditorPlay()
+{
+    EnterPlayMode();
+}
+
+void SandboxApp::OnEditorStop()
+{
+    ExitPlayMode();
+}
+
+void SandboxApp::EnterPlayMode()
+{
+    if (m_EditorMode == EditorMode::Playing)
+        return;
+
+    if (!m_Scene.SaveToFile(m_PlayModeSnapshotPath))
+        return;
+
+    m_EditorMode = EditorMode::Playing;
+    m_Scene.BeginPlay();
+}
+
+void SandboxApp::ExitPlayMode()
+{
+    if (m_EditorMode != EditorMode::Playing)
+        return;
+
+    m_Scene.EndPlay();
+
+    if (m_Scene.LoadFromFile(m_PlayModeSnapshotPath))
+        RefreshRuntimeHandles();
+
+    m_EditorMode = EditorMode::Editing;
+}
+
 void SandboxApp::OnUpdate(float deltaTime)
 {
     CameraCommand command{};
     glm::vec2 playerInput{0.0f, 0.0f};
-    
-    const SceneViewportState& viewportState = GetSceneViewportState();
-    const bool allowSceneInput = viewportState.visible
-        && viewportState.focused
-        && IsKeyboardCapturedByUI();
 
-    if (allowSceneInput)
+    const InputState& input = GetInputState();
+    const SceneViewportState& viewportState = GetSceneViewportState();
+
+    if (input.CanUseRuntimeViewportInput())
     {
-        if (IsKeyDown(GLFW_KEY_A))
+        if (input.IsKeyDown(GLFW_KEY_A))
         {
             playerInput.x -= 1.0f;
         }
-        if (IsKeyDown(GLFW_KEY_D))
+        if (input.IsKeyDown(GLFW_KEY_D))
         {
             playerInput.x += 1.0f;
         }
-        if (IsKeyDown(GLFW_KEY_W))
+        if (input.IsKeyDown(GLFW_KEY_W))
         {
             playerInput.y -= 1.0f;
         }
-        if (IsKeyDown(GLFW_KEY_S))
+        if (input.IsKeyDown(GLFW_KEY_S))
         {
             playerInput.y += 1.0f;
         }
+    }
 
-        if (IsKeyDown(GLFW_KEY_Q))
+    if (input.CanUseEditorViewportInput())
+    {
+        if (input.IsKeyDown(GLFW_KEY_Q))
             command.zoomDelta -= 1.0f;
-        if (IsKeyDown(GLFW_KEY_E))
+        if (input.IsKeyDown(GLFW_KEY_E))
             command.zoomDelta += 1.0f;
     }
 
-    const bool savePressed = IsKeyDown(GLFW_KEY_F5);
-    if (savePressed && !m_SavePressedLastFrame)
+    if (input.CanUseEditorShortcuts() && input.WasKeyPressed(GLFW_KEY_F5))
         m_Scene.SaveToFile(m_SceneFilePath);
-    m_SavePressedLastFrame = savePressed;
 
-    const bool loadPressed = IsKeyDown(GLFW_KEY_F9);
-    if (loadPressed && !m_LoadPressedLastFrame)
+    if (input.CanUseEditorShortcuts() && input.WasKeyPressed(GLFW_KEY_F9))
     {
         if (m_Scene.LoadFromFile(m_SceneFilePath))
-        {
             RefreshRuntimeHandles();
-            m_Scene.BeginPlay();
-        }
     }
-    m_LoadPressedLastFrame = loadPressed;
 
-    if (m_Player.IsValid())
+    if (m_EditorMode == EditorMode::Playing && m_Player.IsValid())
         m_Player.Move(playerInput, deltaTime);
 
     if (viewportState.visible)
@@ -104,7 +139,8 @@ void SandboxApp::OnUpdate(float deltaTime)
         );
     }
 
-    m_Scene.Update(deltaTime);
+    if (m_EditorMode == EditorMode::Playing)
+        m_Scene.Update(deltaTime);
 }
 
 void SandboxApp::OnRender(VulkanRenderer& renderer)
