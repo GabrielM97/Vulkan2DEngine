@@ -83,12 +83,11 @@ void Application::Run()
             window->ResetResizeFlag();
         }
 
-        // First draw uses the currently registered texture handle.
-        editorLayer->Draw(GetEditorScene(), vulkanRenderer.GetSceneViewportTextureID());
-
         const SceneViewportState& viewportState = editorLayer->GetSceneViewportState();
         if (viewportState.visible)
             vulkanRenderer.EnsureSceneViewportTarget(viewportState.width, viewportState.height);
+
+        editorLayer->Draw(GetEditorScene(), vulkanRenderer.GetSceneViewportTextureID());
 
         OnUpdate(deltaTime);
 
