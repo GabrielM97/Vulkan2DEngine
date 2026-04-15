@@ -54,6 +54,7 @@ void VulkanRenderer::Cleanup()
         m_SceneViewportTextureID = NULL;
     }
     
+    m_ViewportPipeline.Cleanup(device.GetDevice());
     m_SceneViewportTarget.Cleanup(device.GetDevice());
     m_InstanceBuffer.Cleanup(device.GetDevice());
     m_IndexBuffer.Cleanup(device.GetDevice());
@@ -100,34 +101,39 @@ void VulkanRenderer::EnsureSceneViewportTarget(uint32_t width, uint32_t height)
         return;
 
     const VkFormat format = m_swapchain.GetFormat();
+    const bool needsResize = !m_SceneViewportTarget.IsValid()
+        || m_SceneViewportTarget.GetWidth() != width
+        || m_SceneViewportTarget.GetHeight() != height;
+
+    if (!needsResize)
+        return;
+
+    vkDeviceWaitIdle(device.GetDevice());
     
     if (!m_SceneViewportTarget.IsValid())
     {
         m_SceneViewportTarget.Init(device, width, height, format);
-        
-        m_SceneViewportTarget.TransitionToShaderRead(
-           device.GetDevice(),
-           m_UploadCommandPool,
-           device.GetGraphicsQueue()
-       );
-        
-        RefreshSceneViewportTextureHandle();
-        return;
     }
-
-    if (m_SceneViewportTarget.GetWidth() != width || m_SceneViewportTarget.GetHeight() != height)
+    else
     {
         m_SceneViewportTarget.Resize(device, width, height, format);
-        
-        m_SceneViewportTarget.TransitionToShaderRead(
-           device.GetDevice(),
-           m_UploadCommandPool,
-           device.GetGraphicsQueue()
-       );
-        
-        RefreshSceneViewportTextureHandle();
     }
-        
+
+    m_SceneViewportTarget.TransitionToShaderRead(
+       device.GetDevice(),
+       m_UploadCommandPool,
+       device.GetGraphicsQueue()
+   );
+
+    m_ViewportPipeline.Cleanup(device.GetDevice());
+    m_ViewportPipeline.Init(
+        device.GetDevice(),
+        m_SceneViewportTarget.GetExtent(),
+        m_SceneViewportTarget.GetRenderPass(),
+        m_DescriptorSetLayout
+    );
+
+    RefreshSceneViewportTextureHandle();
 }
 
 void VulkanRenderer::SetImGuiLayer(ImGuiLayer* imguiLayer)
@@ -192,13 +198,13 @@ void VulkanRenderer::RecordSceneViewportPass(VkCommandBuffer commandBuffer)
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = m_SceneViewportTarget.GetExtent();
 
-    VkClearValue clearColor = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
+    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 0.0f}}};
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.Get());
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ViewportPipeline.Get());
 
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -230,7 +236,7 @@ void VulkanRenderer::RecordSceneViewportPass(VkCommandBuffer commandBuffer)
         vkCmdBindDescriptorSets(
             commandBuffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
-            m_Pipeline.GetLayout(),
+            m_ViewportPipeline.GetLayout(),
             0,
             1,
             &descriptorSet,
