@@ -155,6 +155,7 @@ namespace
                 {"width", tileMap.width},
                 {"height", tileMap.height},
                 {"tileSize", SerializeVec2(tileMap.tileSize)},
+                {"atlasCellSize", json::array({tileMap.atlasCellSize.x, tileMap.atlasCellSize.y})},
                 {"columns", tileMap.columns},
                 {"rows", tileMap.rows},
                 {"tilesetTexturePath", tileMap.tilesetTexturePath},
@@ -169,6 +170,21 @@ namespace
         tileMap.tileSize = value.contains("tileSize")
             ? DeserializeVec2(value.at("tileSize"))
             : glm::vec2{32.0f, 32.0f};
+        if (value.contains("atlasCellSize") && value.at("atlasCellSize").is_array() && value.at("atlasCellSize").size() >= 2)
+        {
+            const json& atlasCellSize = value.at("atlasCellSize");
+            tileMap.atlasCellSize = {
+                std::max(1, atlasCellSize.at(0).get<int>()),
+                std::max(1, atlasCellSize.at(1).get<int>())
+            };
+        }
+        else
+        {
+            tileMap.atlasCellSize = {
+                std::max(1, static_cast<int>(tileMap.tileSize.x)),
+                std::max(1, static_cast<int>(tileMap.tileSize.y))
+            };
+        }
         tileMap.columns = std::max<uint32_t>(1, value.value("columns", 1u));
         tileMap.rows = std::max<uint32_t>(1, value.value("rows", 1u));
         tileMap.tilesetTexturePath = value.value("tilesetTexturePath", "");

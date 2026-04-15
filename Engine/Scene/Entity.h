@@ -118,6 +118,8 @@ public:
     uint32_t GetTileMapHeight() const;
     glm::vec2 GetTileSize() const;
     void SetTileSize(const glm::vec2& size) const;
+    glm::ivec2 GetTileAtlasCellSize() const;
+    void SetTileAtlasCellSize(const glm::ivec2& size) const;
 
     std::string GetTileMapTexturePath() const;
     void SetTileMapTexturePath(const std::string& path) const;
