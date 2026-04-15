@@ -122,3 +122,28 @@ bool ImGuiLayer::WantsKeyboardCapture() const
 {
     return ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().WantCaptureKeyboard;
 }
+
+ImTextureID ImGuiLayer::RegisterTexture(
+    VkSampler sampler,
+    VkImageView imageView,
+    VkImageLayout layout)
+{
+    if (!m_Initialized)
+        throw std::runtime_error("Cannot register ImGui texture before ImGuiLayer initialization");
+
+    VkDescriptorSet descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, imageView, layout);
+    return reinterpret_cast<ImTextureID>(descriptorSet);
+}
+
+void ImGuiLayer::UnregisterTexture(ImTextureID textureID)
+{
+    if (!m_Initialized || textureID == NULL)
+        return;
+
+    ImGui_ImplVulkan_RemoveTexture(reinterpret_cast<VkDescriptorSet>(textureID));
+}
+
+void ImGuiLayer::UploadFontTexture(VulkanRenderer& renderer)
+{
+    (void)renderer;
+}

@@ -8,6 +8,7 @@ set(MATH_FOLDER_SRC
     Math/Transform2D.h
     Math/TransformMath2D.cpp
     Math/TransformMath2D.h
+        Renderer/VulkanViewportRenderTarget.cpp
 )
 
 set(COMPONENT_FOLDER_SRC
@@ -61,6 +62,8 @@ set(RENDERER_FOLDER_SRC
     Renderer/VulkanUniformBuffer.h
     Renderer/VulkanVertexBuffer.cpp
     Renderer/VulkanVertexBuffer.h
+        Renderer/VulkanViewportRenderTarget.h
+        Renderer/VulkanViewportRenderTarget.cpp
 )
 
 set(SCENE_FOLDER_SRC

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <imgui.h>
 
 #include "Editor/SceneViewportPanel.h"
 
@@ -14,7 +15,7 @@ public:
     EditorLayer();
     ~EditorLayer();
 
-    void Draw(Scene* scene);
+    void Draw(Scene* scene, ImTextureID sceneViewportTextureID);
     const SceneViewportState& GetSceneViewportState() const;
 
 private:
