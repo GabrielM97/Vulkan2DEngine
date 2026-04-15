@@ -93,6 +93,16 @@ void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass rende
     viewportState.scissorCount = 1;
     viewportState.pScissors = &scissor;
 
+    std::array<VkDynamicState, 2> dynamicStates = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+
+    VkPipelineDynamicStateCreateInfo dynamicState{};
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+    dynamicState.pDynamicStates = dynamicStates.data();
+
     //Rasterizer
     VkPipelineRasterizationStateCreateInfo rasterizer{};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -152,6 +162,7 @@ void VulkanPipeline::Init(VkDevice device, VkExtent2D extent, VkRenderPass rende
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pDynamicState = &dynamicState;
 
     pipelineInfo.layout = m_pipelineLayout;
     pipelineInfo.renderPass = renderPass;

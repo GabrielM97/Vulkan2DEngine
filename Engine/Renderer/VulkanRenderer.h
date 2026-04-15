@@ -111,6 +111,7 @@ private:
     VulkanSwapChain m_swapchain;
     VulkanRenderPass m_renderPass;
     VulkanPipeline m_Pipeline;
+    VulkanPipeline m_ViewportPipeline;
     VulkanFramebuffer m_Framebuffer;
     VulkanCommandBuffer m_CommandBuffer;
     VkCommandPool m_UploadCommandPool = VK_NULL_HANDLE;
@@ -149,6 +150,6 @@ private:
     bool m_HasFallbackTexture = false;
     
     ImGuiLayer* m_ImGuiLayer = nullptr;
-    ImTextureID m_SceneViewportTextureID = 0;
+    ImTextureID m_SceneViewportTextureID = NULL;
 
 };
