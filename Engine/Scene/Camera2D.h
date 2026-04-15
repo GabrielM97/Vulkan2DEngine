@@ -1,6 +1,8 @@
 #pragma once
 
 #include <algorithm>
+#include <glm/fwd.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 
 class Camera2D
@@ -25,8 +27,13 @@ public:
 
     void SetZoomLimits(float minZoom, float maxZoom);
     void Update(float moveX, float moveY, float zoomDelta, float deltaTime, float viewportWidth, float viewportHeight);
+    
+    const glm::mat4& GetViewProjectionMatrix() const { return m_ViewProjection; }
+    glm::vec2 ScreenToWorld(const glm::vec2& screenPosition, float viewportWidth, float viewportHeight) const;
 
 private:
+    void RebuildMatrices(float viewportWidth, float viewportHeight);
+
     glm::vec2 m_TopLeftPosition{ 0.0f, 0.0f };
     float m_Zoom = 1.0f;
 
@@ -34,4 +41,6 @@ private:
     float m_ZoomSpeed = 1.5f;
     float m_MinZoom = 0.25f;
     float m_MaxZoom = 4.0f;
+    glm::mat4 m_ViewProjection{1.0f};
+    glm::mat4 m_InverseViewProjection{1.0f};
 };

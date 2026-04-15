@@ -148,6 +148,38 @@ namespace
 
         return requiredComponents;
     }
+    
+    json SerializeTileMap(const TileMapComponent& tileMap)
+    {
+        return {
+                {"width", tileMap.width},
+                {"height", tileMap.height},
+                {"tileSize", SerializeVec2(tileMap.tileSize)},
+                {"columns", tileMap.columns},
+                {"rows", tileMap.rows},
+                {"tilesetTexturePath", tileMap.tilesetTexturePath},
+                {"tiles", tileMap.tiles}
+        };
+    }
+
+    void DeserializeTileMap(const json& value, TileMapComponent& tileMap)
+    {
+        tileMap.width = value.value("width", 0u);
+        tileMap.height = value.value("height", 0u);
+        tileMap.tileSize = value.contains("tileSize")
+            ? DeserializeVec2(value.at("tileSize"))
+            : glm::vec2{32.0f, 32.0f};
+        tileMap.columns = std::max<uint32_t>(1, value.value("columns", 1u));
+        tileMap.rows = std::max<uint32_t>(1, value.value("rows", 1u));
+        tileMap.tilesetTexturePath = value.value("tilesetTexturePath", "");
+        tileMap.tiles = value.value("tiles", std::vector<int32_t>{});
+
+        const std::size_t expectedCount =
+            static_cast<std::size_t>(tileMap.width) * static_cast<std::size_t>(tileMap.height);
+
+        if (tileMap.tiles.size() != expectedCount)
+            tileMap.tiles.assign(expectedCount, -1);
+    }
 }
 
 bool SceneSerializer::SaveToFile(const Scene& scene, const std::string& path)
@@ -189,6 +221,12 @@ bool SceneSerializer::SaveToFile(const Scene& scene, const std::string& path)
                 {"clipName", animation.GetRequestedClipName()},
                 {"playing", animation.IsPlaying()}
             };
+        }
+        
+        if (scene.m_Registry.all_of<TileMapComponent>(entity))
+        {
+            const auto& tileMap = scene.m_Registry.get<TileMapComponent>(entity);
+            entityJson["tileMap"] = SerializeTileMap(tileMap);
         }
 
         Entity wrapped = scene.GetEntity(id);
@@ -287,6 +325,12 @@ bool SceneSerializer::LoadFromFile(Scene& scene, const std::string& path)
                 if (!animationJson.value("playing", true))
                     animation.Stop();
             }
+        }
+        
+        if (entityJson.contains("tileMap"))
+        {
+            auto& tileMap = scene.m_Registry.emplace<TileMapComponent>(entity);
+            DeserializeTileMap(entityJson.at("tileMap"), tileMap);
         }
 
         Entity wrapped = scene.GetEntity(id);

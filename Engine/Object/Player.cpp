@@ -1,7 +1,7 @@
 #include "Object/Player.h"
 
-#include "Gameplay/DebugSettingsComponent.h"
-#include "Gameplay/PlayerMovementComponent.h"
+#include "Component/Gameplay/DebugSettingsComponent.h"
+#include "Component/Gameplay/PlayerMovementComponent.h"
 
 void Player::Initialize()
 {

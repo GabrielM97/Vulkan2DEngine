@@ -28,6 +28,9 @@ private:
     void RefreshRuntimeHandles();
     void EnterPlayMode();
     void ExitPlayMode();
+    bool TryGetHoveredTile(Entity entity, glm::ivec2& outTile) const;
+    glm::vec2 ScreenToWorld(const glm::vec2& screenPosition, const SceneViewportState& viewportState) const;
+
 
     Scene m_Scene;
     Player m_Player;

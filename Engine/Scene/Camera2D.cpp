@@ -1,5 +1,8 @@
 #include "Camera2D.h"
 
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+
 void Camera2D::SetTopLeftPosition(const glm::vec2& position)
 {
     m_TopLeftPosition = position;
@@ -52,6 +55,50 @@ void Camera2D::SetZoomLimits(float minZoom, float maxZoom)
     m_Zoom = std::clamp(m_Zoom, m_MinZoom, m_MaxZoom);
 }
 
+void Camera2D::RebuildMatrices(float viewportWidth, float viewportHeight)
+{
+    if (viewportWidth <= 0.0f || viewportHeight <= 0.0f)
+    {
+        m_ViewProjection = glm::mat4{1.0f};
+        m_InverseViewProjection = glm::mat4{1.0f};
+        return;
+    }
+
+    const float viewWidth = viewportWidth / m_Zoom;
+    const float viewHeight = viewportHeight / m_Zoom;
+
+    const glm::mat4 projection = glm::ortho(
+        0.0f,
+        viewWidth,
+        viewHeight,
+        0.0f,
+        -1.0f,
+        1.0f
+    );
+
+    const glm::mat4 view = glm::translate(
+        glm::mat4{1.0f},
+        glm::vec3(-m_TopLeftPosition, 0.0f)
+    );
+
+    m_ViewProjection = projection * view;
+    m_InverseViewProjection = glm::inverse(m_ViewProjection);
+}
+
+glm::vec2 Camera2D::ScreenToWorld(const glm::vec2& screenPosition, float viewportWidth, float viewportHeight) const
+{
+    if (viewportWidth <= 0.0f || viewportHeight <= 0.0f)
+        return {};
+
+    const glm::vec2 ndc = {
+        (screenPosition.x / viewportWidth) * 2.0f - 1.0f,
+        1.0f - (screenPosition.y / viewportHeight) * 2.0f
+    };
+
+    const glm::vec4 world = m_InverseViewProjection * glm::vec4(ndc.x, ndc.y, 0.0f, 1.0f);
+    return glm::vec2(world.x, world.y);
+}
+
 void Camera2D::Update(float moveX, float moveY, float zoomDelta, float deltaTime, float viewportWidth, float viewportHeight)
 {
     Move(
@@ -64,4 +111,6 @@ void Camera2D::Update(float moveX, float moveY, float zoomDelta, float deltaTime
         viewportWidth,
         viewportHeight
     );
+
+    RebuildMatrices(viewportWidth, viewportHeight);
 }

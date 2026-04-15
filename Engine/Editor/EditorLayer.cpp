@@ -24,6 +24,7 @@ void EditorLayer::Draw(Scene* scene, ImTextureID sceneViewportTextureID, bool is
 
     m_SceneViewportPanel->Draw(sceneViewportTextureID);
     m_SceneEditorPanel->Draw(*scene);
+    m_TileMapEditorPanel.Draw(*scene, m_SceneEditorPanel->GetSelectedObjectID());
 }
 
 const SceneViewportState& EditorLayer::GetSceneViewportState() const

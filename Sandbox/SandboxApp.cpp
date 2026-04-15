@@ -2,7 +2,8 @@
 
 #include <GLFW/glfw3.h>
 
-#include "Gameplay/PlayerMovementComponent.h"
+#include "Component/Gameplay/PlayerMovementComponent.h"
+#include "Editor/EditorLayer.h"
 
 void SandboxApp::OnInit()
 {
@@ -13,8 +14,6 @@ void SandboxApp::CreateDefaultScene()
 {
     m_Player = m_Scene.Place<Player>();
     //m_Player.SetPosition(glm::vec2{300.0f, 100.0f});
-
-    m_Scene.Place<Player>();
     
     Entity weapon = m_Scene.CreateEntity("Weapon", m_Player.GetID());
     weapon.SetPosition({300.0f, 0.0f});
@@ -27,6 +26,13 @@ void SandboxApp::CreateDefaultScene()
     weapon2.SetSpriteSize({16.0f, 16.0f});
     weapon2.SetSpriteTexturePath("Assets/Textures/texture.jpg");
     weapon2.SetSpriteLayer(1);
+    
+    Entity map = m_Scene.CreateEntity("Map");
+    map.EnsureTileMap();
+    map.ResizeTileMap(16, 16);
+    map.SetTileSize({32.0f, 32.0f});
+    map.SetTileMapGrid(8, 8);
+    map.SetTileMapTexturePath("Assets/Textures/texture.jpg");
 }
 
 void SandboxApp::RefreshRuntimeHandles()
@@ -81,6 +87,53 @@ void SandboxApp::ExitPlayMode()
     m_EditorMode = EditorMode::Editing;
 }
 
+bool SandboxApp::TryGetHoveredTile(Entity entity, glm::ivec2& outTile) const
+{
+    if (!entity.IsValid() || !entity.HasTileMap())
+        return false;
+
+    const SceneViewportState& viewportState = GetSceneViewportState();
+    const glm::vec2 mouseScreen = GetInputState().GetMouseScreenPosition();
+    const glm::vec2 worldPosition = ScreenToWorld(mouseScreen, viewportState);
+    const Transform2D mapTransform = entity.GetTransform();
+    const glm::vec2 tileSize = entity.GetTileSize();
+
+    if (tileSize.x <= 0.0f || tileSize.y <= 0.0f)
+        return false;
+
+    const glm::vec2 local = worldPosition - mapTransform.position;
+    const int tileX = static_cast<int>(std::floor(local.x / tileSize.x));
+    const int tileY = static_cast<int>(std::floor(local.y / tileSize.y));
+
+    if (tileX < 0 || tileY < 0)
+        return false;
+
+    if (tileX >= static_cast<int>(entity.GetTileMapWidth()) ||
+        tileY >= static_cast<int>(entity.GetTileMapHeight()))
+    {
+        return false;
+    }
+
+    outTile = {tileX, tileY};
+    return true;
+}
+
+glm::vec2 SandboxApp::ScreenToWorld(const glm::vec2& screenPosition, const SceneViewportState& viewportState) const
+{
+    const glm::vec2 viewportMin{
+        viewportState.contentMin.x,
+        viewportState.contentMin.y
+    };
+
+    const glm::vec2 viewportLocal = screenPosition - viewportMin;
+
+    return m_Scene.GetCamera().ScreenToWorld(
+        viewportLocal,
+        static_cast<float>(viewportState.width),
+        static_cast<float>(viewportState.height)
+    );
+}
+
 void SandboxApp::OnUpdate(float deltaTime)
 {
     CameraCommand command{};
@@ -88,6 +141,31 @@ void SandboxApp::OnUpdate(float deltaTime)
 
     const InputState& input = GetInputState();
     const SceneViewportState& viewportState = GetSceneViewportState();
+    
+    if (input.CanUseEditorViewportInput() && viewportState.hovered)
+    {
+        auto& tileMapPanel = GetEditorLayer().GetTileMapEditorPanel();
+        Entity selected = m_Scene.GetEntity(tileMapPanel.GetSelectedObjectID());
+
+        glm::ivec2 hoveredTile{-1, -1};
+        if (tileMapPanel.HasActiveTileMap(m_Scene) && TryGetHoveredTile(selected, hoveredTile))
+        {
+            tileMapPanel.SetHoveredTile(hoveredTile);
+
+            if (input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT) && tileMapPanel.IsPaintModeEnabled())
+                selected.SetTile(hoveredTile.x, hoveredTile.y, tileMapPanel.GetSelectedTileID());
+
+            if (
+                input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT) ||
+                (tileMapPanel.IsEraseModeEnabled() && input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT))
+            )
+                selected.SetTile(hoveredTile.x, hoveredTile.y, -1);
+        }
+        else
+        {
+            tileMapPanel.SetHoveredTile(glm::ivec2{-1, -1});
+        }
+    }
 
     if (input.CanUseRuntimeViewportInput())
     {

@@ -10,13 +10,17 @@ set(MATH_FOLDER_SRC
     Math/Transform2D.h
     Math/TransformMath2D.cpp
     Math/TransformMath2D.h
-        Renderer/VulkanViewportRenderTarget.cpp
 )
 
 set(COMPONENT_FOLDER_SRC
     Component/EntityComponent.h
     Component/SceneComponent.h
     Component/SceneComponentRegistry.h
+)
+
+set(GAMEPLAY_FOLDER_SRC
+    Component/Gameplay/DebugSettingsComponent.h
+    Component/Gameplay/PlayerMovementComponent.h
 )
 
 set(REFLECTION_FOLDER_SRC
@@ -64,8 +68,8 @@ set(RENDERER_FOLDER_SRC
     Renderer/VulkanUniformBuffer.h
     Renderer/VulkanVertexBuffer.cpp
     Renderer/VulkanVertexBuffer.h
-        Renderer/VulkanViewportRenderTarget.h
-        Renderer/VulkanViewportRenderTarget.cpp
+    Renderer/VulkanViewportRenderTarget.h
+    Renderer/VulkanViewportRenderTarget.cpp
 )
 
 set(SCENE_FOLDER_SRC
@@ -94,16 +98,15 @@ set(OBJECT_FOLDER_SRC
     Object/Player.h
 )
 
-set(GAMEPLAY_FOLDER_SRC
-    Gameplay/DebugSettingsComponent.h
-    Gameplay/PlayerMovementComponent.h
-)
-
 set(EDITOR_FOLDER_SRC
     Editor/EditorLayer.cpp
     Editor/EditorLayer.h
     Editor/SceneEditorPanel.cpp
     Editor/SceneEditorPanel.h
+    Editor/SceneViewportPanel.h
+    Editor/SceneViewportPanel.cpp
+    Editor/TileMapEditorPanel.h
+    Editor/TileMapEditorPanel.cpp
 )
 
 # --- Core ---
@@ -111,6 +114,7 @@ set(CORE_SRC
     ${CORE_FOLDER_SRC}
     ${MATH_FOLDER_SRC}
     ${COMPONENT_FOLDER_SRC}
+    ${GAMEPLAY_FOLDER_SRC}
     ${REFLECTION_FOLDER_SRC}
 )
 
@@ -149,12 +153,7 @@ target_link_libraries(Scene PUBLIC Renderer EngineDeps)
 
 # --- Editor ---
 set(EDITOR_SRC
-    Editor/EditorLayer.cpp
-    Editor/EditorLayer.h
-    Editor/SceneEditorPanel.cpp
-    Editor/SceneEditorPanel.h
-    Editor/SceneViewportPanel.h
-    Editor/SceneViewportPanel.cpp
+    ${EDITOR_FOLDER_SRC}
 )
 
 add_library(Editor STATIC ${EDITOR_SRC})

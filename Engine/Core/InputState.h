@@ -3,6 +3,7 @@
 #include <array>
 
 #include <GLFW/glfw3.h>
+#include <glm/vec2.hpp>
 
 class InputState
 {
@@ -28,6 +29,12 @@ public:
     bool IsEditorPlaying() const { return m_IsEditorPlaying; }
     bool IsViewportVisible() const { return m_ViewportVisible; }
     bool IsViewportFocused() const { return m_ViewportFocused; }
+    
+    bool IsMouseButtonDown(int button) const;
+    bool WasMouseButtonPressed(int button) const;
+    static bool IsValidMouseButton(int button);
+
+    glm::vec2 GetMouseScreenPosition() const { return m_MouseScreenPosition; }
 
 private:
     static bool IsValidKey(int key);
@@ -38,4 +45,8 @@ private:
     bool m_ViewportFocused = false;
     bool m_TextInputActive = false;
     bool m_IsEditorPlaying = false;
+    
+    std::array<bool, GLFW_MOUSE_BUTTON_LAST + 1> m_CurrentMouseButtons{};
+    std::array<bool, GLFW_MOUSE_BUTTON_LAST + 1> m_PreviousMouseButtons{};
+    glm::vec2 m_MouseScreenPosition{0.0f, 0.0f};
 };

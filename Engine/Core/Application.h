@@ -35,6 +35,9 @@ protected:
 
     VulkanRenderer& GetRenderer() { return vulkanRenderer; }
     const InputState& GetInputState() const { return inputState; }
+    
+    EditorLayer& GetEditorLayer() { return *editorLayer; }
+    const EditorLayer& GetEditorLayer() const { return *editorLayer; }
 
 private:
     std::unique_ptr<Window> window = nullptr;

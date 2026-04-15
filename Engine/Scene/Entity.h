@@ -110,6 +110,25 @@ public:
     bool HasAnimationFinished() const;
     bool IsPlayingAnimationClip(const std::string& clipName) const;
     
+    bool HasTileMap() const;
+    void EnsureTileMap() const;
+    void RemoveTileMap() const;
+
+    uint32_t GetTileMapWidth() const;
+    uint32_t GetTileMapHeight() const;
+    glm::vec2 GetTileSize() const;
+    void SetTileSize(const glm::vec2& size) const;
+
+    std::string GetTileMapTexturePath() const;
+    void SetTileMapTexturePath(const std::string& path) const;
+
+    uint32_t GetTileMapColumns() const;
+    uint32_t GetTileMapRows() const;
+    void SetTileMapGrid(uint32_t columns, uint32_t rows) const;
+
+    void ResizeTileMap(uint32_t width, uint32_t height) const;
+    int32_t GetTile(int x, int y) const;
+    void SetTile(int x, int y, int32_t tileID) const;
     
     template<typename T, typename... Args>
     T& AddComponent(Args&&... args) const;
@@ -169,7 +188,8 @@ T& Entity::GetComponent()
         !std::is_same_v<T, RequiredComponentsComponent> &&
         !std::is_same_v<T, ObjectTypeComponent> &&
         !std::is_same_v<T, SpriteComponent> &&
-        !std::is_same_v<T, SpriteAnimationComponent>,
+        !std::is_same_v<T, SpriteAnimationComponent>&&
+        !std::is_same_v<T, TileMapComponent>,
         "Use Scene or Entity APIs for engine-managed components."
     );
 
