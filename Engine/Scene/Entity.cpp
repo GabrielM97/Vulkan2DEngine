@@ -439,6 +439,23 @@ void Entity::SetTileSize(const glm::vec2& size) const
     m_Scene->MarkTransformDirty(m_ID);
 }
 
+glm::ivec2 Entity::GetTileAtlasCellSize() const
+{
+    return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).atlasCellSize : glm::ivec2{32, 32};
+}
+
+void Entity::SetTileAtlasCellSize(const glm::ivec2& size) const
+{
+    if (!HasTileMap())
+        return;
+
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    tileMap.atlasCellSize = {
+        std::max(1, size.x),
+        std::max(1, size.y)
+    };
+}
+
 std::string Entity::GetTileMapTexturePath() const
 {
     return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).tilesetTexturePath : std::string{};

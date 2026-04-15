@@ -64,6 +64,7 @@ struct TileMapComponent
     uint32_t width = 0;
     uint32_t height = 0;
     glm::vec2 tileSize = {32.0f, 32.0f};
+    glm::ivec2 atlasCellSize = {32, 32};
     uint32_t columns = 1;
     uint32_t rows = 1;
     std::string tilesetTexturePath;

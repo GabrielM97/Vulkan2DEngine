@@ -5,6 +5,7 @@
 #include <filesystem>
 
 #include <imgui.h>
+#include <stb_image.h>
 
 #include "Scene/Scene.h"
 
@@ -21,6 +22,12 @@
 
 namespace
 {
+    bool TryGetImageSize(const std::string& path, int& outWidth, int& outHeight)
+    {
+        int channels = 0;
+        return stbi_info(path.c_str(), &outWidth, &outHeight, &channels) != 0;
+    }
+
 #ifdef _WIN32
     std::string OpenTilesetTexturePath()
     {
@@ -171,6 +178,16 @@ void TileMapEditorPanel::Draw(Scene& scene, GameObjectID selectedObjectID)
             m_TileMapTexturePathBuffer.size()))
     {
         entity.SetTileMapTexturePath(m_TileMapTexturePathBuffer.data());
+
+        int textureWidth = 0;
+        int textureHeight = 0;
+        if (TryGetImageSize(entity.GetTileMapTexturePath(), textureWidth, textureHeight))
+        {
+            entity.SetTileAtlasCellSize({
+                std::max(1, textureWidth / static_cast<int>(entity.GetTileMapColumns())),
+                std::max(1, textureHeight / static_cast<int>(entity.GetTileMapRows()))
+            });
+        }
     }
 
 #ifdef _WIN32
@@ -187,6 +204,16 @@ void TileMapEditorPanel::Draw(Scene& scene, GameObjectID selectedObjectID)
                 pickedPath.c_str()
             );
             entity.SetTileMapTexturePath(m_TileMapTexturePathBuffer.data());
+
+            int textureWidth = 0;
+            int textureHeight = 0;
+            if (TryGetImageSize(entity.GetTileMapTexturePath(), textureWidth, textureHeight))
+            {
+                entity.SetTileAtlasCellSize({
+                    std::max(1, textureWidth / static_cast<int>(entity.GetTileMapColumns())),
+                    std::max(1, textureHeight / static_cast<int>(entity.GetTileMapRows()))
+                });
+            }
         }
     }
 #endif
@@ -221,7 +248,20 @@ void TileMapEditorPanel::Draw(Scene& scene, GameObjectID selectedObjectID)
             static_cast<uint32_t>(m_TileMapColumnsDraft),
             static_cast<uint32_t>(m_TileMapRowsDraft)
         );
+
+        int textureWidth = 0;
+        int textureHeight = 0;
+        if (TryGetImageSize(entity.GetTileMapTexturePath(), textureWidth, textureHeight))
+        {
+            entity.SetTileAtlasCellSize({
+                std::max(1, textureWidth / m_TileMapColumnsDraft),
+                std::max(1, textureHeight / m_TileMapRowsDraft)
+            });
+        }
     }
+
+    const glm::ivec2 atlasCellSize = entity.GetTileAtlasCellSize();
+    ImGui::Text("Atlas Cell Size: %d x %d px", atlasCellSize.x, atlasCellSize.y);
 
     ImGui::SeparatorText("Brush");
 

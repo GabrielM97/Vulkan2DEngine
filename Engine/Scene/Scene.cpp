@@ -256,8 +256,8 @@ void Scene::Render(IRenderer2D& renderer)
             if (tileMap.width == 0 || tileMap.height == 0 || tileMap.tilesetTexturePath.empty())
                 continue;
 
-            const int cellWidth = std::max(1, static_cast<int>(tileMap.tileSize.x));
-            const int cellHeight = std::max(1, static_cast<int>(tileMap.tileSize.y));
+            const int cellWidth = std::max(1, tileMap.atlasCellSize.x);
+            const int cellHeight = std::max(1, tileMap.atlasCellSize.y);
             const int maxTileCount = static_cast<int>(tileMap.columns * tileMap.rows);
             const Transform2D mapTransform = GetWorldTransform(id.id);
 
