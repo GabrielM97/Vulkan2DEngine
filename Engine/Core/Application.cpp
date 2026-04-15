@@ -78,6 +78,7 @@ void Application::Run()
 
         editorLayer->Draw(
             GetEditorScene(),
+            vulkanRenderer,
             vulkanRenderer.GetSceneViewportTextureID(),
             IsEditorPlaying()
         );

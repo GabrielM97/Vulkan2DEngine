@@ -7,6 +7,7 @@
 #include <imgui.h>
 #include <stb_image.h>
 
+#include "Renderer/VulkanRenderer.h"
 #include "Scene/Scene.h"
 
 #ifdef _WIN32
@@ -33,6 +34,8 @@ namespace
     {
         char filePath[MAX_PATH] = {};
 
+        std::filesystem::path BasePath = std::filesystem::current_path();
+        
         OPENFILENAMEA dialog{};
         dialog.lStructSize = sizeof(dialog);
         dialog.lpstrFilter =
@@ -49,8 +52,10 @@ namespace
         std::filesystem::path selectedPath = std::filesystem::path(filePath);
         std::error_code errorCode;
         const std::filesystem::path relativePath =
-            std::filesystem::relative(selectedPath, std::filesystem::current_path(), errorCode);
+            std::filesystem::relative(selectedPath, BasePath, errorCode);
 
+        std::filesystem::current_path(BasePath);
+        
         if (errorCode)
             return selectedPath.generic_string();
 
@@ -70,6 +75,8 @@ void TileMapEditorPanel::SyncFromSelection(Scene& scene, GameObjectID selectedOb
         m_TileMapHeightDraft = 16;
         m_TileMapColumnsDraft = 1;
         m_TileMapRowsDraft = 1;
+        m_AtlasCellWidthDraft = 32;
+        m_AtlasCellHeightDraft = 32;
         m_SelectedTileID = 0;
         m_TileEditX = 0;
         m_TileEditY = 0;
@@ -85,6 +92,8 @@ void TileMapEditorPanel::SyncFromSelection(Scene& scene, GameObjectID selectedOb
         m_TileMapHeightDraft = 16;
         m_TileMapColumnsDraft = 1;
         m_TileMapRowsDraft = 1;
+        m_AtlasCellWidthDraft = 32;
+        m_AtlasCellHeightDraft = 32;
         m_TileEditX = 0;
         m_TileEditY = 0;
         m_TileEditValue = 0;
@@ -102,6 +111,9 @@ void TileMapEditorPanel::SyncFromSelection(Scene& scene, GameObjectID selectedOb
     m_TileMapHeightDraft = static_cast<int>(entity.GetTileMapHeight());
     m_TileMapColumnsDraft = static_cast<int>(entity.GetTileMapColumns());
     m_TileMapRowsDraft = static_cast<int>(entity.GetTileMapRows());
+    const glm::ivec2 atlasCellSize = entity.GetTileAtlasCellSize();
+    m_AtlasCellWidthDraft = atlasCellSize.x;
+    m_AtlasCellHeightDraft = atlasCellSize.y;
 
     if (m_TileEditX >= m_TileMapWidthDraft)
         m_TileEditX = 0;
@@ -119,7 +131,116 @@ bool TileMapEditorPanel::HasActiveTileMap(Scene& scene) const
     return scene.GetEntity(m_SelectedObjectID).HasTileMap();
 }
 
-void TileMapEditorPanel::Draw(Scene& scene, GameObjectID selectedObjectID)
+void TileMapEditorPanel::DrawAtlasPicker(Entity& entity, VulkanRenderer& renderer)
+{
+    const std::string texturePath = entity.GetTileMapTexturePath();
+    if (texturePath.empty())
+    {
+        ImGui::TextDisabled("No tileset texture selected.");
+        return;
+    }
+
+    const uint32_t textureIndex = renderer.GetOrLoadTexture(texturePath);
+    const VulkanTexture* texture = renderer.GetTexture(textureIndex);
+    ImTextureID textureID = renderer.GetOrCreateImGuiTextureID(texturePath);
+
+    if (texture == nullptr || textureID == NULL || texture->GetWidth() == 0 || texture->GetHeight() == 0)
+    {
+        ImGui::TextDisabled("Failed to load tileset preview.");
+        return;
+    }
+
+    const uint32_t columns = std::max<uint32_t>(1, entity.GetTileMapColumns());
+    const uint32_t rows = std::max<uint32_t>(1, entity.GetTileMapRows());
+
+    ImGui::SliderFloat("Preview Scale", &m_AtlasPreviewScale, 0.25f, 8.0f, "%.2fx");
+
+    const ImVec2 imageSize{
+        static_cast<float>(texture->GetWidth()) * m_AtlasPreviewScale,
+        static_cast<float>(texture->GetHeight()) * m_AtlasPreviewScale
+    };
+
+    ImGui::BeginChild("TileAtlasPreview", ImVec2(0.0f, 320.0f), true, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Image(textureID, imageSize);
+
+    const ImVec2 imageMin = ImGui::GetItemRectMin();
+    const ImVec2 imageMax = ImGui::GetItemRectMax();
+    const float cellWidth = (imageMax.x - imageMin.x) / static_cast<float>(columns);
+    const float cellHeight = (imageMax.y - imageMin.y) / static_cast<float>(rows);
+
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    for (uint32_t x = 1; x < columns; ++x)
+    {
+        const float px = imageMin.x + cellWidth * static_cast<float>(x);
+        drawList->AddLine(ImVec2(px, imageMin.y), ImVec2(px, imageMax.y), IM_COL32(255, 255, 255, 80));
+    }
+
+    for (uint32_t y = 1; y < rows; ++y)
+    {
+        const float py = imageMin.y + cellHeight * static_cast<float>(y);
+        drawList->AddLine(ImVec2(imageMin.x, py), ImVec2(imageMax.x, py), IM_COL32(255, 255, 255, 80));
+    }
+
+    if (m_SelectedTileID >= 0)
+    {
+        const int selectedColumn = m_SelectedTileID % static_cast<int>(columns);
+        const int selectedRow = m_SelectedTileID / static_cast<int>(columns);
+
+        if (selectedRow < static_cast<int>(rows))
+        {
+            const ImVec2 selectionMin{
+                imageMin.x + cellWidth * static_cast<float>(selectedColumn),
+                imageMin.y + cellHeight * static_cast<float>(selectedRow)
+            };
+            const ImVec2 selectionMax{
+                selectionMin.x + cellWidth,
+                selectionMin.y + cellHeight
+            };
+
+            drawList->AddRect(selectionMin, selectionMax, IM_COL32(255, 200, 0, 255), 0.0f, 0, 3.0f);
+        }
+    }
+
+    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+    {
+        const ImVec2 mouse = ImGui::GetMousePos();
+        const int column = static_cast<int>((mouse.x - imageMin.x) / cellWidth);
+        const int row = static_cast<int>((mouse.y - imageMin.y) / cellHeight);
+
+        if (column >= 0 && column < static_cast<int>(columns) &&
+            row >= 0 && row < static_cast<int>(rows))
+        {
+            m_SelectedTileID = row * static_cast<int>(columns) + column;
+        }
+    }
+
+    ImGui::EndChild();
+}
+
+void TileMapEditorPanel::ApplyAtlusCellSize(Entity entity)
+{
+    m_AtlasCellWidthDraft = std::max(1, m_AtlasCellWidthDraft);
+    m_AtlasCellHeightDraft = std::max(1, m_AtlasCellHeightDraft);
+
+    entity.SetTileAtlasCellSize({
+        m_AtlasCellWidthDraft,
+        m_AtlasCellHeightDraft
+    });
+
+    int textureWidth = 0;
+    int textureHeight = 0;
+    if (TryGetImageSize(entity.GetTileMapTexturePath(), textureWidth, textureHeight))
+    {
+        m_TileMapColumnsDraft = std::max(1, textureWidth / m_AtlasCellWidthDraft);
+        m_TileMapRowsDraft = std::max(1, textureHeight / m_AtlasCellHeightDraft);
+        entity.SetTileMapGrid(
+            static_cast<uint32_t>(m_TileMapColumnsDraft),
+            static_cast<uint32_t>(m_TileMapRowsDraft)
+        );
+    }
+}
+
+void TileMapEditorPanel::Draw(Scene& scene, VulkanRenderer& renderer, GameObjectID selectedObjectID)
 {
     ImGui::Begin("Tile Map Editor");
 
@@ -204,7 +325,8 @@ void TileMapEditorPanel::Draw(Scene& scene, GameObjectID selectedObjectID)
                 pickedPath.c_str()
             );
             entity.SetTileMapTexturePath(m_TileMapTexturePathBuffer.data());
-
+            ApplyAtlusCellSize(entity);
+            
             int textureWidth = 0;
             int textureHeight = 0;
             if (TryGetImageSize(entity.GetTileMapTexturePath(), textureWidth, textureHeight))
@@ -236,32 +358,30 @@ void TileMapEditorPanel::Draw(Scene& scene, GameObjectID selectedObjectID)
     }
 
     ImGui::SeparatorText("Atlas");
-
-    ImGui::InputInt("Columns", &m_TileMapColumnsDraft);
-    ImGui::InputInt("Rows", &m_TileMapRowsDraft);
-
-    if (ImGui::Button("Apply Grid"))
-    {
-        m_TileMapColumnsDraft = std::max(1, m_TileMapColumnsDraft);
-        m_TileMapRowsDraft = std::max(1, m_TileMapRowsDraft);
-        entity.SetTileMapGrid(
-            static_cast<uint32_t>(m_TileMapColumnsDraft),
-            static_cast<uint32_t>(m_TileMapRowsDraft)
-        );
-
-        int textureWidth = 0;
-        int textureHeight = 0;
-        if (TryGetImageSize(entity.GetTileMapTexturePath(), textureWidth, textureHeight))
-        {
-            entity.SetTileAtlasCellSize({
-                std::max(1, textureWidth / m_TileMapColumnsDraft),
-                std::max(1, textureHeight / m_TileMapRowsDraft)
-            });
-        }
-    }
-
+    
     const glm::ivec2 atlasCellSize = entity.GetTileAtlasCellSize();
     ImGui::Text("Atlas Cell Size: %d x %d px", atlasCellSize.x, atlasCellSize.y);
+
+    ImGui::InputInt("Atlas Cell Width", &m_AtlasCellWidthDraft);
+    ImGui::InputInt("Atlas Cell Height", &m_AtlasCellHeightDraft);
+
+    if (ImGui::Button("Apply Cell Size"))
+    {
+        ApplyAtlusCellSize(entity);
+    }
+
+    int textureWidth = 0;
+    int textureHeight = 0;
+    if (TryGetImageSize(entity.GetTileMapTexturePath(), textureWidth, textureHeight))
+    {
+        const bool widthEven = (textureWidth % std::max(1, m_AtlasCellWidthDraft)) == 0;
+        const bool heightEven = (textureHeight % std::max(1, m_AtlasCellHeightDraft)) == 0;
+        if (!widthEven || !heightEven)
+            ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.2f, 1.0f), "Warning: atlas cell size does not evenly divide the texture.");
+    }
+
+    ImGui::SeparatorText("Atlas Picker");
+    DrawAtlasPicker(entity, renderer);
 
     ImGui::SeparatorText("Brush");
 

@@ -5,10 +5,12 @@
 #include <glm/vec2.hpp>
 
 #include "Scene/Scene.h"
+class VulkanRenderer;
+
 class TileMapEditorPanel
 {
 public:
-    void Draw(Scene& scene, GameObjectID selectedObjectID);
+    void Draw(Scene& scene, VulkanRenderer& renderer, GameObjectID selectedObjectID);
     void SyncFromSelection(Scene& scene, GameObjectID selectedObjectID);
     bool IsPaintModeEnabled() const { return m_PaintModeEnabled; }
     bool IsEraseModeEnabled() const { return m_EraseModeEnabled; }
@@ -19,6 +21,9 @@ public:
     void SetHoveredTile(glm::ivec2 tile) { m_HoveredTile = tile; }
 
 private:
+    void DrawAtlasPicker(Entity& entity, VulkanRenderer& renderer);
+    void ApplyAtlusCellSize(Entity entity);
+
     GameObjectID m_SelectedObjectID = 0;
 
     std::array<char, 260> m_TileMapTexturePathBuffer{};
@@ -26,6 +31,8 @@ private:
     int m_TileMapHeightDraft = 16;
     int m_TileMapColumnsDraft = 1;
     int m_TileMapRowsDraft = 1;
+    int m_AtlasCellWidthDraft = 32;
+    int m_AtlasCellHeightDraft = 32;
     int m_SelectedTileID = 0;
     int m_TileEditX = 0;
     int m_TileEditY = 0;
@@ -33,4 +40,5 @@ private:
     bool m_PaintModeEnabled = true;
     bool m_EraseModeEnabled = false;
     glm::ivec2 m_HoveredTile{-1, -1};
+    float m_AtlasPreviewScale = 1.0f;
 };
