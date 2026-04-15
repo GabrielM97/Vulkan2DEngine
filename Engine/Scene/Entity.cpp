@@ -365,7 +365,7 @@ void Entity::SetAnimationSetPath(const std::string& path) const
 
 void Entity::PlayAnimation(const std::string& clipName, bool restartIfSame) const
 {
-    if (IsValid())
+    if (IsValid() && m_Scene->IsPlaying())
         AddComponent<SpriteAnimationComponent>().Play(clipName, restartIfSame);
 }
 

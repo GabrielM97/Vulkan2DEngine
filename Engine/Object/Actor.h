@@ -105,4 +105,6 @@ public:
     }
     
     virtual void Initialize() = 0;
+    virtual void BeginPlay() {}
+    virtual void EndPlay() {}
 };

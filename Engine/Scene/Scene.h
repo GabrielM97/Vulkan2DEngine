@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -32,6 +33,9 @@ public:
     Entity GetEntity(GameObjectID id) const;
 
     template<typename TObject, typename... Args>
+    TObject Place(Args&&... args);
+
+    template<typename TObject, typename... Args>
     TObject Spawn(Args&&... args);
 
     bool IsValidGameObject(GameObjectID id) const;
@@ -45,6 +49,9 @@ public:
     void UpdateCamera(const CameraCommand& command, float deltaTime, float viewportWidth, float viewportHeight);
     bool SaveToFile(const std::string& path) const;
     bool LoadFromFile(const std::string& path);
+    bool IsPlaying() const { return m_IsPlaying; }
+    void BeginPlay();
+    void EndPlay();
 
     std::string GetGameObjectName(GameObjectID id) const;
     bool SetGameObjectName(GameObjectID id, const std::string& name);
@@ -92,6 +99,7 @@ public:
     const Camera2D& GetCamera() const { return m_Camera; }
 
 private:
+
     friend class Entity;
     friend class SceneSerializer;
 
@@ -112,18 +120,41 @@ private:
     void OnLocalTransformUpdated(entt::registry& registry, entt::entity entity);
     void ResolveRequiredComponents(entt::entity entity);
 
+    template<typename TObject, typename... Args>
+    TObject CreateObject(bool beginPlayIfAlreadyPlaying, Args&&... args);
+
     entt::registry m_Registry;
     std::unordered_map<GameObjectID, entt::entity> m_EntityByID;
     Camera2D m_Camera;
     std::unordered_map<std::string, SpriteAnimationSet> m_AnimationSetCache;
     GameObjectID m_NextGameObjectID = 1;
+    bool m_IsPlaying = false;
 };
+
+template<typename TObject, typename... Args>
+TObject Scene::Place(Args&&... args)
+{
+    return CreateObject<TObject>(false, std::forward<Args>(args)...);
+}
 
 template<typename TObject, typename... Args>
 TObject Scene::Spawn(Args&&... args)
 {
+    return CreateObject<TObject>(true, std::forward<Args>(args)...);
+}
+
+template<typename TObject, typename... Args>
+TObject Scene::CreateObject(bool beginPlayIfAlreadyPlaying, Args&&... args)
+{
     Entity entity = CreateEntity(TObject::StaticName());
+    const entt::entity rawEntity = FindEntityByID(entity.GetID());
+    m_Registry.get<ObjectTypeComponent>(rawEntity).typeName = TObject::StaticName();
+
     TObject object(entity);
     object.Initialize(std::forward<Args>(args)...);
+
+    if (beginPlayIfAlreadyPlaying && m_IsPlaying)
+        object.BeginPlay();
+
     return object;
 }

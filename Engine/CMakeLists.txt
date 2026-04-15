@@ -84,6 +84,7 @@ set(SCENE_FOLDER_SRC
 set(OBJECT_FOLDER_SRC
     Object/Actor.h
     Object/Object.h
+    Object/ObjectRegistry.h
     Object/Player.cpp
     Object/Player.h
 )

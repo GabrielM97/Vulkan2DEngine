@@ -23,6 +23,16 @@ void Player::Initialize()
 
     EnsureAnimation();
     SetAnimationSetPath("Assets/Animations/CharacterSpriteSheet.csv");
+}
+
+void Player::BeginPlay()
+{
+    if (GetEntity().HasComponent<PlayerMovementComponent>())
+        GetEntity().GetComponent<PlayerMovementComponent>().runtimeVelocity = 0.0f;
+
+    if (GetEntity().HasComponent<DebugSettingsComponent>())
+        GetEntity().GetComponent<DebugSettingsComponent>().runtimeAccumulator = 0.0f;
+    
     PlayAnimation("Walk");
 }
 

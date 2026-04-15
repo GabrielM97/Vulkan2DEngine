@@ -167,6 +167,7 @@ T& Entity::GetComponent()
         !std::is_same_v<T, LocalTransformComponent> &&
         !std::is_same_v<T, WorldTransformComponent> &&
         !std::is_same_v<T, RequiredComponentsComponent> &&
+        !std::is_same_v<T, ObjectTypeComponent> &&
         !std::is_same_v<T, SpriteComponent> &&
         !std::is_same_v<T, SpriteAnimationComponent>,
         "Use Scene or Entity APIs for engine-managed components."

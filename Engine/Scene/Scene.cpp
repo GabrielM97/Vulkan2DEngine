@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "Math/TransformMath2D.h"
+#include "Object/ObjectRegistry.h"
 #include "Renderer/IRenderer2D.h"
 #include "SceneSerializer.h"
 #include "SpriteAnimation.h"
@@ -12,6 +13,54 @@
 Scene::Scene()
 {
     ConnectRegistrySignals();
+}
+
+void Scene::BeginPlay()
+{
+    if (m_IsPlaying)
+        return;
+
+    m_IsPlaying = true;
+
+    auto view = m_Registry.view<IDComponent, ObjectTypeComponent>();
+    for (entt::entity entity : view)
+    {
+        const auto& idComponent = view.get<IDComponent>(entity);
+        const auto& objectType = view.get<ObjectTypeComponent>(entity);
+
+        if (objectType.typeName.empty())
+            continue;
+
+        const ObjectLifecycleHooks* hooks = ObjectRegistry::Get().Find(objectType.typeName);
+        if (hooks == nullptr || !hooks->beginPlay)
+            continue;
+
+        hooks->beginPlay(Entity(this, &m_Registry, entity, idComponent.id));
+    }
+}
+
+void Scene::EndPlay()
+{
+    if (!m_IsPlaying)
+        return;
+
+    auto view = m_Registry.view<IDComponent, ObjectTypeComponent>();
+    for (entt::entity entity : view)
+    {
+        const auto& idComponent = view.get<IDComponent>(entity);
+        const auto& objectType = view.get<ObjectTypeComponent>(entity);
+
+        if (objectType.typeName.empty())
+            continue;
+
+        const ObjectLifecycleHooks* hooks = ObjectRegistry::Get().Find(objectType.typeName);
+        if (hooks == nullptr || !hooks->endPlay)
+            continue;
+
+        hooks->endPlay(Entity(this, &m_Registry, entity, idComponent.id));
+    }
+
+    m_IsPlaying = false;
 }
 
 void Scene::ConnectRegistrySignals()
@@ -105,6 +154,7 @@ entt::entity Scene::CreateEntityInternal(const std::string& name)
     m_Registry.emplace<LocalTransformComponent>(entity);
     m_Registry.emplace<WorldTransformComponent>(entity);
     m_Registry.emplace<RequiredComponentsComponent>(entity);
+    m_Registry.emplace<ObjectTypeComponent>(entity);
     m_Registry.emplace<SpriteComponent>(entity);
 
     m_EntityByID.emplace(id, entity);
@@ -129,6 +179,7 @@ entt::entity Scene::CreateEntityWithID(const std::string& name, GameObjectID id)
     m_Registry.emplace<LocalTransformComponent>(entity);
     m_Registry.emplace<WorldTransformComponent>(entity);
     m_Registry.emplace<RequiredComponentsComponent>(entity);
+    m_Registry.emplace<ObjectTypeComponent>(entity);
     m_Registry.emplace<SpriteComponent>(entity);
 
     m_EntityByID.emplace(id, entity);
@@ -138,6 +189,7 @@ entt::entity Scene::CreateEntityWithID(const std::string& name, GameObjectID id)
 
 void Scene::Clear()
 {
+    EndPlay();
     m_Registry.clear();
     m_EntityByID.clear();
     m_AnimationSetCache.clear();
