@@ -7,12 +7,13 @@
 void SandboxApp::OnInit()
 {
     CreateDefaultScene();
+    m_Scene.BeginPlay();
 }
 
 void SandboxApp::CreateDefaultScene()
 {
-    m_Player = m_Scene.Spawn<Player>();
-    m_Player.SetPosition(glm::vec2{300.0f, 100.0f});
+    m_Player = m_Scene.Place<Player>();
+    //m_Player.SetPosition(glm::vec2{300.0f, 100.0f});
 
     Entity weapon = m_Scene.CreateEntity("Weapon", m_Player.GetID());
     weapon.SetPosition({300.0f, 0.0f});
@@ -78,7 +79,10 @@ void SandboxApp::OnUpdate(float deltaTime)
     if (loadPressed && !m_LoadPressedLastFrame)
     {
         if (m_Scene.LoadFromFile(m_SceneFilePath))
+        {
             RefreshRuntimeHandles();
+            m_Scene.BeginPlay();
+        }
     }
     m_LoadPressedLastFrame = loadPressed;
 

@@ -169,6 +169,7 @@ bool SceneSerializer::SaveToFile(const Scene& scene, const std::string& path)
         json entityJson = {
             {"id", id},
             {"name", scene.GetGameObjectName(id)},
+            {"objectType", scene.m_Registry.get<ObjectTypeComponent>(entity).typeName},
             {"active", scene.IsGameObjectActive(id)},
             {"relationship", {
                 {"parentId", relationship.parentID},
@@ -261,6 +262,7 @@ bool SceneSerializer::LoadFromFile(Scene& scene, const std::string& path)
 
         scene.SetGameObjectActive(id, entityJson.value("active", true));
         scene.SetLocalTransform(id, DeserializeTransform(entityJson.at("localTransform")));
+        scene.m_Registry.get<ObjectTypeComponent>(entity).typeName = entityJson.value("objectType", "");
 
         if (entityJson.contains("requiredComponents"))
         {

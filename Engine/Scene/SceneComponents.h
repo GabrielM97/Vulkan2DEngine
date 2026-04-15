@@ -53,3 +53,8 @@ struct RequiredComponentsComponent
 {
     std::vector<ComponentTypeID> componentIDs;
 };
+
+struct ObjectTypeComponent
+{
+    std::string typeName;
+};
