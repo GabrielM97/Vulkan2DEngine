@@ -444,7 +444,7 @@ void SceneEditorPanel::SyncInspectorFromSelection(Scene& scene)
         m_SourceRectValues[3] = 0;
         return;
     }
-
+    
     const Entity selected = scene.GetEntity(m_InspectorObjectID);
 
     std::snprintf(m_NameBuffer.data(), m_NameBuffer.size(), "%s", selected.GetName().c_str());
@@ -475,6 +475,7 @@ void SceneEditorPanel::SyncInspectorFromSelection(Scene& scene)
     m_ReparentTargetID = selected.HasParent()
         ? static_cast<int>(selected.GetParentID())
         : 0;
+    
 }
 
 void SceneEditorPanel::DrawHierarchyPanel(Scene& scene)
@@ -565,3 +566,4 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
 
     ImGui::End();
 }
+

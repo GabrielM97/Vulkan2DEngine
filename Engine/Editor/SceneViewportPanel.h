@@ -10,6 +10,8 @@ struct SceneViewportState
     bool hovered = false;
     bool focused = false;
     bool visible = false;
+    ImVec2 contentMin{0.0f, 0.0f};
+    ImVec2 contentMax{0.0f, 0.0f};
 };
 
 class SceneViewportPanel

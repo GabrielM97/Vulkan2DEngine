@@ -4,12 +4,15 @@
 
 #include "Scene/SceneComponents.h"
 
+class Entity;
 class Scene;
 
 class SceneEditorPanel
 {
 public:
     void Draw(Scene& scene);
+    
+    GameObjectID GetSelectedObjectID() const { return m_SelectedObjectID; }
 
 private:
     void SelectObject(Scene& scene, GameObjectID id);
@@ -17,7 +20,7 @@ private:
     void DrawHierarchyPanel(Scene& scene);
     void DrawHierarchyNode(Scene& scene, GameObjectID id);
     void DrawInspectorPanel(Scene& scene);
-
+    
     GameObjectID m_SelectedObjectID = 0;
     GameObjectID m_InspectorObjectID = 0;
 
@@ -28,4 +31,5 @@ private:
     int m_ReparentTargetID = 0;
     int m_SourceRectValues[4] = {0, 0, 0, 0};
     int m_SourceGridValues[4] = {0, 0, 64, 64};
+    
 };

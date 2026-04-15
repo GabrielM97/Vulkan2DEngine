@@ -395,3 +395,140 @@ bool Entity::IsPlayingAnimationClip(const std::string& clipName) const
 {
     return IsValid() && HasAnimation() && GetComponent<SpriteAnimationComponent>().IsPlayingClip(clipName);
 }
+
+bool Entity::HasTileMap() const
+{
+    return IsValid() && HasComponent<TileMapComponent>();
+}
+
+void Entity::EnsureTileMap() const
+{
+    if (!IsValid() || HasComponent<TileMapComponent>())
+        return;
+
+    m_Registry->emplace<TileMapComponent>(m_Entity);
+}
+
+void Entity::RemoveTileMap() const
+{
+    if (IsValid() && HasComponent<TileMapComponent>())
+        m_Registry->remove<TileMapComponent>(m_Entity);
+}
+
+uint32_t Entity::GetTileMapWidth() const
+{
+    return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).width : 0;
+}
+
+uint32_t Entity::GetTileMapHeight() const
+{
+    return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).height : 0;
+}
+
+glm::vec2 Entity::GetTileSize() const
+{
+    return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).tileSize : glm::vec2{32.0f, 32.0f};
+}
+
+void Entity::SetTileSize(const glm::vec2& size) const
+{
+    if (!HasTileMap())
+        return;
+
+    m_Registry->get<TileMapComponent>(m_Entity).tileSize = size;
+    m_Scene->MarkTransformDirty(m_ID);
+}
+
+std::string Entity::GetTileMapTexturePath() const
+{
+    return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).tilesetTexturePath : std::string{};
+}
+
+void Entity::SetTileMapTexturePath(const std::string& path) const
+{
+    if (!HasTileMap())
+        return;
+
+    m_Registry->get<TileMapComponent>(m_Entity).tilesetTexturePath = path;
+}
+
+uint32_t Entity::GetTileMapColumns() const
+{
+    return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).columns : 1;
+}
+
+uint32_t Entity::GetTileMapRows() const
+{
+    return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).rows : 1;
+}
+
+void Entity::SetTileMapGrid(uint32_t columns, uint32_t rows) const
+{
+    if (!HasTileMap())
+        return;
+
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    tileMap.columns = std::max<uint32_t>(1, columns);
+    tileMap.rows = std::max<uint32_t>(1, rows);
+}
+
+void Entity::ResizeTileMap(uint32_t width, uint32_t height) const
+{
+    if (!HasTileMap())
+        return;
+
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+
+    std::vector<int32_t> resizedTiles(width * height, -1);
+
+    const uint32_t copyWidth = std::min(tileMap.width, width);
+    const uint32_t copyHeight = std::min(tileMap.height, height);
+
+    for (uint32_t y = 0; y < copyHeight; ++y)
+    {
+        for (uint32_t x = 0; x < copyWidth; ++x)
+        {
+            resizedTiles[y * width + x] = tileMap.tiles[y * tileMap.width + x];
+        }
+    }
+
+    tileMap.width = width;
+    tileMap.height = height;
+    tileMap.tiles = std::move(resizedTiles);
+}
+
+int32_t Entity::GetTile(int x, int y) const
+{
+    if (!HasTileMap())
+        return -1;
+
+    const auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (x < 0 || y < 0)
+        return -1;
+
+    const uint32_t tileX = static_cast<uint32_t>(x);
+    const uint32_t tileY = static_cast<uint32_t>(y);
+
+    if (tileX >= tileMap.width || tileY >= tileMap.height)
+        return -1;
+
+    return tileMap.tiles[tileY * tileMap.width + tileX];
+}
+
+void Entity::SetTile(int x, int y, int32_t tileID) const
+{
+    if (!HasTileMap())
+        return;
+
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (x < 0 || y < 0)
+        return;
+
+    const uint32_t tileX = static_cast<uint32_t>(x);
+    const uint32_t tileY = static_cast<uint32_t>(y);
+
+    if (tileX >= tileMap.width || tileY >= tileMap.height)
+        return;
+
+    tileMap.tiles[tileY * tileMap.width + tileX] = tileID;
+}
