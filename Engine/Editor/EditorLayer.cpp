@@ -14,14 +14,14 @@ EditorLayer::EditorLayer()
 
 EditorLayer::~EditorLayer() = default;
 
-void EditorLayer::Draw(Scene* scene)
+void EditorLayer::Draw(Scene* scene, ImTextureID sceneViewportTextureID)
 {
     DrawDockspace();
 
     if (scene == nullptr)
         return;
 
-    m_SceneViewportPanel->Draw();
+    m_SceneViewportPanel->Draw(sceneViewportTextureID);
     m_SceneEditorPanel->Draw(*scene);
 }
 

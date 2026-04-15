@@ -7,6 +7,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <Scene/SpriteRenderer.h>
 
+#include "ImGuiLayer.h"
 #include "VulkanVertexBuffer.h"
 #include "Math/Transform2D.h"
 
@@ -47,6 +48,13 @@ void VulkanRenderer::Cleanup()
 {
     vkDeviceWaitIdle(device.GetDevice());
     
+    if (m_ImGuiLayer != nullptr && m_SceneViewportTextureID != NULL)
+    {
+        m_ImGuiLayer->UnregisterTexture(m_SceneViewportTextureID);
+        m_SceneViewportTextureID = NULL;
+    }
+    
+    m_SceneViewportTarget.Cleanup(device.GetDevice());
     m_InstanceBuffer.Cleanup(device.GetDevice());
     m_IndexBuffer.Cleanup(device.GetDevice());
     m_VertexBuffer.Cleanup(device.GetDevice());
@@ -86,6 +94,80 @@ void VulkanRenderer::SetCamera(const Camera2D& camera)
     m_CameraDirty = true;
 }
 
+void VulkanRenderer::EnsureSceneViewportTarget(uint32_t width, uint32_t height)
+{
+    if (width == 0 || height == 0)
+        return;
+
+    const VkFormat format = m_swapchain.GetFormat();
+    
+    if (!m_SceneViewportTarget.IsValid())
+    {
+        m_SceneViewportTarget.Init(device, width, height, format);
+        
+        m_SceneViewportTarget.TransitionToShaderRead(
+           device.GetDevice(),
+           m_UploadCommandPool,
+           device.GetGraphicsQueue()
+       );
+        
+        RefreshSceneViewportTextureHandle();
+        return;
+    }
+
+    if (m_SceneViewportTarget.GetWidth() != width || m_SceneViewportTarget.GetHeight() != height)
+    {
+        m_SceneViewportTarget.Resize(device, width, height, format);
+        
+        m_SceneViewportTarget.TransitionToShaderRead(
+           device.GetDevice(),
+           m_UploadCommandPool,
+           device.GetGraphicsQueue()
+       );
+        
+        RefreshSceneViewportTextureHandle();
+    }
+        
+}
+
+void VulkanRenderer::SetImGuiLayer(ImGuiLayer* imguiLayer)
+{
+    if (m_ImGuiLayer == imguiLayer)
+        return;
+
+    if (m_ImGuiLayer != nullptr && m_SceneViewportTextureID != NULL)
+    {
+        m_ImGuiLayer->UnregisterTexture(m_SceneViewportTextureID);
+        m_SceneViewportTextureID = NULL;
+    }
+
+    m_ImGuiLayer = imguiLayer;
+
+    if (m_ImGuiLayer != nullptr && m_SceneViewportTarget.IsValid())
+        RefreshSceneViewportTextureHandle();
+}
+
+void VulkanRenderer::RefreshSceneViewportTextureHandle()
+{
+    if (m_ImGuiLayer == nullptr)
+        return;
+
+    if (m_SceneViewportTextureID != NULL)
+    {
+        m_ImGuiLayer->UnregisterTexture(m_SceneViewportTextureID);
+        m_SceneViewportTextureID = NULL;
+    }
+
+    if (!m_SceneViewportTarget.IsValid())
+        return;
+
+    m_SceneViewportTextureID = m_ImGuiLayer->RegisterTexture(
+        m_SceneViewportTarget.GetSampler(),
+        m_SceneViewportTarget.GetImageView(),
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    );
+}
+
 void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, float rotationDegrees, const glm::vec2 pivot, const glm::vec2 uvMin, const glm::vec2 uvMax, const glm::vec4 tint, uint32_t textureIndex)
 {
     QuadCommand command{};
@@ -99,6 +181,95 @@ void VulkanRenderer::DrawQuad(const glm::vec2 position, const glm::vec2 size, fl
     command.textureIndex = textureIndex;
 
     m_QuadCommands.push_back(command);
+}
+
+void VulkanRenderer::RecordSceneViewportPass(VkCommandBuffer commandBuffer)
+{
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = m_SceneViewportTarget.GetRenderPass();
+    renderPassInfo.framebuffer = m_SceneViewportTarget.GetFramebuffer();
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = m_SceneViewportTarget.GetExtent();
+
+    VkClearValue clearColor = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.Get());
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(m_SceneViewportTarget.GetWidth());
+    viewport.height = static_cast<float>(m_SceneViewportTarget.GetHeight());
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = m_SceneViewportTarget.GetExtent();
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+    VkBuffer vertexBuffers[] = {
+        m_VertexBuffer.GetBuffer(),
+        m_InstanceBuffer.GetBuffer()
+    };
+    VkDeviceSize offsets[] = {0, 0};
+
+    vkCmdBindVertexBuffers(commandBuffer, 0, 2, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+    for (const PreparedBatch& batch : m_PreparedBatches)
+    {
+        VkDescriptorSet descriptorSet = m_TextureDescriptorSets[batch.textureIndex];
+
+        vkCmdBindDescriptorSets(
+            commandBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            m_Pipeline.GetLayout(),
+            0,
+            1,
+            &descriptorSet,
+            0,
+            nullptr
+        );
+
+        vkCmdDrawIndexed(
+            commandBuffer,
+            m_IndexBuffer.GetIndexCount(),
+            batch.instanceCount,
+            0,
+            0,
+            batch.firstInstance
+        );
+    }
+
+    vkCmdEndRenderPass(commandBuffer);
+}
+
+void VulkanRenderer::RecordSwapchainUiPass(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+{
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = m_renderPass.Get();
+    renderPassInfo.framebuffer = m_Framebuffer.Get()[imageIndex];
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = m_swapchain.GetExtent();
+
+    VkClearValue clearColor = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    if (m_ImGuiRenderCallback)
+        m_ImGuiRenderCallback(commandBuffer);
+
+    vkCmdEndRenderPass(commandBuffer);
 }
 
 void VulkanRenderer::EndFrame()
@@ -144,80 +315,71 @@ void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = 0;
 
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to begin recording command buffer");
-    }
 
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-
-    // Your render pass
-    renderPassInfo.renderPass = m_renderPass.Get();
-
-    // Framebuffer for THIS swapchain image
-    renderPassInfo.framebuffer = m_Framebuffer.Get()[imageIndex];
-
-    // Area to render to
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = m_swapchain.GetExtent();
-
-    // Clear color (background)
-    VkClearValue clearColor = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
-    renderPassInfo.clearValueCount = 1;
-    renderPassInfo.pClearValues = &clearColor;
-
-    //Begin render pass
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline.Get());
-
-    VkBuffer vertexBuffers[] = {
-        m_VertexBuffer.GetBuffer(),
-        m_InstanceBuffer.GetBuffer()
-    };
-
-    VkDeviceSize offsets[] = {0, 0};
-
-    vkCmdBindVertexBuffers(commandBuffer, 0, 2, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-    for (const PreparedBatch& batch : m_PreparedBatches)
+    if (m_SceneViewportTarget.IsValid())
     {
-        VkDescriptorSet descriptorSet = m_TextureDescriptorSets[batch.textureIndex];
+        // Transition viewport image to renderable state
+        // For Step 11, do this inline with vkCmdPipelineBarrier rather than helper submit commands.
+        VkImageMemoryBarrier toColor{};
+        toColor.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        toColor.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        toColor.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        toColor.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        toColor.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        toColor.image = m_SceneViewportTarget.GetImage();
+        toColor.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        toColor.subresourceRange.baseMipLevel = 0;
+        toColor.subresourceRange.levelCount = 1;
+        toColor.subresourceRange.baseArrayLayer = 0;
+        toColor.subresourceRange.layerCount = 1;
+        toColor.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        toColor.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-        vkCmdBindDescriptorSets(
+        vkCmdPipelineBarrier(
             commandBuffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            m_Pipeline.GetLayout(),
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
             0,
-            1,
-            &descriptorSet,
-            0,
-            nullptr
+            0, nullptr,
+            0, nullptr,
+            1, &toColor
         );
 
-        vkCmdDrawIndexed(
+        RecordSceneViewportPass(commandBuffer);
+
+        VkImageMemoryBarrier toShaderRead{};
+        toShaderRead.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        toShaderRead.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        toShaderRead.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        toShaderRead.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        toShaderRead.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        toShaderRead.image = m_SceneViewportTarget.GetImage();
+        toShaderRead.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        toShaderRead.subresourceRange.baseMipLevel = 0;
+        toShaderRead.subresourceRange.levelCount = 1;
+        toShaderRead.subresourceRange.baseArrayLayer = 0;
+        toShaderRead.subresourceRange.layerCount = 1;
+        toShaderRead.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        toShaderRead.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(
             commandBuffer,
-            m_IndexBuffer.GetIndexCount(),
-            batch.instanceCount,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
             0,
-            0,
-            batch.firstInstance
+            0, nullptr,
+            0, nullptr,
+            1, &toShaderRead
         );
     }
 
-    if (m_ImGuiRenderCallback)
-        m_ImGuiRenderCallback(commandBuffer);
-
-    vkCmdEndRenderPass(commandBuffer);
+    RecordSwapchainUiPass(commandBuffer, imageIndex);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to record command buffer");
-    }
 }
 
 void VulkanRenderer::CreatePersistentResources(GLFWwindow* window)
@@ -437,16 +599,25 @@ void VulkanRenderer::CreateFallbackTexture()
 
 void VulkanRenderer::UpdateCameraMatrices() 
 {
-    if (m_FramebufferWidth <= 0 || m_FramebufferHeight <= 0)
+    int renderWidth = m_FramebufferWidth;
+    int renderHeight = m_FramebufferHeight;
+
+    if (m_SceneViewportTarget.IsValid())
+    {
+        renderWidth = static_cast<int>(m_SceneViewportTarget.GetWidth());
+        renderHeight = static_cast<int>(m_SceneViewportTarget.GetHeight());
+    }
+
+    if (renderWidth <= 0 || renderHeight <= 0)
         return;
 
     GlobalUBO ubo{};
 
     const float zoom = glm::max(m_Camera.GetZoom(), 0.01f);
 
-    const float viewWidth = static_cast<float>(m_FramebufferWidth) / zoom;
-    const float viewHeight = static_cast<float>(m_FramebufferHeight) / zoom;
-    
+    const float viewWidth = static_cast<float>(renderWidth) / zoom;
+    const float viewHeight = static_cast<float>(renderHeight) / zoom;
+
     const glm::vec2& topLeft = m_Camera.GetTopLeftPosition();
 
     const float left = topLeft.x;
@@ -454,23 +625,11 @@ void VulkanRenderer::UpdateCameraMatrices()
     const float top = topLeft.y;
     const float bottom = topLeft.y + viewHeight;
 
-    ubo.viewProjection = glm::ortho(
-        left,
-        right,
-        bottom,
-        top,
-        -1.0f,
-        1.0f
-    );
-
+    ubo.viewProjection = glm::ortho(left, right, bottom, top, -1.0f, 1.0f);
     ubo.viewProjection[1][1] *= -1.0f;
     ubo.viewProjection[3][1] *= -1.0f;
 
-    m_GlobalUniformBuffer.Update(
-        device.GetDevice(),
-        &ubo,
-        sizeof(GlobalUBO)
-    );
+    m_GlobalUniformBuffer.Update(device.GetDevice(), &ubo, sizeof(GlobalUBO));
 }
 
 void VulkanRenderer::CreateSwapchainResources(int width, int height)

@@ -30,6 +30,7 @@ bool Application::Init()
     );
 
     imguiLayer.Init(window->GetNativeWindow(), vulkanRenderer);
+    vulkanRenderer.SetImGuiLayer(&imguiLayer);
 
     vulkanRenderer.SetImGuiRenderCallback(
         [this](VkCommandBuffer commandBuffer)
@@ -81,19 +82,25 @@ void Application::Run()
 
             window->ResetResizeFlag();
         }
-        
-        editorLayer->Draw(GetEditorScene());
+
+        // First draw uses the currently registered texture handle.
+        editorLayer->Draw(GetEditorScene(), vulkanRenderer.GetSceneViewportTextureID());
+
+        const SceneViewportState& viewportState = editorLayer->GetSceneViewportState();
+        if (viewportState.visible)
+            vulkanRenderer.EnsureSceneViewportTarget(viewportState.width, viewportState.height);
+
         OnUpdate(deltaTime);
-        
+
         vulkanRenderer.BeginFrame();
         OnRender(vulkanRenderer);
-        
+
         imguiLayer.EndFrame();
         vulkanRenderer.EndFrame();
     }
-    
+
     isRunning = false;
-    Shutdown();   
+    Shutdown();
 }
 
 void Application::Shutdown()

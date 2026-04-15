@@ -1,5 +1,6 @@
 #pragma once
 
+#include <imgui.h>
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
@@ -15,6 +16,9 @@ public:
     void EndFrame();
     void Render(VkCommandBuffer commandBuffer);
     bool WantsKeyboardCapture() const;
+    
+    ImTextureID RegisterTexture(VkSampler sampler, VkImageView imageView, VkImageLayout layout);
+    void UnregisterTexture(ImTextureID textureID);
 
 private:
     void UploadFontTexture(VulkanRenderer& renderer);

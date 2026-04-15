@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <cstdint>
+#include <imgui.h>
 
 struct SceneViewportState
 {
@@ -14,7 +15,7 @@ struct SceneViewportState
 class SceneViewportPanel
 {
 public:
-    void Draw();
+    void Draw(ImTextureID textureID);
     const SceneViewportState& GetState() const { return m_State; }
 
 private:

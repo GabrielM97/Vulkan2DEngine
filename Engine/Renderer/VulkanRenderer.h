@@ -13,15 +13,19 @@
 #include "VulkanQuadInstanceBuffer.h"
 #include "RenderTypes.h"
 #include "VulkanUniformBuffer.h"
+#include "VulkanViewportRenderTarget.h"
 
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <functional>
+#include <imgui.h>
 
 #include "IRenderer2D.h"
 #include "VulkanTexture.h"
 #include "Scene/Camera2D.h"
+
+class ImGuiLayer;
 
 class VulkanRenderer : public IRenderer2D
 {
@@ -58,11 +62,21 @@ public:
     VkCommandPool GetUploadCommandPool() const { return m_UploadCommandPool; }
     uint32_t GetMinImageCount() const { return 2; }
     uint32_t GetImageCount() const { return static_cast<uint32_t>(m_swapchain.GetImageViews().size()); }
+    
+    void EnsureSceneViewportTarget(uint32_t width, uint32_t height);
+    uint32_t GetSceneViewportWidth() const { return m_SceneViewportTarget.GetWidth(); }
+    uint32_t GetSceneViewportHeight() const { return m_SceneViewportTarget.GetHeight(); }
+    
+    void SetImGuiLayer(ImGuiLayer* imguiLayer);
+    void RefreshSceneViewportTextureHandle();
+    ImTextureID GetSceneViewportTextureID() const { return m_SceneViewportTextureID; }
 
 private:
     void DrawQuad(glm::vec2 position, glm::vec2 size, float rotationDegrees, glm::vec2 pivot, glm::vec2 uvMin, glm::vec2 uvMax, 
                     glm::vec4 tint =glm::vec4(1.0f), uint32_t textureIndex = 0);
     
+    void RecordSceneViewportPass(VkCommandBuffer commandBuffer);
+    void RecordSwapchainUiPass(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     
     // Long-lived setup: survives swapchain recreation.
@@ -103,6 +117,7 @@ private:
     std::vector<VulkanTexture> m_Textures;
 
     std::function<void(VkCommandBuffer)> m_ImGuiRenderCallback;
+    VulkanViewportRenderTarget m_SceneViewportTarget;
 
     Camera2D m_Camera;
     bool m_CameraDirty = true;
@@ -132,5 +147,8 @@ private:
     std::unordered_map<std::string, uint32_t> m_TextureCache;
     uint32_t m_FallbackTextureIndex = 0;
     bool m_HasFallbackTexture = false;
+    
+    ImGuiLayer* m_ImGuiLayer = nullptr;
+    ImTextureID m_SceneViewportTextureID = 0;
 
 };
