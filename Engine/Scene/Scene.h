@@ -20,6 +20,7 @@ struct CameraCommand
 };
 
 class IRenderer2D;
+class SceneSerializer;
 
 class Scene
 {
@@ -28,6 +29,7 @@ public:
 
     Entity CreateEntity(const std::string& name = "Entity", GameObjectID parentID = 0);
     Entity GetEntity(GameObjectID id);
+    Entity GetEntity(GameObjectID id) const;
 
     template<typename TObject, typename... Args>
     TObject Spawn(Args&&... args);
@@ -41,6 +43,8 @@ public:
     void Update(float deltaTime);
     void Render(IRenderer2D& renderer);
     void UpdateCamera(const CameraCommand& command, float deltaTime, float viewportWidth, float viewportHeight);
+    bool SaveToFile(const std::string& path) const;
+    bool LoadFromFile(const std::string& path);
 
     std::string GetGameObjectName(GameObjectID id) const;
     bool SetGameObjectName(GameObjectID id, const std::string& name);
@@ -89,9 +93,12 @@ public:
 
 private:
     friend class Entity;
+    friend class SceneSerializer;
 
     entt::entity CreateEntityInternal(const std::string& name);
+    entt::entity CreateEntityWithID(const std::string& name, GameObjectID id);
     entt::entity FindEntityByID(GameObjectID id) const;
+    void Clear();
 
     const SpriteAnimationSet* GetOrLoadAnimationSet(const std::string& path);
     void MarkTransformDirty(GameObjectID id);
@@ -103,6 +110,7 @@ private:
     void DestroyGameObjectRecursive(GameObjectID id);
     void ConnectRegistrySignals();
     void OnLocalTransformUpdated(entt::registry& registry, entt::entity entity);
+    void ResolveRequiredComponents(entt::entity entity);
 
     entt::registry m_Registry;
     std::unordered_map<GameObjectID, entt::entity> m_EntityByID;

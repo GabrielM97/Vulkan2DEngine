@@ -1,6 +1,41 @@
 #include "Entity.h"
 
+#include <algorithm>
+
+#include "SpriteAnimation.h"
 #include "Scene.h"
+
+const std::vector<ComponentTypeID>& Entity::GetTrackedComponentIDs() const
+{
+    static const std::vector<ComponentTypeID> empty;
+
+    if (!IsValid() || !m_Registry->all_of<RequiredComponentsComponent>(m_Entity))
+        return empty;
+
+    return m_Registry->get<RequiredComponentsComponent>(m_Entity).componentIDs;
+}
+
+void Entity::RegisterTrackedComponent(ComponentTypeID componentID) const
+{
+    if (!IsValid() || !m_Registry->all_of<RequiredComponentsComponent>(m_Entity))
+        return;
+
+    auto& componentIDs = m_Registry->get<RequiredComponentsComponent>(m_Entity).componentIDs;
+    if (std::find(componentIDs.begin(), componentIDs.end(), componentID) == componentIDs.end())
+        componentIDs.push_back(componentID);
+}
+
+void Entity::UnregisterTrackedComponent(ComponentTypeID componentID) const
+{
+    if (!IsValid() || !m_Registry->all_of<RequiredComponentsComponent>(m_Entity))
+        return;
+
+    auto& componentIDs = m_Registry->get<RequiredComponentsComponent>(m_Entity).componentIDs;
+    componentIDs.erase(
+        std::remove(componentIDs.begin(), componentIDs.end(), componentID),
+        componentIDs.end()
+    );
+}
 
 bool Entity::IsValid() const
 {

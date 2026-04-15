@@ -6,6 +6,11 @@
 
 void SandboxApp::OnInit()
 {
+    CreateDefaultScene();
+}
+
+void SandboxApp::CreateDefaultScene()
+{
     m_Player = m_Scene.Spawn<Player>();
     m_Player.SetPosition(glm::vec2{300.0f, 100.0f});
 
@@ -20,6 +25,18 @@ void SandboxApp::OnInit()
     weapon2.SetSpriteSize({16.0f, 16.0f});
     weapon2.SetSpriteTexturePath("Assets/Textures/texture.jpg");
     weapon2.SetSpriteLayer(1);
+}
+
+void SandboxApp::RefreshRuntimeHandles()
+{
+    if (m_Scene.IsValidGameObject(m_Player.GetID()))
+    {
+        m_Player = Player(m_Scene.GetEntity(m_Player.GetID()));
+    }
+    else
+    {
+        m_Player = {};
+    }
 }
 
 void SandboxApp::OnUpdate(float deltaTime)
@@ -50,8 +67,20 @@ void SandboxApp::OnUpdate(float deltaTime)
             command.zoomDelta -= 1.0f;
         if (IsKeyDown(GLFW_KEY_E))
             command.zoomDelta += 1.0f;
-        
     }
+
+    const bool savePressed = IsKeyDown(GLFW_KEY_F5);
+    if (savePressed && !m_SavePressedLastFrame)
+        m_Scene.SaveToFile(m_SceneFilePath);
+    m_SavePressedLastFrame = savePressed;
+
+    const bool loadPressed = IsKeyDown(GLFW_KEY_F9);
+    if (loadPressed && !m_LoadPressedLastFrame)
+    {
+        if (m_Scene.LoadFromFile(m_SceneFilePath))
+            RefreshRuntimeHandles();
+    }
+    m_LoadPressedLastFrame = loadPressed;
 
     if (m_Player.IsValid())
         m_Player.Move(playerInput, deltaTime);

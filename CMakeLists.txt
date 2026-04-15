@@ -18,7 +18,7 @@ if(SCCACHE_PROGRAM)
 endif()
 
 # --- Vulkan SDK check ---
-if (WIN32 AND NOT DEFINED ENV{VULKAN_SDK})
+if(WIN32 AND NOT DEFINED ENV{VULKAN_SDK})
     message(FATAL_ERROR "VULKAN_SDK environment variable not set!")
 endif()
 
@@ -28,6 +28,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 # --- Engine dependencies ---
 add_library(EngineDeps INTERFACE)
@@ -39,7 +40,7 @@ if(WIN32)
 elseif(UNIX)
     target_include_directories(EngineDeps INTERFACE
         /usr/include
-         ${CMAKE_SOURCE_DIR}/External/stb
+        ${CMAKE_SOURCE_DIR}/External/stb
     )
 endif()
 target_link_libraries(EngineDeps INTERFACE
@@ -48,6 +49,7 @@ target_link_libraries(EngineDeps INTERFACE
     glm::glm
     imgui::imgui
     EnTT::EnTT
+    nlohmann_json::nlohmann_json
 )
 
 # --- Add engine modules ---

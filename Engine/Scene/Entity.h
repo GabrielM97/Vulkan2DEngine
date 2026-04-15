@@ -10,6 +10,16 @@
 
 class Scene;
 
+template<typename T, typename = void>
+struct HasStaticSceneComponentID : std::false_type
+{
+};
+
+template<typename T>
+struct HasStaticSceneComponentID<T, std::void_t<decltype(T::StaticComponentID)>> : std::true_type
+{
+};
+
 class Entity
 {
 public:
@@ -115,8 +125,13 @@ public:
 
     template<typename T>
     void RemoveComponent() const;
+    
+    const std::vector<ComponentTypeID>& GetTrackedComponentIDs() const;
 
 private:
+    void RegisterTrackedComponent(ComponentTypeID componentID) const;
+    void UnregisterTrackedComponent(ComponentTypeID componentID) const;
+
     Scene* m_Scene = nullptr;
     entt::registry* m_Registry = nullptr;
     entt::entity m_Entity{entt::null};
@@ -126,6 +141,9 @@ private:
 template<typename T, typename... Args>
 T& Entity::AddComponent(Args&&... args) const
 {
+    if constexpr (HasStaticSceneComponentID<T>::value)
+        RegisterTrackedComponent(T::StaticComponentID);
+
     if (m_Registry->all_of<T>(m_Entity))
         return m_Registry->get<T>(m_Entity);
 
@@ -148,6 +166,7 @@ T& Entity::GetComponent()
         !std::is_same_v<T, RelationshipComponent> &&
         !std::is_same_v<T, LocalTransformComponent> &&
         !std::is_same_v<T, WorldTransformComponent> &&
+        !std::is_same_v<T, RequiredComponentsComponent> &&
         !std::is_same_v<T, SpriteComponent> &&
         !std::is_same_v<T, SpriteAnimationComponent>,
         "Use Scene or Entity APIs for engine-managed components."
@@ -165,6 +184,9 @@ const T& Entity::GetComponent() const
 template<typename T>
 void Entity::RemoveComponent() const
 {
+    if constexpr (HasStaticSceneComponentID<T>::value)
+        UnregisterTrackedComponent(T::StaticComponentID);
+
     if (m_Registry->all_of<T>(m_Entity))
         m_Registry->remove<T>(m_Entity);
 }

@@ -2,10 +2,12 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
-#include "Math/Transform2D.h"
 #include "SpriteAnimation.h"
+#include "Math/Transform2D.h"
 #include "SpriteRenderer.h"
+#include "Component/EntityComponent.h"
 
 using GameObjectID = uint64_t;
 using LocalTransformComponent = Transform2D;
@@ -45,4 +47,9 @@ struct WorldTransformComponent
 {
     Transform2D world{};
     bool dirty = true;
+};
+
+struct RequiredComponentsComponent
+{
+    std::vector<ComponentTypeID> componentIDs;
 };
