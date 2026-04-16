@@ -9,6 +9,7 @@
 
 #include "Renderer/VulkanRenderer.h"
 #include "Scene/Scene.h"
+#include "Scene/TileMapAssetSerializer.h"
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -61,6 +62,76 @@ namespace
 
         return relativePath.generic_string();
     }
+
+    std::string OpenTileMapAssetPath()
+    {
+        char filePath[MAX_PATH] = {};
+
+        std::filesystem::path basePath = std::filesystem::current_path();
+
+        OPENFILENAMEA dialog{};
+        dialog.lStructSize = sizeof(dialog);
+        dialog.lpstrFilter =
+            "Tile Map Assets\0*.tilemap.json\0"
+            "JSON Files\0*.json\0"
+            "All Files\0*.*\0";
+        dialog.lpstrFile = filePath;
+        dialog.nMaxFile = MAX_PATH;
+        dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+        dialog.lpstrTitle = "Open Tile Map Asset";
+
+        if (!GetOpenFileNameA(&dialog))
+            return {};
+
+        std::filesystem::path selectedPath = std::filesystem::path(filePath);
+        std::error_code errorCode;
+        const std::filesystem::path relativePath =
+            std::filesystem::relative(selectedPath, basePath, errorCode);
+
+        std::filesystem::current_path(basePath);
+
+        if (errorCode)
+            return selectedPath.generic_string();
+
+        return relativePath.generic_string();
+    }
+
+    std::string SaveTileMapAssetPath()
+    {
+        char filePath[MAX_PATH] = {};
+
+        std::filesystem::path basePath = std::filesystem::current_path();
+
+        OPENFILENAMEA dialog{};
+        dialog.lStructSize = sizeof(dialog);
+        dialog.lpstrFilter =
+            "Tile Map Assets\0*.tilemap.json\0"
+            "JSON Files\0*.json\0"
+            "All Files\0*.*\0";
+        dialog.lpstrFile = filePath;
+        dialog.nMaxFile = MAX_PATH;
+        dialog.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
+        dialog.lpstrDefExt = "json";
+        dialog.lpstrTitle = "Save Tile Map Asset";
+
+        if (!GetSaveFileNameA(&dialog))
+            return {};
+
+        std::filesystem::path selectedPath = std::filesystem::path(filePath);
+        if (selectedPath.extension() != ".json" || selectedPath.stem().extension() != ".tilemap")
+            selectedPath += ".tilemap.json";
+
+        std::error_code errorCode;
+        const std::filesystem::path relativePath =
+            std::filesystem::relative(selectedPath, basePath, errorCode);
+
+        std::filesystem::current_path(basePath);
+
+        if (errorCode)
+            return selectedPath.generic_string();
+
+        return relativePath.generic_string();
+    }
 #endif
 }
 
@@ -71,6 +142,7 @@ void TileMapEditorPanel::SyncFromSelection(Scene& scene, GameObjectID selectedOb
     if (!scene.IsValidGameObject(m_SelectedObjectID))
     {
         m_TileMapTexturePathBuffer[0] = '\0';
+        m_TileMapAssetPathBuffer[0] = '\0';
         m_TileMapWidthDraft = 16;
         m_TileMapHeightDraft = 16;
         m_TileMapColumnsDraft = 1;
@@ -78,6 +150,9 @@ void TileMapEditorPanel::SyncFromSelection(Scene& scene, GameObjectID selectedOb
         m_AtlasCellWidthDraft = 32;
         m_AtlasCellHeightDraft = 32;
         m_SelectedTileID = 0;
+        m_TileMapViewEnabled = false;
+        m_AtlasSelectionStart = {0, 0};
+        m_AtlasSelectionEnd = {0, 0};
         m_TileEditX = 0;
         m_TileEditY = 0;
         m_TileEditValue = 0;
@@ -88,12 +163,17 @@ void TileMapEditorPanel::SyncFromSelection(Scene& scene, GameObjectID selectedOb
     if (!entity.HasTileMap())
     {
         m_TileMapTexturePathBuffer[0] = '\0';
+        m_TileMapAssetPathBuffer[0] = '\0';
         m_TileMapWidthDraft = 16;
         m_TileMapHeightDraft = 16;
         m_TileMapColumnsDraft = 1;
         m_TileMapRowsDraft = 1;
         m_AtlasCellWidthDraft = 32;
         m_AtlasCellHeightDraft = 32;
+        m_SelectedTileID = 0;
+        m_TileMapViewEnabled = false;
+        m_AtlasSelectionStart = {0, 0};
+        m_AtlasSelectionEnd = {0, 0};
         m_TileEditX = 0;
         m_TileEditY = 0;
         m_TileEditValue = 0;
@@ -106,14 +186,26 @@ void TileMapEditorPanel::SyncFromSelection(Scene& scene, GameObjectID selectedOb
         "%s",
         entity.GetTileMapTexturePath().c_str()
     );
+    std::snprintf(
+        m_TileMapAssetPathBuffer.data(),
+        m_TileMapAssetPathBuffer.size(),
+        "%s",
+        entity.GetTileMapAssetPath().c_str()
+    );
 
     m_TileMapWidthDraft = static_cast<int>(entity.GetTileMapWidth());
     m_TileMapHeightDraft = static_cast<int>(entity.GetTileMapHeight());
     m_TileMapColumnsDraft = static_cast<int>(entity.GetTileMapColumns());
     m_TileMapRowsDraft = static_cast<int>(entity.GetTileMapRows());
+    m_ActiveLayerDraft = static_cast<int>(entity.GetActiveTileLayerIndex());
     const glm::ivec2 atlasCellSize = entity.GetTileAtlasCellSize();
     m_AtlasCellWidthDraft = atlasCellSize.x;
     m_AtlasCellHeightDraft = atlasCellSize.y;
+    m_AtlasSelectionStart = {
+        m_SelectedTileID % std::max(1, m_TileMapColumnsDraft),
+        m_SelectedTileID / std::max(1, m_TileMapColumnsDraft)
+    };
+    m_AtlasSelectionEnd = m_AtlasSelectionStart;
 
     if (m_TileEditX >= m_TileMapWidthDraft)
         m_TileEditX = 0;
@@ -129,6 +221,34 @@ bool TileMapEditorPanel::HasActiveTileMap(Scene& scene) const
         return false;
 
     return scene.GetEntity(m_SelectedObjectID).HasTileMap();
+}
+
+glm::ivec2 TileMapEditorPanel::GetSelectedAtlasOrigin() const
+{
+    return {
+        std::min(m_AtlasSelectionStart.x, m_AtlasSelectionEnd.x),
+        std::min(m_AtlasSelectionStart.y, m_AtlasSelectionEnd.y)
+    };
+}
+
+glm::ivec2 TileMapEditorPanel::GetSelectedAtlasSize() const
+{
+    const glm::ivec2 origin = GetSelectedAtlasOrigin();
+    const glm::ivec2 maxCorner{
+        std::max(m_AtlasSelectionStart.x, m_AtlasSelectionEnd.x),
+        std::max(m_AtlasSelectionStart.y, m_AtlasSelectionEnd.y)
+    };
+
+    return {
+        maxCorner.x - origin.x + 1,
+        maxCorner.y - origin.y + 1
+    };
+}
+
+int TileMapEditorPanel::GetSelectedTileIDAtOffset(glm::ivec2 offset, int atlasColumns) const
+{
+    const glm::ivec2 origin = GetSelectedAtlasOrigin();
+    return (origin.y + offset.y) * atlasColumns + (origin.x + offset.x);
 }
 
 void TileMapEditorPanel::DrawAtlasPicker(Entity& entity, VulkanRenderer& renderer)
@@ -181,20 +301,20 @@ void TileMapEditorPanel::DrawAtlasPicker(Entity& entity, VulkanRenderer& rendere
         drawList->AddLine(ImVec2(imageMin.x, py), ImVec2(imageMax.x, py), IM_COL32(255, 255, 255, 80));
     }
 
+    const glm::ivec2 selectedOrigin = GetSelectedAtlasOrigin();
+    const glm::ivec2 selectedSize = GetSelectedAtlasSize();
     if (m_SelectedTileID >= 0)
     {
-        const int selectedColumn = m_SelectedTileID % static_cast<int>(columns);
-        const int selectedRow = m_SelectedTileID / static_cast<int>(columns);
-
-        if (selectedRow < static_cast<int>(rows))
+        if (selectedOrigin.x < static_cast<int>(columns) &&
+            selectedOrigin.y < static_cast<int>(rows))
         {
             const ImVec2 selectionMin{
-                imageMin.x + cellWidth * static_cast<float>(selectedColumn),
-                imageMin.y + cellHeight * static_cast<float>(selectedRow)
+                imageMin.x + cellWidth * static_cast<float>(selectedOrigin.x),
+                imageMin.y + cellHeight * static_cast<float>(selectedOrigin.y)
             };
             const ImVec2 selectionMax{
-                selectionMin.x + cellWidth,
-                selectionMin.y + cellHeight
+                selectionMin.x + cellWidth * static_cast<float>(selectedSize.x),
+                selectionMin.y + cellHeight * static_cast<float>(selectedSize.y)
             };
 
             drawList->AddRect(selectionMin, selectionMax, IM_COL32(255, 200, 0, 255), 0.0f, 0, 3.0f);
@@ -210,8 +330,37 @@ void TileMapEditorPanel::DrawAtlasPicker(Entity& entity, VulkanRenderer& rendere
         if (column >= 0 && column < static_cast<int>(columns) &&
             row >= 0 && row < static_cast<int>(rows))
         {
+            m_IsAtlasSelecting = true;
+            m_AtlasSelectionStart = {column, row};
+            m_AtlasSelectionEnd = m_AtlasSelectionStart;
             m_SelectedTileID = row * static_cast<int>(columns) + column;
         }
+    }
+
+    if (m_IsAtlasSelecting && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+    {
+        const ImVec2 mouse = ImGui::GetMousePos();
+        const int column = std::clamp(
+            static_cast<int>((mouse.x - imageMin.x) / cellWidth),
+            0,
+            static_cast<int>(columns) - 1
+        );
+        const int row = std::clamp(
+            static_cast<int>((mouse.y - imageMin.y) / cellHeight),
+            0,
+            static_cast<int>(rows) - 1
+        );
+
+        m_AtlasSelectionEnd = {column, row};
+        const glm::ivec2 origin = GetSelectedAtlasOrigin();
+        m_SelectedTileID = origin.y * static_cast<int>(columns) + origin.x;
+    }
+
+    if (m_IsAtlasSelecting && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+    {
+        m_IsAtlasSelecting = false;
+        const glm::ivec2 origin = GetSelectedAtlasOrigin();
+        m_SelectedTileID = origin.y * static_cast<int>(columns) + origin.x;
     }
 
     ImGui::EndChild();
@@ -237,6 +386,123 @@ void TileMapEditorPanel::ApplyAtlusCellSize(Entity entity)
             static_cast<uint32_t>(m_TileMapColumnsDraft),
             static_cast<uint32_t>(m_TileMapRowsDraft)
         );
+    }
+}
+
+void TileMapEditorPanel::DrawLayerControls(Entity entity)
+{
+    ImGui::SeparatorText("Layers");
+
+    if (ImGui::Button("Add Layer"))
+        entity.AddTileLayer(std::string("Layer ") + std::to_string(entity.GetTileLayerCount()));
+
+    ImGui::SameLine();
+    if (ImGui::Button("Remove Active Layer"))
+        entity.RemoveTileLayer(entity.GetActiveTileLayerIndex());
+
+    const uint32_t layerCount = entity.GetTileLayerCount();
+    const uint32_t activeLayer = entity.GetActiveTileLayerIndex();
+    m_ActiveLayerDraft = static_cast<int>(activeLayer);
+
+    for (uint32_t layerIndex = 0; layerIndex < layerCount; ++layerIndex)
+    {
+        bool active = layerIndex == activeLayer;
+        if (ImGui::RadioButton(("##LayerActive" + std::to_string(layerIndex)).c_str(), active))
+            entity.SetActiveTileLayerIndex(layerIndex);
+
+        ImGui::SameLine();
+
+        bool visible = entity.IsTileLayerVisible(layerIndex);
+        if (ImGui::Checkbox(("##LayerVisible" + std::to_string(layerIndex)).c_str(), &visible))
+            entity.SetTileLayerVisible(layerIndex, visible);
+
+        ImGui::SameLine();
+        ImGui::Text("%s", entity.GetTileLayerName(layerIndex).c_str());
+    }
+}
+
+void TileMapEditorPanel::DrawAssetControls(Scene& scene, Entity entity)
+{
+    ImGui::SeparatorText("Tile Map Asset");
+
+    ImGui::Text(
+        "Backed By Asset: %s",
+        entity.IsTileMapAssetBacked() ? "Yes" : "No (scene-local)"
+    );
+
+    ImGui::InputText(
+        "Asset Path",
+        m_TileMapAssetPathBuffer.data(),
+        m_TileMapAssetPathBuffer.size()
+    );
+
+#ifdef _WIN32
+    if (ImGui::Button("Browse Asset..."))
+    {
+        const std::string pickedPath = OpenTileMapAssetPath();
+        if (!pickedPath.empty())
+        {
+            std::snprintf(
+                m_TileMapAssetPathBuffer.data(),
+                m_TileMapAssetPathBuffer.size(),
+                "%s",
+                pickedPath.c_str()
+            );
+        }
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Save As New Asset..."))
+    {
+        const std::string pickedPath = SaveTileMapAssetPath();
+        if (!pickedPath.empty())
+        {
+            std::snprintf(
+                m_TileMapAssetPathBuffer.data(),
+                m_TileMapAssetPathBuffer.size(),
+                "%s",
+                pickedPath.c_str()
+            );
+
+            if (TileMapAssetSerializer::SaveToFile(entity, pickedPath))
+            {
+                entity.SetTileMapAssetPath(pickedPath);
+                SyncFromSelection(scene, entity.GetID());
+            }
+        }
+    }
+#endif
+
+    if (ImGui::Button("Load From Asset"))
+    {
+        if (m_TileMapAssetPathBuffer[0] != '\0' &&
+            TileMapAssetSerializer::LoadIntoEntity(m_TileMapAssetPathBuffer.data(), entity))
+        {
+            m_SelectedTileID = 0;
+            SyncFromSelection(scene, entity.GetID());
+        }
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Reload From Asset"))
+    {
+        const std::string assetPath = entity.GetTileMapAssetPath();
+        if (!assetPath.empty() && TileMapAssetSerializer::LoadIntoEntity(assetPath, entity))
+        {
+            m_SelectedTileID = 0;
+            SyncFromSelection(scene, entity.GetID());
+        }
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Save Back To Asset"))
+    {
+        const std::string assetPath = entity.GetTileMapAssetPath();
+        if (!assetPath.empty())
+        {
+            if (TileMapAssetSerializer::SaveToFile(entity, assetPath))
+                SyncFromSelection(scene, entity.GetID());
+        }
     }
 }
 
@@ -290,6 +556,9 @@ void TileMapEditorPanel::Draw(Scene& scene, VulkanRenderer& renderer, GameObject
         ImGui::End();
         return;
     }
+
+    ImGui::Checkbox("Tile Map View", &m_TileMapViewEnabled);
+    ImGui::Separator();
 
     ImGui::SeparatorText("Map");
 
@@ -382,6 +651,8 @@ void TileMapEditorPanel::Draw(Scene& scene, VulkanRenderer& renderer, GameObject
 
     ImGui::SeparatorText("Atlas Picker");
     DrawAtlasPicker(entity, renderer);
+    DrawLayerControls(entity);
+    DrawAssetControls(scene, entity);
 
     ImGui::SeparatorText("Brush");
 
@@ -395,10 +666,36 @@ void TileMapEditorPanel::Draw(Scene& scene, VulkanRenderer& renderer, GameObject
     if (m_PaintModeEnabled)
         m_EraseModeEnabled = false;
 
-    ImGui::InputInt("Selected Tile ID", &m_SelectedTileID);
+    if (ImGui::InputInt("Selected Tile ID", &m_SelectedTileID))
+    {
+        m_SelectedTileID = std::max(-1, m_SelectedTileID);
+        if (m_SelectedTileID >= 0)
+        {
+            const int atlasColumns = std::max(1, static_cast<int>(entity.GetTileMapColumns()));
+            const int atlasRows = std::max(1, static_cast<int>(entity.GetTileMapRows()));
+            const int maxTileID = atlasColumns * atlasRows - 1;
+            m_SelectedTileID = std::clamp(m_SelectedTileID, 0, maxTileID);
+
+            const glm::ivec2 selectionCell{
+                m_SelectedTileID % atlasColumns,
+                m_SelectedTileID / atlasColumns
+            };
+            m_AtlasSelectionStart = selectionCell;
+            m_AtlasSelectionEnd = selectionCell;
+        }
+    }
     if (m_SelectedTileID < -1)
         m_SelectedTileID = -1;
 
+    const glm::ivec2 atlasSelectionOrigin = GetSelectedAtlasOrigin();
+    const glm::ivec2 atlasSelectionSize = GetSelectedAtlasSize();
+    ImGui::Text(
+        "Atlas Selection: (%d, %d) size %d x %d",
+        atlasSelectionOrigin.x,
+        atlasSelectionOrigin.y,
+        atlasSelectionSize.x,
+        atlasSelectionSize.y
+    );
     ImGui::Text("Hovered Tile: (%d, %d)", m_HoveredTile.x, m_HoveredTile.y);
     ImGui::End();
 }

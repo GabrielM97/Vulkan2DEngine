@@ -46,6 +46,7 @@ public:
 
     void Update(float deltaTime);
     void Render(IRenderer2D& renderer);
+    void RenderTileMapOnly(IRenderer2D& renderer, GameObjectID tileMapID);
     void UpdateCamera(const CameraCommand& command, float deltaTime, float viewportWidth, float viewportHeight);
     bool SaveToFile(const std::string& path) const;
     bool LoadFromFile(const std::string& path);
@@ -111,6 +112,7 @@ private:
     const SpriteAnimationSet* GetOrLoadAnimationSet(const std::string& path);
     void MarkTransformDirty(GameObjectID id);
     Transform2D ResolveWorldTransform(entt::entity entity);
+    void RenderEntity(IRenderer2D& renderer, entt::entity entity);
     std::vector<entt::entity> SortForRendering() const;
     void DestroyPendingGameObjects();
     bool WouldCreateCycle(GameObjectID childID, GameObjectID parentID) const;

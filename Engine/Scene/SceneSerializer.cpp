@@ -151,6 +151,16 @@ namespace
     
     json SerializeTileMap(const TileMapComponent& tileMap)
     {
+        json layers = json::array();
+        for (const auto& layer : tileMap.layers)
+        {
+            layers.push_back({
+                {"name", layer.name},
+                {"visible", layer.visible},
+                {"tiles", layer.tiles}
+            });
+        }
+
         return {
                 {"width", tileMap.width},
                 {"height", tileMap.height},
@@ -159,7 +169,9 @@ namespace
                 {"columns", tileMap.columns},
                 {"rows", tileMap.rows},
                 {"tilesetTexturePath", tileMap.tilesetTexturePath},
-                {"tiles", tileMap.tiles}
+                {"assetPath", tileMap.assetPath},
+                {"activeLayerIndex", tileMap.activeLayerIndex},
+                {"layers", layers}
         };
     }
 
@@ -188,13 +200,51 @@ namespace
         tileMap.columns = std::max<uint32_t>(1, value.value("columns", 1u));
         tileMap.rows = std::max<uint32_t>(1, value.value("rows", 1u));
         tileMap.tilesetTexturePath = value.value("tilesetTexturePath", "");
-        tileMap.tiles = value.value("tiles", std::vector<int32_t>{});
-
+        tileMap.assetPath = value.value("assetPath", "");
         const std::size_t expectedCount =
             static_cast<std::size_t>(tileMap.width) * static_cast<std::size_t>(tileMap.height);
 
-        if (tileMap.tiles.size() != expectedCount)
-            tileMap.tiles.assign(expectedCount, -1);
+        tileMap.layers.clear();
+
+        if (value.contains("layers") && value.at("layers").is_array())
+        {
+            for (const json& layerValue : value.at("layers"))
+            {
+                TileMapComponent::Layer layer;
+                layer.name = layerValue.value("name", "Layer");
+                layer.visible = layerValue.value("visible", true);
+                layer.tiles = layerValue.value("tiles", std::vector<int32_t>{});
+
+                if (layer.tiles.size() != expectedCount)
+                    layer.tiles.assign(expectedCount, -1);
+
+                tileMap.layers.push_back(std::move(layer));
+            }
+        }
+        else
+        {
+            TileMapComponent::Layer layer;
+            layer.name = "Layer 0";
+            layer.visible = true;
+            layer.tiles = value.value("tiles", std::vector<int32_t>{});
+            if (layer.tiles.size() != expectedCount)
+                layer.tiles.assign(expectedCount, -1);
+            tileMap.layers.push_back(std::move(layer));
+        }
+
+        if (tileMap.layers.empty())
+        {
+            TileMapComponent::Layer layer;
+            layer.name = "Layer 0";
+            layer.visible = true;
+            layer.tiles.assign(expectedCount, -1);
+            tileMap.layers.push_back(std::move(layer));
+        }
+
+        tileMap.activeLayerIndex = std::min<uint32_t>(
+            value.value("activeLayerIndex", 0u),
+            static_cast<uint32_t>(tileMap.layers.size() - 1)
+        );
     }
 }
 

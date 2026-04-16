@@ -61,6 +61,13 @@ struct ObjectTypeComponent
 
 struct TileMapComponent
 {
+    struct Layer
+    {
+        std::string name = "Layer";
+        bool visible = true;
+        std::vector<int32_t> tiles;
+    };
+
     uint32_t width = 0;
     uint32_t height = 0;
     glm::vec2 tileSize = {32.0f, 32.0f};
@@ -68,5 +75,7 @@ struct TileMapComponent
     uint32_t columns = 1;
     uint32_t rows = 1;
     std::string tilesetTexturePath;
-    std::vector<int32_t> tiles;
+    std::string assetPath;
+    std::vector<Layer> layers{{}};
+    uint32_t activeLayerIndex = 0;
 };

@@ -1,6 +1,7 @@
 #include "SandboxApp.h"
 
 #include <iostream>
+#include <cstdint>
 #include <GLFW/glfw3.h>
 
 #include "Component/Gameplay/PlayerMovementComponent.h"
@@ -67,6 +68,8 @@ void SandboxApp::EnterPlayMode()
 {
     if (m_EditorMode == EditorMode::Playing)
         return;
+
+    GetEditorLayer().GetTileMapEditorPanel().SetTileMapViewEnabled(false);
 
     if (!m_Scene.SaveToFile(m_PlayModeSnapshotPath))
         return;
@@ -135,6 +138,140 @@ glm::vec2 SandboxApp::ScreenToWorld(const glm::vec2& screenPosition, const Scene
     );
 }
 
+void SandboxApp::BeginTileStroke(Entity entity)
+{
+    m_TileStrokeActive = true;
+    m_ActiveTileStroke = {};
+    m_ActiveTileStroke.targetID = entity.GetID();
+}
+
+void SandboxApp::ApplyTileStrokeStamp(Entity entity, glm::ivec2 hoveredTile, bool erase)
+{
+    if (!m_TileStrokeActive || !entity.IsValid() || !entity.HasTileMap())
+        return;
+
+    auto& tileMapPanel = GetEditorLayer().GetTileMapEditorPanel();
+    const glm::ivec2 selectionSize = tileMapPanel.GetSelectedAtlasSize();
+    const int atlasColumns = static_cast<int>(entity.GetTileMapColumns());
+    const uint32_t activeLayer = entity.GetActiveTileLayerIndex();
+
+    for (int offsetY = 0; offsetY < selectionSize.y; ++offsetY)
+    {
+        for (int offsetX = 0; offsetX < selectionSize.x; ++offsetX)
+        {
+            const int tileX = hoveredTile.x + offsetX;
+            const int tileY = hoveredTile.y + offsetY;
+            const int32_t newValue = erase
+                ? -1
+                : tileMapPanel.GetSelectedTileIDAtOffset({offsetX, offsetY}, atlasColumns);
+            const int32_t oldValue = entity.GetTile(activeLayer, tileX, tileY);
+
+            if (oldValue == newValue)
+                continue;
+
+            const int64_t key =
+                (static_cast<int64_t>(tileY) << 32) |
+                static_cast<uint32_t>(tileX);
+
+            auto lookupIt = m_ActiveTileStroke.cellLookup.find(key);
+            if (lookupIt == m_ActiveTileStroke.cellLookup.end())
+            {
+                m_ActiveTileStroke.cellLookup.emplace(key, m_ActiveTileStroke.cells.size());
+                m_ActiveTileStroke.cells.push_back({
+                    activeLayer,
+                    tileX,
+                    tileY,
+                    oldValue,
+                    newValue
+                });
+            }
+            else
+            {
+                m_ActiveTileStroke.cells[lookupIt->second].after = newValue;
+            }
+
+            entity.SetTile(activeLayer, tileX, tileY, newValue);
+        }
+    }
+}
+
+void SandboxApp::EndTileStroke()
+{
+    if (!m_TileStrokeActive)
+        return;
+
+    m_TileStrokeActive = false;
+
+    if (!m_ActiveTileStroke.cells.empty())
+    {
+        m_ActiveTileStroke.cellLookup.clear();
+        m_UndoTileStrokes.push_back(std::move(m_ActiveTileStroke));
+        m_RedoTileStrokes.clear();
+    }
+    else
+    {
+        m_ActiveTileStroke = {};
+    }
+}
+
+void SandboxApp::UndoTileStroke()
+{
+    if (m_UndoTileStrokes.empty())
+        return;
+
+    TileEditStroke stroke = std::move(m_UndoTileStrokes.back());
+    m_UndoTileStrokes.pop_back();
+
+    Entity entity = m_Scene.GetEntity(stroke.targetID);
+    if (entity.IsValid() && entity.HasTileMap())
+    {
+        for (const TileEditCell& cell : stroke.cells)
+            entity.SetTile(cell.layerIndex, cell.x, cell.y, cell.before);
+    }
+
+    stroke.cellLookup.clear();
+    m_RedoTileStrokes.push_back(std::move(stroke));
+}
+
+void SandboxApp::RedoTileStroke()
+{
+    if (m_RedoTileStrokes.empty())
+        return;
+
+    TileEditStroke stroke = std::move(m_RedoTileStrokes.back());
+    m_RedoTileStrokes.pop_back();
+
+    Entity entity = m_Scene.GetEntity(stroke.targetID);
+    if (entity.IsValid() && entity.HasTileMap())
+    {
+        for (const TileEditCell& cell : stroke.cells)
+            entity.SetTile(cell.layerIndex, cell.x, cell.y, cell.after);
+    }
+
+    stroke.cellLookup.clear();
+    m_UndoTileStrokes.push_back(std::move(stroke));
+}
+
+bool SandboxApp::IsUndoShortcutPressed() const
+{
+    const InputState& input = GetInputState();
+    const bool controlDown =
+        input.IsKeyDown(GLFW_KEY_LEFT_CONTROL) ||
+        input.IsKeyDown(GLFW_KEY_RIGHT_CONTROL);
+
+    return controlDown && input.WasKeyPressed(GLFW_KEY_Z);
+}
+
+bool SandboxApp::IsRedoShortcutPressed() const
+{
+    const InputState& input = GetInputState();
+    const bool controlDown =
+        input.IsKeyDown(GLFW_KEY_LEFT_CONTROL) ||
+        input.IsKeyDown(GLFW_KEY_RIGHT_CONTROL);
+
+    return controlDown && input.WasKeyPressed(GLFW_KEY_Y);
+}
+
 void SandboxApp::OnUpdate(float deltaTime)
 {
     CameraCommand command{};
@@ -142,8 +279,14 @@ void SandboxApp::OnUpdate(float deltaTime)
 
     const InputState& input = GetInputState();
     const SceneViewportState& viewportState = GetSceneViewportState();
+
+    if (!IsEditorPlaying() && input.CanUseEditorShortcuts() && IsUndoShortcutPressed())
+        UndoTileStroke();
+
+    if (!IsEditorPlaying() && input.CanUseEditorShortcuts() && IsRedoShortcutPressed())
+        RedoTileStroke();
     
-    if (input.CanUseEditorViewportInput() && viewportState.hovered)
+    if (!IsEditorPlaying() && viewportState.visible && viewportState.hovered)
     {
         auto& tileMapPanel = GetEditorLayer().GetTileMapEditorPanel();
         Entity selected = m_Scene.GetEntity(tileMapPanel.GetSelectedObjectID());
@@ -153,20 +296,41 @@ void SandboxApp::OnUpdate(float deltaTime)
         {
             tileMapPanel.SetHoveredTile(hoveredTile);
 
-            if (input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT) && tileMapPanel.IsPaintModeEnabled())
+            const bool paintStroke =
+                input.CanUseEditorViewportInput() &&
+                input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT) &&
+                tileMapPanel.IsPaintModeEnabled();
+            const bool eraseStroke =
+                input.CanUseEditorViewportInput() &&
+                (input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT) ||
+                 (tileMapPanel.IsEraseModeEnabled() && input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)));
+
+            if ((paintStroke || eraseStroke) && !m_TileStrokeActive)
+                BeginTileStroke(selected);
+
+            if (paintStroke)
             {
-                selected.SetTile(hoveredTile.x, hoveredTile.y, tileMapPanel.GetSelectedTileID());
+                ApplyTileStrokeStamp(selected, hoveredTile, false);
             }
              
-            if (input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT) ||
-                (tileMapPanel.IsEraseModeEnabled() && input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT))
-            )
-                selected.SetTile(hoveredTile.x, hoveredTile.y, -1);
+            if (eraseStroke)
+                ApplyTileStrokeStamp(selected, hoveredTile, true);
         }
         else
         {
             tileMapPanel.SetHoveredTile(glm::ivec2{-1, -1});
         }
+    }
+    else
+    {
+        GetEditorLayer().GetTileMapEditorPanel().SetHoveredTile(glm::ivec2{-1, -1});
+    }
+
+    if (m_TileStrokeActive &&
+        (input.WasMouseButtonReleased(GLFW_MOUSE_BUTTON_LEFT) ||
+         input.WasMouseButtonReleased(GLFW_MOUSE_BUTTON_RIGHT)))
+    {
+        EndTileStroke();
     }
 
     if (input.CanUseRuntimeViewportInput())
@@ -191,6 +355,15 @@ void SandboxApp::OnUpdate(float deltaTime)
 
     if (input.CanUseEditorViewportInput())
     {
+        if (input.IsKeyDown(GLFW_KEY_A) || input.IsKeyDown(GLFW_KEY_LEFT))
+            command.moveX -= 1.0f;
+        if (input.IsKeyDown(GLFW_KEY_D) || input.IsKeyDown(GLFW_KEY_RIGHT))
+            command.moveX += 1.0f;
+        if (input.IsKeyDown(GLFW_KEY_W) || input.IsKeyDown(GLFW_KEY_UP))
+            command.moveY -= 1.0f;
+        if (input.IsKeyDown(GLFW_KEY_S) || input.IsKeyDown(GLFW_KEY_DOWN))
+            command.moveY += 1.0f;
+
         if (input.IsKeyDown(GLFW_KEY_Q))
             command.zoomDelta -= 1.0f;
         if (input.IsKeyDown(GLFW_KEY_E))
@@ -225,5 +398,14 @@ void SandboxApp::OnUpdate(float deltaTime)
 
 void SandboxApp::OnRender(VulkanRenderer& renderer)
 {
+    const TileMapEditorPanel& tileMapPanel = GetEditorLayer().GetTileMapEditorPanel();
+    Entity selected = m_Scene.GetEntity(tileMapPanel.GetSelectedObjectID());
+
+    if (tileMapPanel.IsTileMapViewEnabled() && selected.IsValid() && selected.HasTileMap())
+    {
+        m_Scene.RenderTileMapOnly(renderer, selected.GetID());
+        return;
+    }
+
     m_Scene.Render(renderer);
 }

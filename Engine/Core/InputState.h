@@ -32,6 +32,7 @@ public:
     
     bool IsMouseButtonDown(int button) const;
     bool WasMouseButtonPressed(int button) const;
+    bool WasMouseButtonReleased(int button) const;
     static bool IsValidMouseButton(int button);
 
     glm::vec2 GetMouseScreenPosition() const { return m_MouseScreenPosition; }

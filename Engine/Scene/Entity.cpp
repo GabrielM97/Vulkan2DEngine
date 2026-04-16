@@ -406,7 +406,9 @@ void Entity::EnsureTileMap() const
     if (!IsValid() || HasComponent<TileMapComponent>())
         return;
 
-    m_Registry->emplace<TileMapComponent>(m_Entity);
+    auto& tileMap = m_Registry->emplace<TileMapComponent>(m_Entity);
+    tileMap.layers = { TileMapComponent::Layer{} };
+    tileMap.activeLayerIndex = 0;
 }
 
 void Entity::RemoveTileMap() const
@@ -469,6 +471,24 @@ void Entity::SetTileMapTexturePath(const std::string& path) const
     m_Registry->get<TileMapComponent>(m_Entity).tilesetTexturePath = path;
 }
 
+std::string Entity::GetTileMapAssetPath() const
+{
+    return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).assetPath : std::string{};
+}
+
+void Entity::SetTileMapAssetPath(const std::string& path) const
+{
+    if (!HasTileMap())
+        return;
+
+    m_Registry->get<TileMapComponent>(m_Entity).assetPath = path;
+}
+
+bool Entity::IsTileMapAssetBacked() const
+{
+    return HasTileMap() && !m_Registry->get<TileMapComponent>(m_Entity).assetPath.empty();
+}
+
 uint32_t Entity::GetTileMapColumns() const
 {
     return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).columns : 1;
@@ -489,29 +509,55 @@ void Entity::SetTileMapGrid(uint32_t columns, uint32_t rows) const
     tileMap.rows = std::max<uint32_t>(1, rows);
 }
 
+TileMapComponent Entity::GetTileMapData() const
+{
+    return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity) : TileMapComponent{};
+}
+
+void Entity::SetTileMapData(const TileMapComponent& tileMap) const
+{
+    if (!IsValid())
+        return;
+
+    EnsureTileMap();
+    m_Registry->get<TileMapComponent>(m_Entity) = tileMap;
+    m_Scene->MarkTransformDirty(m_ID);
+}
+
 void Entity::ResizeTileMap(uint32_t width, uint32_t height) const
 {
     if (!HasTileMap())
         return;
 
     auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    const uint32_t oldWidth = tileMap.width;
+    const uint32_t oldHeight = tileMap.height;
+    const uint32_t copyWidth = std::min(oldWidth, width);
+    const uint32_t copyHeight = std::min(oldHeight, height);
 
-    std::vector<int32_t> resizedTiles(width * height, -1);
+    if (tileMap.layers.empty())
+        tileMap.layers = { TileMapComponent::Layer{} };
 
-    const uint32_t copyWidth = std::min(tileMap.width, width);
-    const uint32_t copyHeight = std::min(tileMap.height, height);
-
-    for (uint32_t y = 0; y < copyHeight; ++y)
+    for (auto& layer : tileMap.layers)
     {
-        for (uint32_t x = 0; x < copyWidth; ++x)
+        std::vector<int32_t> resizedTiles(width * height, -1);
+
+        if (!layer.tiles.empty() && oldWidth > 0)
         {
-            resizedTiles[y * width + x] = tileMap.tiles[y * tileMap.width + x];
+            for (uint32_t y = 0; y < copyHeight; ++y)
+            {
+                for (uint32_t x = 0; x < copyWidth; ++x)
+                {
+                    resizedTiles[y * width + x] = layer.tiles[y * oldWidth + x];
+                }
+            }
         }
+
+        layer.tiles = std::move(resizedTiles);
     }
 
     tileMap.width = width;
     tileMap.height = height;
-    tileMap.tiles = std::move(resizedTiles);
 }
 
 int32_t Entity::GetTile(int x, int y) const
@@ -520,16 +566,11 @@ int32_t Entity::GetTile(int x, int y) const
         return -1;
 
     const auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
-    if (x < 0 || y < 0)
-        return -1;
-
-    const uint32_t tileX = static_cast<uint32_t>(x);
-    const uint32_t tileY = static_cast<uint32_t>(y);
-
-    if (tileX >= tileMap.width || tileY >= tileMap.height)
-        return -1;
-
-    return tileMap.tiles[tileY * tileMap.width + tileX];
+    const uint32_t activeLayer = std::min<uint32_t>(
+        tileMap.activeLayerIndex,
+        static_cast<uint32_t>(tileMap.layers.empty() ? 0 : tileMap.layers.size() - 1)
+    );
+    return GetTile(activeLayer, x, y);
 }
 
 void Entity::SetTile(int x, int y, int32_t tileID) const
@@ -538,14 +579,143 @@ void Entity::SetTile(int x, int y, int32_t tileID) const
         return;
 
     auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
-    if (x < 0 || y < 0)
+    const uint32_t activeLayer = std::min<uint32_t>(
+        tileMap.activeLayerIndex,
+        static_cast<uint32_t>(tileMap.layers.empty() ? 0 : tileMap.layers.size() - 1)
+    );
+    SetTile(activeLayer, x, y, tileID);
+}
+
+uint32_t Entity::GetTileLayerCount() const
+{
+    return HasTileMap() ? static_cast<uint32_t>(m_Registry->get<TileMapComponent>(m_Entity).layers.size()) : 0;
+}
+
+uint32_t Entity::GetActiveTileLayerIndex() const
+{
+    return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).activeLayerIndex : 0;
+}
+
+void Entity::SetActiveTileLayerIndex(uint32_t index) const
+{
+    if (!HasTileMap())
+        return;
+
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (tileMap.layers.empty())
+        return;
+
+    tileMap.activeLayerIndex = std::min<uint32_t>(index, static_cast<uint32_t>(tileMap.layers.size() - 1));
+}
+
+std::string Entity::GetTileLayerName(uint32_t index) const
+{
+    if (!HasTileMap())
+        return {};
+
+    const auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (index >= tileMap.layers.size())
+        return {};
+
+    return tileMap.layers[index].name;
+}
+
+void Entity::SetTileLayerName(uint32_t index, const std::string& name) const
+{
+    if (!HasTileMap())
+        return;
+
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (index >= tileMap.layers.size())
+        return;
+
+    tileMap.layers[index].name = name;
+}
+
+bool Entity::IsTileLayerVisible(uint32_t index) const
+{
+    if (!HasTileMap())
+        return false;
+
+    const auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (index >= tileMap.layers.size())
+        return false;
+
+    return tileMap.layers[index].visible;
+}
+
+void Entity::SetTileLayerVisible(uint32_t index, bool visible) const
+{
+    if (!HasTileMap())
+        return;
+
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (index >= tileMap.layers.size())
+        return;
+
+    tileMap.layers[index].visible = visible;
+}
+
+void Entity::AddTileLayer(const std::string& name) const
+{
+    if (!HasTileMap())
+        return;
+
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    TileMapComponent::Layer layer;
+    layer.name = name;
+    layer.visible = true;
+    layer.tiles.assign(static_cast<size_t>(tileMap.width) * static_cast<size_t>(tileMap.height), -1);
+    tileMap.layers.push_back(std::move(layer));
+    tileMap.activeLayerIndex = static_cast<uint32_t>(tileMap.layers.size() - 1);
+}
+
+void Entity::RemoveTileLayer(uint32_t index) const
+{
+    if (!HasTileMap())
+        return;
+
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (index >= tileMap.layers.size() || tileMap.layers.size() <= 1)
+        return;
+
+    tileMap.layers.erase(tileMap.layers.begin() + static_cast<std::ptrdiff_t>(index));
+    tileMap.activeLayerIndex = std::min<uint32_t>(
+        tileMap.activeLayerIndex,
+        static_cast<uint32_t>(tileMap.layers.size() - 1)
+    );
+}
+
+int32_t Entity::GetTile(uint32_t layerIndex, int x, int y) const
+{
+    if (!HasTileMap())
+        return -1;
+
+    const auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (layerIndex >= tileMap.layers.size() || x < 0 || y < 0)
+        return -1;
+
+    const uint32_t tileX = static_cast<uint32_t>(x);
+    const uint32_t tileY = static_cast<uint32_t>(y);
+    if (tileX >= tileMap.width || tileY >= tileMap.height)
+        return -1;
+
+    return tileMap.layers[layerIndex].tiles[tileY * tileMap.width + tileX];
+}
+
+void Entity::SetTile(uint32_t layerIndex, int x, int y, int32_t tileID) const
+{
+    if (!HasTileMap())
+        return;
+
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (layerIndex >= tileMap.layers.size() || x < 0 || y < 0)
         return;
 
     const uint32_t tileX = static_cast<uint32_t>(x);
     const uint32_t tileY = static_cast<uint32_t>(y);
-
     if (tileX >= tileMap.width || tileY >= tileMap.height)
         return;
 
-    tileMap.tiles[tileY * tileMap.width + tileX] = tileID;
+    tileMap.layers[layerIndex].tiles[tileY * tileMap.width + tileX] = tileID;
 }

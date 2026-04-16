@@ -30,6 +30,7 @@ public:
     
     const glm::mat4& GetViewProjectionMatrix() const { return m_ViewProjection; }
     glm::vec2 ScreenToWorld(const glm::vec2& screenPosition, float viewportWidth, float viewportHeight) const;
+    glm::vec2 WorldToScreen(const glm::vec2& worldPosition, float viewportWidth, float viewportHeight) const;
 
 private:
     void RebuildMatrices(float viewportWidth, float viewportHeight);

@@ -123,14 +123,30 @@ public:
 
     std::string GetTileMapTexturePath() const;
     void SetTileMapTexturePath(const std::string& path) const;
+    std::string GetTileMapAssetPath() const;
+    void SetTileMapAssetPath(const std::string& path) const;
+    bool IsTileMapAssetBacked() const;
 
     uint32_t GetTileMapColumns() const;
     uint32_t GetTileMapRows() const;
     void SetTileMapGrid(uint32_t columns, uint32_t rows) const;
+    TileMapComponent GetTileMapData() const;
+    void SetTileMapData(const TileMapComponent& tileMap) const;
 
     void ResizeTileMap(uint32_t width, uint32_t height) const;
     int32_t GetTile(int x, int y) const;
     void SetTile(int x, int y, int32_t tileID) const;
+    uint32_t GetTileLayerCount() const;
+    uint32_t GetActiveTileLayerIndex() const;
+    void SetActiveTileLayerIndex(uint32_t index) const;
+    std::string GetTileLayerName(uint32_t index) const;
+    void SetTileLayerName(uint32_t index, const std::string& name) const;
+    bool IsTileLayerVisible(uint32_t index) const;
+    void SetTileLayerVisible(uint32_t index, bool visible) const;
+    void AddTileLayer(const std::string& name = "Layer") const;
+    void RemoveTileLayer(uint32_t index) const;
+    int32_t GetTile(uint32_t layerIndex, int x, int y) const;
+    void SetTile(uint32_t layerIndex, int x, int y, int32_t tileID) const;
     
     template<typename T, typename... Args>
     T& AddComponent(Args&&... args) const;

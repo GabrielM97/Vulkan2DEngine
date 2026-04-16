@@ -26,6 +26,7 @@ void EditorLayer::Draw(Scene* scene, VulkanRenderer& renderer, ImTextureID scene
     m_SceneViewportPanel->Draw(sceneViewportTextureID);
     m_SceneEditorPanel->Draw(*scene);
     m_TileMapEditorPanel.Draw(*scene, renderer, m_SceneEditorPanel->GetSelectedObjectID());
+    DrawTileStampPreview(*scene, isPlaying);
 }
 
 const SceneViewportState& EditorLayer::GetSceneViewportState() const
@@ -121,4 +122,66 @@ void EditorLayer::DrawTopBar(bool isPlaying)
 
     ImGui::End();
     ImGui::PopStyleVar(3);
+}
+
+void EditorLayer::DrawTileStampPreview(Scene& scene, bool isPlaying)
+{
+    if (isPlaying)
+        return;
+
+    const SceneViewportState& viewportState = m_SceneViewportPanel->GetState();
+    if (!viewportState.visible || !viewportState.hovered)
+        return;
+
+    if (!scene.IsValidGameObject(m_TileMapEditorPanel.GetSelectedObjectID()))
+        return;
+
+    Entity selected = scene.GetEntity(m_TileMapEditorPanel.GetSelectedObjectID());
+    if (!selected.HasTileMap())
+        return;
+
+    const glm::ivec2 hoveredTile = m_TileMapEditorPanel.GetHoveredTile();
+    if (hoveredTile.x < 0 || hoveredTile.y < 0)
+        return;
+
+    const glm::ivec2 selectionSize = m_TileMapEditorPanel.GetSelectedAtlasSize();
+    if (selectionSize.x <= 0 || selectionSize.y <= 0)
+        return;
+
+    const Transform2D mapTransform = selected.GetTransform();
+    const glm::vec2 tileSize = selected.GetTileSize();
+    const glm::vec2 worldMin = mapTransform.position + glm::vec2{
+        static_cast<float>(hoveredTile.x) * tileSize.x,
+        static_cast<float>(hoveredTile.y) * tileSize.y
+    };
+    const glm::vec2 worldMax = worldMin + glm::vec2{
+        static_cast<float>(selectionSize.x) * tileSize.x,
+        static_cast<float>(selectionSize.y) * tileSize.y
+    };
+
+    const Camera2D& camera = scene.GetCamera();
+    const glm::vec2 screenMinLocal = camera.WorldToScreen(
+        worldMin,
+        static_cast<float>(viewportState.width),
+        static_cast<float>(viewportState.height)
+    );
+    const glm::vec2 screenMaxLocal = camera.WorldToScreen(
+        worldMax,
+        static_cast<float>(viewportState.width),
+        static_cast<float>(viewportState.height)
+    );
+
+    const ImVec2 viewportMin = viewportState.contentMin;
+    const ImVec2 rectMin{
+        viewportMin.x + std::min(screenMinLocal.x, screenMaxLocal.x),
+        viewportMin.y + std::min(screenMinLocal.y, screenMaxLocal.y)
+    };
+    const ImVec2 rectMax{
+        viewportMin.x + std::max(screenMinLocal.x, screenMaxLocal.x),
+        viewportMin.y + std::max(screenMinLocal.y, screenMaxLocal.y)
+    };
+
+    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+    drawList->AddRectFilled(rectMin, rectMax, IM_COL32(255, 200, 0, 40));
+    drawList->AddRect(rectMin, rectMax, IM_COL32(255, 200, 0, 220), 0.0f, 0, 2.0f);
 }
