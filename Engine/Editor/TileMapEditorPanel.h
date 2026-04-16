@@ -15,6 +15,7 @@ public:
     void SyncFromSelection(Scene& scene, GameObjectID selectedObjectID);
     bool IsPaintModeEnabled() const { return m_PaintModeEnabled; }
     bool IsEraseModeEnabled() const { return m_EraseModeEnabled; }
+    bool IsFillModeEnabled() const { return m_FillModeEnabled; }
     bool IsTileMapViewEnabled() const { return m_TileMapViewEnabled; }
     void SetTileMapViewEnabled(bool enabled) { m_TileMapViewEnabled = enabled; }
     int GetSelectedTileID() const { return m_SelectedTileID; }
@@ -49,6 +50,7 @@ private:
     int m_TileEditValue = 0;
     bool m_PaintModeEnabled = true;
     bool m_EraseModeEnabled = false;
+    bool m_FillModeEnabled = false;
     bool m_TileMapViewEnabled = false;
     glm::ivec2 m_HoveredTile{-1, -1};
     float m_AtlasPreviewScale = 1.0f;
