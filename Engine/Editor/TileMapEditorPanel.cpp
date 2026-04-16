@@ -659,12 +659,20 @@ void TileMapEditorPanel::Draw(Scene& scene, VulkanRenderer& renderer, GameObject
     ImGui::Checkbox("Paint Mode", &m_PaintModeEnabled);
     ImGui::SameLine();
     ImGui::Checkbox("Erase Mode", &m_EraseModeEnabled);
+    ImGui::SameLine();
+    ImGui::Checkbox("Fill Mode", &m_FillModeEnabled);
 
     if (m_EraseModeEnabled)
+    {
         m_PaintModeEnabled = false;
+        m_FillModeEnabled = false;
+    }
 
-    if (m_PaintModeEnabled)
+    if (m_PaintModeEnabled || m_FillModeEnabled)
         m_EraseModeEnabled = false;
+
+    if (m_FillModeEnabled)
+        m_PaintModeEnabled = false;
 
     if (ImGui::InputInt("Selected Tile ID", &m_SelectedTileID))
     {

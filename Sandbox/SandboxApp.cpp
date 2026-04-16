@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cstdint>
+#include <queue>
 #include <GLFW/glfw3.h>
 
 #include "Component/Gameplay/PlayerMovementComponent.h"
@@ -145,6 +146,39 @@ void SandboxApp::BeginTileStroke(Entity entity)
     m_ActiveTileStroke.targetID = entity.GetID();
 }
 
+void SandboxApp::RecordTileStrokeEdit(Entity entity, uint32_t layerIndex, int tileX, int tileY, int32_t newValue)
+{
+    if (!m_TileStrokeActive || !entity.IsValid() || !entity.HasTileMap())
+        return;
+
+    const int32_t oldValue = entity.GetTile(layerIndex, tileX, tileY);
+    if (oldValue == newValue)
+        return;
+
+    const int64_t key =
+        (static_cast<int64_t>(tileY) << 32) |
+        static_cast<uint32_t>(tileX);
+
+    auto lookupIt = m_ActiveTileStroke.cellLookup.find(key);
+    if (lookupIt == m_ActiveTileStroke.cellLookup.end())
+    {
+        m_ActiveTileStroke.cellLookup.emplace(key, m_ActiveTileStroke.cells.size());
+        m_ActiveTileStroke.cells.push_back({
+            layerIndex,
+            tileX,
+            tileY,
+            oldValue,
+            newValue
+        });
+    }
+    else
+    {
+        m_ActiveTileStroke.cells[lookupIt->second].after = newValue;
+    }
+
+    entity.SetTile(layerIndex, tileX, tileY, newValue);
+}
+
 void SandboxApp::ApplyTileStrokeStamp(Entity entity, glm::ivec2 hoveredTile, bool erase)
 {
     if (!m_TileStrokeActive || !entity.IsValid() || !entity.HasTileMap())
@@ -164,34 +198,80 @@ void SandboxApp::ApplyTileStrokeStamp(Entity entity, glm::ivec2 hoveredTile, boo
             const int32_t newValue = erase
                 ? -1
                 : tileMapPanel.GetSelectedTileIDAtOffset({offsetX, offsetY}, atlasColumns);
-            const int32_t oldValue = entity.GetTile(activeLayer, tileX, tileY);
-
-            if (oldValue == newValue)
-                continue;
-
-            const int64_t key =
-                (static_cast<int64_t>(tileY) << 32) |
-                static_cast<uint32_t>(tileX);
-
-            auto lookupIt = m_ActiveTileStroke.cellLookup.find(key);
-            if (lookupIt == m_ActiveTileStroke.cellLookup.end())
-            {
-                m_ActiveTileStroke.cellLookup.emplace(key, m_ActiveTileStroke.cells.size());
-                m_ActiveTileStroke.cells.push_back({
-                    activeLayer,
-                    tileX,
-                    tileY,
-                    oldValue,
-                    newValue
-                });
-            }
-            else
-            {
-                m_ActiveTileStroke.cells[lookupIt->second].after = newValue;
-            }
-
-            entity.SetTile(activeLayer, tileX, tileY, newValue);
+            RecordTileStrokeEdit(entity, activeLayer, tileX, tileY, newValue);
         }
+    }
+}
+
+void SandboxApp::ApplyTileStrokeFill(Entity entity, glm::ivec2 hoveredTile, bool erase)
+{
+    if (!m_TileStrokeActive || !entity.IsValid() || !entity.HasTileMap())
+        return;
+
+    auto& tileMapPanel = GetEditorLayer().GetTileMapEditorPanel();
+    const glm::ivec2 selectionSize = tileMapPanel.GetSelectedAtlasSize();
+    const int atlasColumns = static_cast<int>(entity.GetTileMapColumns());
+    const uint32_t activeLayer = entity.GetActiveTileLayerIndex();
+    const uint32_t mapWidth = entity.GetTileMapWidth();
+    const uint32_t mapHeight = entity.GetTileMapHeight();
+
+    if (hoveredTile.x < 0 || hoveredTile.y < 0 ||
+        hoveredTile.x >= static_cast<int>(mapWidth) ||
+        hoveredTile.y >= static_cast<int>(mapHeight))
+    {
+        return;
+    }
+
+    const int32_t targetValue = entity.GetTile(activeLayer, hoveredTile.x, hoveredTile.y);
+    const auto ComputeFillValue = [&](int tileX, int tileY) -> int32_t
+    {
+        if (erase)
+            return -1;
+
+        const int offsetX = (tileX - hoveredTile.x) % std::max(1, selectionSize.x);
+        const int offsetY = (tileY - hoveredTile.y) % std::max(1, selectionSize.y);
+        const int wrappedOffsetX = offsetX < 0 ? offsetX + selectionSize.x : offsetX;
+        const int wrappedOffsetY = offsetY < 0 ? offsetY + selectionSize.y : offsetY;
+        return tileMapPanel.GetSelectedTileIDAtOffset({wrappedOffsetX, wrappedOffsetY}, atlasColumns);
+    };
+
+    const int32_t hoveredNewValue = ComputeFillValue(hoveredTile.x, hoveredTile.y);
+    if (targetValue == hoveredNewValue)
+        return;
+
+    std::vector<uint8_t> visited(static_cast<size_t>(mapWidth) * static_cast<size_t>(mapHeight), 0);
+    std::queue<glm::ivec2> queue;
+    queue.push(hoveredTile);
+
+    while (!queue.empty())
+    {
+        const glm::ivec2 current = queue.front();
+        queue.pop();
+
+        if (current.x < 0 || current.y < 0 ||
+            current.x >= static_cast<int>(mapWidth) ||
+            current.y >= static_cast<int>(mapHeight))
+        {
+            continue;
+        }
+
+        const size_t visitedIndex =
+            static_cast<size_t>(current.y) * static_cast<size_t>(mapWidth) +
+            static_cast<size_t>(current.x);
+        if (visited[visitedIndex] != 0)
+            continue;
+
+        visited[visitedIndex] = 1;
+
+        if (entity.GetTile(activeLayer, current.x, current.y) != targetValue)
+            continue;
+
+        RecordTileStrokeEdit(entity, activeLayer, current.x, current.y, ComputeFillValue(current.x, current.y));
+
+        queue.push({current.x + 1, current.y});
+        queue.push({current.x - 1, current.y});
+        queue.push({current.x, current.y + 1});
+        queue.push({current.x, current.y - 1});
     }
 }
 
@@ -296,14 +376,28 @@ void SandboxApp::OnUpdate(float deltaTime)
         {
             tileMapPanel.SetHoveredTile(hoveredTile);
 
+            const bool fillStroke =
+                input.CanUseEditorViewportInput() &&
+                input.WasMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT) &&
+                tileMapPanel.IsFillModeEnabled();
+
             const bool paintStroke =
                 input.CanUseEditorViewportInput() &&
                 input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT) &&
-                tileMapPanel.IsPaintModeEnabled();
+                tileMapPanel.IsPaintModeEnabled() &&
+                !tileMapPanel.IsFillModeEnabled();
             const bool eraseStroke =
                 input.CanUseEditorViewportInput() &&
                 (input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT) ||
-                 (tileMapPanel.IsEraseModeEnabled() && input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)));
+                 (tileMapPanel.IsEraseModeEnabled() && input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT))) &&
+                !tileMapPanel.IsFillModeEnabled();
+
+            if (fillStroke)
+            {
+                BeginTileStroke(selected);
+                ApplyTileStrokeFill(selected, hoveredTile, tileMapPanel.IsEraseModeEnabled());
+                EndTileStroke();
+            }
 
             if ((paintStroke || eraseStroke) && !m_TileStrokeActive)
                 BeginTileStroke(selected);

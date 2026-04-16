@@ -33,7 +33,9 @@ private:
     bool TryGetHoveredTile(Entity entity, glm::ivec2& outTile) const;
     glm::vec2 ScreenToWorld(const glm::vec2& screenPosition, const SceneViewportState& viewportState) const;
     void BeginTileStroke(Entity entity);
+    void RecordTileStrokeEdit(Entity entity, uint32_t layerIndex, int tileX, int tileY, int32_t newValue);
     void ApplyTileStrokeStamp(Entity entity, glm::ivec2 hoveredTile, bool erase);
+    void ApplyTileStrokeFill(Entity entity, glm::ivec2 hoveredTile, bool erase);
     void EndTileStroke();
     void UndoTileStroke();
     void RedoTileStroke();
