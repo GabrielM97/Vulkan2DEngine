@@ -247,25 +247,51 @@ void Scene::Render(IRenderer2D& renderer)
     renderer.SetCamera(m_Camera);
     
     for (entt::entity entity : SortForRendering())
+        RenderEntity(renderer, entity);
+}
+
+void Scene::RenderTileMapOnly(IRenderer2D& renderer, GameObjectID tileMapID)
+{
+    renderer.SetCamera(m_Camera);
+
+    const entt::entity entity = FindEntityByID(tileMapID);
+    if (entity == entt::null || !m_Registry.valid(entity))
+        return;
+
+    if (!m_Registry.all_of<ActiveComponent, TileMapComponent>(entity))
+        return;
+
+    if (!m_Registry.get<ActiveComponent>(entity).active)
+        return;
+
+    RenderEntity(renderer, entity);
+}
+
+void Scene::RenderEntity(IRenderer2D& renderer, entt::entity entity)
+{
+    const auto& id = m_Registry.get<IDComponent>(entity);
+
+    if (m_Registry.all_of<TileMapComponent>(entity))
     {
-        const auto& id = m_Registry.get<IDComponent>(entity);
+        const auto& tileMap = m_Registry.get<TileMapComponent>(entity);
+        if (tileMap.width == 0 || tileMap.height == 0 || tileMap.tilesetTexturePath.empty() || tileMap.layers.empty())
+            return;
 
-        if (m_Registry.all_of<TileMapComponent>(entity))
+        const int cellWidth = std::max(1, tileMap.atlasCellSize.x);
+        const int cellHeight = std::max(1, tileMap.atlasCellSize.y);
+        const int maxTileCount = static_cast<int>(tileMap.columns * tileMap.rows);
+        const Transform2D mapTransform = GetWorldTransform(id.id);
+
+        for (const auto& layer : tileMap.layers)
         {
-            const auto& tileMap = m_Registry.get<TileMapComponent>(entity);
-            if (tileMap.width == 0 || tileMap.height == 0 || tileMap.tilesetTexturePath.empty())
+            if (!layer.visible)
                 continue;
-
-            const int cellWidth = std::max(1, tileMap.atlasCellSize.x);
-            const int cellHeight = std::max(1, tileMap.atlasCellSize.y);
-            const int maxTileCount = static_cast<int>(tileMap.columns * tileMap.rows);
-            const Transform2D mapTransform = GetWorldTransform(id.id);
 
             for (uint32_t y = 0; y < tileMap.height; ++y)
             {
                 for (uint32_t x = 0; x < tileMap.width; ++x)
                 {
-                    const int32_t tileID = tileMap.tiles[y * tileMap.width + x];
+                    const int32_t tileID = layer.tiles[y * tileMap.width + x];
                     if (tileID < 0 || tileID >= maxTileCount)
                         continue;
 
@@ -288,13 +314,13 @@ void Scene::Render(IRenderer2D& renderer)
                     renderer.DrawSprite(tileTransform, tileSprite);
                 }
             }
-
-            continue;
         }
 
-        const auto& sprite = m_Registry.get<SpriteComponent>(entity);
-        renderer.DrawSprite(GetWorldTransform(id.id), sprite);
+        return;
     }
+
+    const auto& sprite = m_Registry.get<SpriteComponent>(entity);
+    renderer.DrawSprite(GetWorldTransform(id.id), sprite);
 }
 
 void Scene::UpdateCamera(const CameraCommand& command, float deltaTime, float viewportWidth, float viewportHeight)

@@ -10,6 +10,11 @@ bool InputState::WasMouseButtonPressed(int button) const
     return IsValidMouseButton(button) && m_CurrentMouseButtons[button] && !m_PreviousMouseButtons[button];
 }
 
+bool InputState::WasMouseButtonReleased(int button) const
+{
+    return IsValidMouseButton(button) && !m_CurrentMouseButtons[button] && m_PreviousMouseButtons[button];
+}
+
 bool InputState::IsValidMouseButton(int button)
 {
     return button >= 0 && button <= GLFW_MOUSE_BUTTON_LAST;

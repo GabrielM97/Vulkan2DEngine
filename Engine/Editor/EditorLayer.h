@@ -28,6 +28,7 @@ public:
 private:
     void DrawDockspace();
     void DrawTopBar(bool isPlaying);
+    void DrawTileStampPreview(Scene& scene, bool isPlaying);
     float GetTopBarHeight() const { return 40.0f; }
 
     TileMapEditorPanel m_TileMapEditorPanel;

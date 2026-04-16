@@ -99,6 +99,20 @@ glm::vec2 Camera2D::ScreenToWorld(const glm::vec2& screenPosition, float viewpor
     return glm::vec2(world.x, world.y);
 }
 
+glm::vec2 Camera2D::WorldToScreen(const glm::vec2& worldPosition, float viewportWidth, float viewportHeight) const
+{
+    if (viewportWidth <= 0.0f || viewportHeight <= 0.0f)
+        return {};
+
+    const glm::vec4 clip = m_ViewProjection * glm::vec4(worldPosition, 0.0f, 1.0f);
+    const glm::vec2 ndc = glm::vec2(clip.x, clip.y) / clip.w;
+
+    return {
+        ((ndc.x + 1.0f) * 0.5f) * viewportWidth,
+        ((1.0f - ndc.y) * 0.5f) * viewportHeight
+    };
+}
+
 void Camera2D::Update(float moveX, float moveY, float zoomDelta, float deltaTime, float viewportWidth, float viewportHeight)
 {
     Move(

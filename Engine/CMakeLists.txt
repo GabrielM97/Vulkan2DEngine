@@ -82,6 +82,8 @@ set(SCENE_FOLDER_SRC
     Scene/SceneComponents.h
     Scene/SceneSerializer.cpp
     Scene/SceneSerializer.h
+    Scene/TileMapAssetSerializer.cpp
+    Scene/TileMapAssetSerializer.h
     Scene/SpriteAnimation.cpp
     Scene/SpriteAnimation.h
     Scene/SpriteAnimationSet.cpp
