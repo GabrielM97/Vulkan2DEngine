@@ -173,6 +173,25 @@ public:
     bool IsBoxColliderEnabled() const;
     void SetBoxColliderEnabled(bool enabled) const;
     
+    bool HasBoxCollider() const;
+    void EnsureBoxCollider() const;
+    void RemoveBoxCollider() const;
+
+    glm::vec2 GetBoxColliderSize() const;
+    void SetBoxColliderSize(const glm::vec2& size) const;
+
+    glm::vec2 GetBoxColliderOffset() const;
+    void SetBoxColliderOffset(const glm::vec2& offset) const;
+
+    ColliderBodyType GetColliderBodyType() const;
+    void SetColliderBodyType(ColliderBodyType bodyType) const;
+
+    bool IsColliderTrigger() const;
+    void SetColliderTrigger(bool isTrigger) const;
+
+    bool IsBoxColliderEnabled() const;
+    void SetBoxColliderEnabled(bool enabled) const;
+    
     template<typename T, typename... Args>
     T& AddComponent(Args&&... args) const;
 
