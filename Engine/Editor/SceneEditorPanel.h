@@ -11,7 +11,6 @@ class SceneEditorPanel
 {
 public:
     void Draw(Scene& scene, GameObjectID& selectedObjectID);
-    void Draw(Scene& scene);
     
     GameObjectID GetSelectedObjectID() const { return m_SelectedObjectID; }
     void DrawTransformSection(Entity& entity);
