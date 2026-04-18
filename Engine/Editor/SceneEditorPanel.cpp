@@ -415,21 +415,21 @@ namespace
     }
 }
 
-void SceneEditorPanel::Draw(Scene& scene)
+void SceneEditorPanel::Draw(Scene& scene, GameObjectID& selectedObjectID)
 {
-    DrawHierarchyPanel(scene);
-    DrawInspectorPanel(scene);
+    DrawHierarchyPanel(scene, selectedObjectID);
+    DrawInspectorPanel(scene, selectedObjectID);
 }
 
-void SceneEditorPanel::SelectObject(Scene& scene, GameObjectID id)
+void SceneEditorPanel::SelectObject(Scene& scene, GameObjectID& selectedObjectID, GameObjectID id)
 {
-    m_SelectedObjectID = id;
-    SyncInspectorFromSelection(scene);
+    selectedObjectID = id;
+    SyncInspectorFromSelection(scene, selectedObjectID);
 }
 
-void SceneEditorPanel::SyncInspectorFromSelection(Scene& scene)
+void SceneEditorPanel::SyncInspectorFromSelection(Scene& scene, GameObjectID selectedObjectID)
 {
-    m_InspectorObjectID = m_SelectedObjectID;
+    m_InspectorObjectID = selectedObjectID;
 
     if (!scene.IsValidGameObject(m_InspectorObjectID))
     {
@@ -478,20 +478,20 @@ void SceneEditorPanel::SyncInspectorFromSelection(Scene& scene)
     
 }
 
-void SceneEditorPanel::DrawHierarchyPanel(Scene& scene)
+void SceneEditorPanel::DrawHierarchyPanel(Scene& scene, GameObjectID& selectedObjectID)
 {
     ImGui::Begin("Hierarchy");
 
     const std::vector<GameObjectID> roots = scene.GetRootGameObjects();
     for (GameObjectID id : roots)
-        DrawHierarchyNode(scene, id);
+        DrawHierarchyNode(scene, selectedObjectID, id);
 
     ImGui::End();
 }
 
-void SceneEditorPanel::DrawHierarchyNode(Scene& scene, GameObjectID id)
+void SceneEditorPanel::DrawHierarchyNode(Scene& scene, GameObjectID& selectedObjectID, GameObjectID id)
 {
-    const bool isSelected = (m_SelectedObjectID == id);
+    const bool isSelected = (selectedObjectID == id);
     const bool hasChildren = scene.HasChildren(id);
 
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
@@ -510,7 +510,7 @@ void SceneEditorPanel::DrawHierarchyNode(Scene& scene, GameObjectID id)
     );
 
     if (ImGui::IsItemClicked())
-        SelectObject(scene, id);
+        SelectObject(scene, selectedObjectID, id);
 
     ImGui::SameLine();
     ImGui::TextDisabled("(ID: %llu)", static_cast<unsigned long long>(id));
@@ -519,30 +519,30 @@ void SceneEditorPanel::DrawHierarchyNode(Scene& scene, GameObjectID id)
     {
         const std::vector<GameObjectID> children = scene.GetChildGameObjects(id);
         for (GameObjectID childID : children)
-            DrawHierarchyNode(scene, childID);
+            DrawHierarchyNode(scene, selectedObjectID, childID);
 
         ImGui::TreePop();
     }
 }
 
-void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
+void SceneEditorPanel::DrawInspectorPanel(Scene& scene, GameObjectID& selectedObjectID)
 {
     ImGui::Begin("Inspector");
 
-    if (!scene.IsValidGameObject(m_SelectedObjectID))
+    if (!scene.IsValidGameObject(selectedObjectID))
     {
-        if (m_SelectedObjectID != 0)
-            SelectObject(scene, 0);
+        if (selectedObjectID != 0)
+            SelectObject(scene, selectedObjectID, 0);
 
         ImGui::TextUnformatted("No object selected.");
         ImGui::End();
         return;
     }
 
-    if (m_InspectorObjectID != m_SelectedObjectID)
-        SyncInspectorFromSelection(scene);
+    if (m_InspectorObjectID != selectedObjectID)
+        SyncInspectorFromSelection(scene, selectedObjectID);
 
-    const GameObjectID selectedID = m_SelectedObjectID;
+    const GameObjectID selectedID = selectedObjectID;
     Entity selected = scene.GetEntity(selectedID);
 
     ImGui::Text("Object ID: %llu", static_cast<unsigned long long>(selectedID));
@@ -550,7 +550,7 @@ void SceneEditorPanel::DrawInspectorPanel(Scene& scene)
     if (ImGui::Button("Destroy Object"))
     {
         selected.Destroy();
-        SelectObject(scene, 0);
+        SelectObject(scene, selectedObjectID, 0);
         ImGui::End();
         return;
     }
