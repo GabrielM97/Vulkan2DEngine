@@ -10,18 +10,15 @@ class Scene;
 class SceneEditorPanel
 {
 public:
-    void Draw(Scene& scene);
-    
-    GameObjectID GetSelectedObjectID() const { return m_SelectedObjectID; }
+    void Draw(Scene& scene, GameObjectID& selectedObjectID);
 
 private:
-    void SelectObject(Scene& scene, GameObjectID id);
-    void SyncInspectorFromSelection(Scene& scene);
-    void DrawHierarchyPanel(Scene& scene);
-    void DrawHierarchyNode(Scene& scene, GameObjectID id);
-    void DrawInspectorPanel(Scene& scene);
-    
-    GameObjectID m_SelectedObjectID = 0;
+    void SelectObject(Scene& scene, GameObjectID& selectedObjectID, GameObjectID id);
+    void SyncInspectorFromSelection(Scene& scene, GameObjectID selectedObjectID);
+    void DrawHierarchyPanel(Scene& scene, GameObjectID& selectedObjectID);
+    void DrawHierarchyNode(Scene& scene, GameObjectID& selectedObjectID, GameObjectID id);
+    void DrawInspectorPanel(Scene& scene, GameObjectID& selectedObjectID);
+
     GameObjectID m_InspectorObjectID = 0;
 
     std::array<char, 256> m_NameBuffer{};

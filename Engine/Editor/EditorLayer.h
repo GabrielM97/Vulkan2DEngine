@@ -21,6 +21,8 @@ public:
     const SceneViewportState& GetSceneViewportState() const;
     bool ConsumePlayRequest();
     bool ConsumeStopRequest();
+    GameObjectID GetSelectedObjectID() const { return m_SelectedObjectID; }
+    void SetSelectedObjectID(Scene& scene, GameObjectID id);
     
     TileMapEditorPanel& GetTileMapEditorPanel() { return m_TileMapEditorPanel; }
     const TileMapEditorPanel& GetTileMapEditorPanel() const { return m_TileMapEditorPanel; }
@@ -34,6 +36,7 @@ private:
     TileMapEditorPanel m_TileMapEditorPanel;
     std::unique_ptr<SceneViewportPanel> m_SceneViewportPanel;
     std::unique_ptr<SceneEditorPanel> m_SceneEditorPanel;
+    GameObjectID m_SelectedObjectID = 0;
     bool m_PlayRequested = false;
     bool m_StopRequested = false;
 };

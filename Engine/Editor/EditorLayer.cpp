@@ -24,8 +24,8 @@ void EditorLayer::Draw(Scene* scene, VulkanRenderer& renderer, ImTextureID scene
         return;
 
     m_SceneViewportPanel->Draw(sceneViewportTextureID);
-    m_SceneEditorPanel->Draw(*scene);
-    m_TileMapEditorPanel.Draw(*scene, renderer, m_SceneEditorPanel->GetSelectedObjectID());
+    m_SceneEditorPanel->Draw(*scene, m_SelectedObjectID);
+    m_TileMapEditorPanel.Draw(*scene, renderer, m_SelectedObjectID);
     DrawTileStampPreview(*scene, isPlaying);
 }
 
@@ -46,6 +46,14 @@ bool EditorLayer::ConsumeStopRequest()
     const bool requested = m_StopRequested;
     m_StopRequested = false;
     return requested;
+}
+
+void EditorLayer::SetSelectedObjectID(Scene& scene, GameObjectID id)
+{
+    if (id != 0 && !scene.IsValidGameObject(id))
+        id = 0;
+
+    m_SelectedObjectID = id;
 }
 
 void EditorLayer::DrawDockspace()
