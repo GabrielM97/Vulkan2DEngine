@@ -1,10 +1,14 @@
 #include "Editor/EditorLayer.h"
 
+#include <algorithm>
 #include <imgui.h>
 
 #include "Editor/SceneViewportPanel.h"
 #include "Editor/SceneEditorPanel.h"
+#include "Math/Transform2D.h"
+#include "Math/TransformMath2D.h"
 #include "Renderer/VulkanRenderer.h"
+#include "Scene/Entity.h"
 #include "Scene/Scene.h"
 
 EditorLayer::EditorLayer()
@@ -26,6 +30,7 @@ void EditorLayer::Draw(Scene* scene, VulkanRenderer& renderer, ImTextureID scene
     m_SceneViewportPanel->Draw(sceneViewportTextureID);
     m_SceneEditorPanel->Draw(*scene, m_SelectedObjectID);
     m_TileMapEditorPanel.Draw(*scene, renderer, m_SelectedObjectID);
+    DrawSelectedObjectOverlay(*scene, isPlaying);
     DrawTileStampPreview(*scene, isPlaying);
 }
 
@@ -130,6 +135,91 @@ void EditorLayer::DrawTopBar(bool isPlaying)
 
     ImGui::End();
     ImGui::PopStyleVar(3);
+}
+
+bool EditorLayer::TryGetSelectionCorners(Entity entity, std::array<glm::vec2, 4>& outCorners) const
+{
+    if (!entity.IsValid() || !entity.IsActive())
+        return false;
+
+    const Transform2D transform = entity.GetTransform();
+
+    if (entity.HasTileMap())
+    {
+        const glm::vec2 tileSize = entity.GetTileSize();
+        const uint32_t mapWidth = entity.GetTileMapWidth();
+        const uint32_t mapHeight = entity.GetTileMapHeight();
+
+        if (tileSize.x <= 0.0f || tileSize.y <= 0.0f || mapWidth == 0 || mapHeight == 0)
+            return false;
+
+        const glm::vec2 size{
+            static_cast<float>(mapWidth) * tileSize.x,
+            static_cast<float>(mapHeight) * tileSize.y
+        };
+
+        outCorners = TransformMath2D::GetWorldCorners(transform, size);
+        return true;
+    }
+
+    if (!entity.IsSpriteVisible())
+        return false;
+
+    const glm::vec2 size = entity.GetSpriteSize();
+    if (size.x == 0.0f || size.y == 0.0f)
+        return false;
+
+    outCorners = TransformMath2D::GetWorldCorners(transform, size);
+    return true;
+}
+
+void EditorLayer::DrawSelectedObjectOverlay(Scene& scene, bool isPlaying)
+{
+    if (isPlaying)
+        return;
+
+    if (!scene.IsValidGameObject(m_SelectedObjectID))
+        return;
+
+    const SceneViewportState& viewportState = m_SceneViewportPanel->GetState();
+    if (!viewportState.visible)
+        return;
+
+    Entity selected = scene.GetEntity(m_SelectedObjectID);
+
+    std::array<glm::vec2, 4> worldCorners{};
+    if (!TryGetSelectionCorners(selected, worldCorners))
+        return;
+
+    const Camera2D& camera = scene.GetCamera();
+    const ImVec2 viewportMin = viewportState.contentMin;
+    std::array<ImVec2, 5> screenCorners{};
+    ImVec2 center{0.0f, 0.0f};
+    for (size_t i = 0; i < worldCorners.size(); ++i)
+    {
+        const glm::vec2 screenLocal = camera.WorldToScreen(
+            worldCorners[i],
+            static_cast<float>(viewportState.width),
+            static_cast<float>(viewportState.height)
+        );
+
+        screenCorners[i] = {
+            viewportMin.x + screenLocal.x,
+            viewportMin.y + screenLocal.y
+        };
+        center.x += screenCorners[i].x;
+        center.y += screenCorners[i].y;
+    }
+
+    screenCorners[4] = screenCorners[0];
+    center.x /= static_cast<float>(worldCorners.size());
+    center.y /= static_cast<float>(worldCorners.size());
+
+    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+    drawList->PushClipRect(viewportState.contentMin, viewportState.contentMax, true);
+    drawList->AddPolyline(screenCorners.data(), static_cast<int>(screenCorners.size()), IM_COL32(80, 160, 255, 255), 0, 2.0f);
+    drawList->AddCircleFilled(center, 3.0f, IM_COL32(80, 160, 255, 255));
+    drawList->PopClipRect();
 }
 
 void EditorLayer::DrawTileStampPreview(Scene& scene, bool isPlaying)

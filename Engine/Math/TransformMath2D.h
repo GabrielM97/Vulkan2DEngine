@@ -2,6 +2,7 @@
 
 #include "Transform2D.h"
 
+#include <array>
 #include <glm/vec2.hpp>
 
 namespace TransformMath2D
@@ -11,6 +12,9 @@ namespace TransformMath2D
 
     glm::vec2 GetPivotLocalPosition(const Transform2D& transform, const glm::vec2& size);
     glm::vec2 GetPivotWorldPosition(const Transform2D& transform, const glm::vec2& size);
+    glm::vec2 WorldToLocalRectPoint(const glm::vec2& worldPoint, const Transform2D& transform, const glm::vec2& size);
+    bool ContainsWorldPoint(const glm::vec2& worldPoint, const Transform2D& transform, const glm::vec2& size);
+    std::array<glm::vec2, 4> GetWorldCorners(const Transform2D& transform, const glm::vec2& size);
 
     Transform2D CombineTransforms(
         const Transform2D& parentWorld,

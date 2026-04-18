@@ -39,6 +39,50 @@ namespace TransformMath2D
         return GetPivotLocalPosition(transform, size);
     }
 
+    glm::vec2 WorldToLocalRectPoint(const glm::vec2& worldPoint, const Transform2D& transform, const glm::vec2& size)
+    {
+        const glm::vec2 finalSize = size * transform.scale;
+        const glm::vec2 pivotWorld = transform.position + transform.pivot * finalSize;
+        const glm::vec2 unrotatedWorld = pivotWorld + RotateVector(worldPoint - pivotWorld, -transform.rotationDegrees);
+        return unrotatedWorld - transform.position;
+    }
+
+    bool ContainsWorldPoint(const glm::vec2& worldPoint, const Transform2D& transform, const glm::vec2& size)
+    {
+        const glm::vec2 finalSize = size * transform.scale;
+        if (finalSize.x == 0.0f || finalSize.y == 0.0f)
+            return false;
+
+        const glm::vec2 localPoint = WorldToLocalRectPoint(worldPoint, transform, size);
+        const float minX = std::min(0.0f, finalSize.x);
+        const float maxX = std::max(0.0f, finalSize.x);
+        const float minY = std::min(0.0f, finalSize.y);
+        const float maxY = std::max(0.0f, finalSize.y);
+
+        return localPoint.x >= minX && localPoint.x <= maxX &&
+               localPoint.y >= minY && localPoint.y <= maxY;
+    }
+
+    std::array<glm::vec2, 4> GetWorldCorners(const Transform2D& transform, const glm::vec2& size)
+    {
+        const glm::vec2 finalSize = size * transform.scale;
+        const glm::vec2 pivotOffset = transform.pivot * finalSize;
+        const glm::vec2 pivotWorld = transform.position + pivotOffset;
+
+        const std::array<glm::vec2, 4> localCorners{{
+            {0.0f, 0.0f},
+            {finalSize.x, 0.0f},
+            {finalSize.x, finalSize.y},
+            {0.0f, finalSize.y}
+        }};
+
+        std::array<glm::vec2, 4> worldCorners{};
+        for (size_t i = 0; i < localCorners.size(); ++i)
+            worldCorners[i] = pivotWorld + RotateVector(localCorners[i] - pivotOffset, transform.rotationDegrees);
+
+        return worldCorners;
+    }
+
     Transform2D CombineTransforms(
         const Transform2D& parentWorld,
         const glm::vec2& parentSize,

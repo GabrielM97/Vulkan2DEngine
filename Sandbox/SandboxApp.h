@@ -31,6 +31,8 @@ private:
     void EnterPlayMode();
     void ExitPlayMode();
     bool TryGetHoveredTile(Entity entity, glm::ivec2& outTile) const;
+    bool TryGetSelectionShape(Entity entity, Transform2D& outTransform, glm::vec2& outSize) const;
+    bool TrySelectedGameObject(GameObjectID& outObjectID) const;
     glm::vec2 ScreenToWorld(const glm::vec2& screenPosition, const SceneViewportState& viewportState) const;
     void BeginTileStroke(Entity entity);
     void RecordTileStrokeEdit(Entity entity, uint32_t layerIndex, int tileX, int tileY, int32_t newValue);
