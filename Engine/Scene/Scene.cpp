@@ -582,6 +582,7 @@ void Scene::RenderCollisionDebug(IRenderer2D& renderer,
         const auto& id = tileMapView.get<IDComponent>(entity);
         const auto& active = tileMapView.get<ActiveComponent>(entity);
         const auto& tileMap = tileMapView.get<TileMapComponent>(entity);
+        const TileSetAsset* tileSetAsset = GetOrLoadTileSetAsset(tileMap.tileSetAssetPath);
 
         if (!active.active)
             continue;
@@ -599,8 +600,14 @@ void Scene::RenderCollisionDebug(IRenderer2D& renderer,
                 for (uint32_t x = 0; x < tileMap.width; ++x)
                 {
                     const int32_t tileID = layer.tiles[y * tileMap.width + x];
+                    
                     if (tileID < 0)
                         continue;
+
+                    if (!tileSetAsset->IsTileSolid(tileID))
+                    {
+                        continue;
+                    }
 
                     const AABB2D bounds = BuildTileAABB(
                         id.id,
