@@ -107,6 +107,8 @@ set(EDITOR_FOLDER_SRC
     Editor/CoreComponentInspectorRegistry.h
     Editor/EditorLayer.cpp
     Editor/EditorLayer.h
+    Editor/EditorViewportMath.cpp
+    Editor/EditorViewportMath.h
     Editor/EditorSceneController.cpp
     Editor/EditorSceneController.h
     Editor/SceneEditorPanel.cpp
