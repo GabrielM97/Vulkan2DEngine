@@ -79,3 +79,19 @@ struct TileMapComponent
     std::vector<Layer> layers{{}};
     uint32_t activeLayerIndex = 0;
 };
+
+enum class ColliderBodyType {
+    Static,
+    Dynamic
+};
+
+
+struct BoxColliderComponent
+{
+    glm::vec2 size = {1.0f, 1.0f};
+    glm::vec2 offset = {0.0f, 0.0f};
+    ColliderBodyType type = ColliderBodyType::Static;
+    bool isTrigger = false;
+    bool enabled = true;
+    
+};

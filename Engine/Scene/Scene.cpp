@@ -335,6 +335,276 @@ void Scene::UpdateCamera(const CameraCommand& command, float deltaTime, float vi
     );
 }
 
+bool Scene::OverlapsSolidBox(const glm::vec2& center, const glm::vec2& size, GameObjectID ignoredID) const
+{
+    const glm::vec2 halfSize = size * 0.5f;
+    return OverlapsSolidBox({center - halfSize, center + halfSize}, ignoredID);
+}
+
+bool Scene::OverlapsSolidBox(const AABB2D& box, GameObjectID ignoredID) const
+{
+    auto entityView = m_Registry.view<IDComponent, ActiveComponent, BoxColliderComponent>();
+    for (entt::entity entity : entityView)
+    {
+        const auto& id = entityView.get<IDComponent>(entity);
+        const auto& active = entityView.get<ActiveComponent>(entity);   
+        const auto& collider = entityView.get<BoxColliderComponent>(entity);
+        
+        if (!active.active || !collider.enabled || collider.isTrigger)
+            continue;
+
+        if (id.id == ignoredID)
+            continue;
+
+        if (collider.type != ColliderBodyType::Static)
+            continue;
+        
+        const AABB2D colliderBounds = BuildColliderAABB(id.id);
+        if (Intersects(box, colliderBounds))
+            return true;
+    }
+    
+    auto tileMapView = m_Registry.view<IDComponent, ActiveComponent, TileMapComponent>();
+    for (entt::entity entity : tileMapView)
+    {
+        const auto& id = tileMapView.get<IDComponent>(entity);
+        const auto& active = tileMapView.get<ActiveComponent>(entity);
+        const auto& tileMap = tileMapView.get<TileMapComponent>(entity);
+
+        if (!active.active || id.id == ignoredID)
+            continue;
+
+        for (const auto& layer : tileMap.layers)
+        {
+            if (!layer.visible)
+                continue;
+
+            for (uint32_t y = 0; y < tileMap.height; ++y)
+            {
+                for (uint32_t x = 0; x < tileMap.width; ++x)
+                {
+                    const int32_t tileID = layer.tiles[y * tileMap.width + x];
+                    if (tileID < 0)
+                        continue;
+
+                    const AABB2D tileBounds = BuildTileAABB(
+                        id.id,
+                        static_cast<int>(x),
+                        static_cast<int>(y)
+                    );
+
+                    if (Intersects(box, tileBounds))
+                        return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+AABB2D Scene::BuildWorldAABB(GameObjectID id) const
+{
+    const Entity entity = GetEntity(id);
+    
+    if (!entity.IsValid() || !entity.HasBoxCollider())
+    {
+        return {};
+    }
+    
+    const Transform2D transform = GetWorldTransform(id);
+    const glm::vec2 colliderSize = entity.GetBoxColliderSize();
+    const glm::vec2 colliderOffset = entity.GetBoxColliderOffset();
+    const glm::vec2 center = transform.position + colliderOffset;
+    const glm::vec2 halfSize = colliderSize * 0.5f;
+    
+    return {
+        center - halfSize,
+        center + halfSize
+    };
+}
+
+AABB2D Scene::BuildColliderAABB(GameObjectID id) const
+{
+    const Entity entity = GetEntity(id);
+    if (!entity.IsValid() || !entity.HasBoxCollider())
+        return {};
+
+    return BuildColliderAABB(id, entity.GetPosition());
+}
+
+AABB2D Scene::BuildColliderAABB(GameObjectID id, const glm::vec2& overridePosition) const
+{
+    const Entity entity = GetEntity(id);
+    if (!entity.IsValid() || !entity.HasBoxCollider())
+        return {};
+
+    const Transform2D transform = GetWorldTransform(id);
+    const glm::vec2 colliderSize = entity.GetBoxColliderSize();
+    const glm::vec2 colliderOffset = entity.GetBoxColliderOffset();
+    const glm::vec2 spriteSize = entity.GetSpriteSize() * transform.scale;
+
+    const glm::vec2 actorTopLeft =
+        overridePosition - glm::vec2{
+            spriteSize.x * transform.pivot.x,
+            spriteSize.y * transform.pivot.y
+        };
+
+    const glm::vec2 colliderMin = actorTopLeft + colliderOffset;
+
+    return {
+        colliderMin,
+        colliderMin + colliderSize
+    };
+}
+
+AABB2D Scene::BuildTileAABB(GameObjectID tileMapID, int tileX, int tileY) const
+{
+    const Entity tileMap = GetEntity(tileMapID);
+    if (!tileMap.IsValid() || !tileMap.HasTileMap())
+        return {};
+
+    const Transform2D transform = GetWorldTransform(tileMapID);
+    const glm::vec2 tileSize = tileMap.GetTileSize();
+    const glm::vec2 min = transform.position + glm::vec2{
+        static_cast<float>(tileX) * tileSize.x,
+        static_cast<float>(tileY) * tileSize.y
+    };
+
+    return {
+        min,
+        min + tileSize
+    };
+}
+
+bool Scene::Intersects(const AABB2D& a, const AABB2D& b) const
+{
+    return
+        a.min.x < b.max.x &&
+        a.max.x > b.min.x &&
+        a.min.y < b.max.y &&
+        a.max.y > b.min.y;
+}
+
+glm::vec2 Scene::ResolveMovement(GameObjectID id, const glm::vec2& currentPosition, const glm::vec2& delta) const
+{
+    const Entity entity = GetEntity(id);
+    if (!entity.IsValid() || !entity.HasBoxCollider())
+        return currentPosition + delta;
+
+    glm::vec2 resolved = currentPosition;
+
+    if (delta.x != 0.0f)
+    {
+        const glm::vec2 proposed = resolved + glm::vec2{delta.x, 0.0f};
+        const AABB2D bounds = BuildColliderAABB(id, proposed);
+
+        if (!OverlapsSolidBox(bounds, id))
+            resolved.x = proposed.x;
+    }
+
+    if (delta.y != 0.0f)
+    {
+        const glm::vec2 proposed = resolved + glm::vec2{0.0f, delta.y};
+        const AABB2D bounds = BuildColliderAABB(id, proposed);
+
+        if (!OverlapsSolidBox(bounds, id))
+            resolved.y = proposed.y;
+    }
+
+    return resolved;
+}
+
+bool Scene::MoveWithCollision(GameObjectID id, const glm::vec2& delta)
+{
+    const Entity entity = GetEntity(id);
+    if (!entity.IsValid())
+        return false;
+
+    const glm::vec2 currentPosition = entity.GetPosition();
+    const glm::vec2 resolvedPosition = ResolveMovement(id, currentPosition, delta);
+
+    if (resolvedPosition == currentPosition)
+        return false;
+
+    entity.SetPosition(resolvedPosition);
+    return true;
+}
+
+void Scene::RenderCollisionDebug(IRenderer2D& renderer,
+    GameObjectID focusedTileMapID,
+    bool tileMapOnly)
+{
+    renderer.SetCamera(m_Camera);
+
+    auto colliderView = m_Registry.view<IDComponent, ActiveComponent, BoxColliderComponent>();
+    for (entt::entity entity : colliderView)
+    {
+        const auto& id = colliderView.get<IDComponent>(entity);
+        const auto& active = colliderView.get<ActiveComponent>(entity);
+        const auto& collider = colliderView.get<BoxColliderComponent>(entity);
+
+        if (!active.active || !collider.enabled)
+            continue;
+
+        if (tileMapOnly && focusedTileMapID != 0 && id.id != focusedTileMapID)
+            continue;
+
+        const AABB2D bounds = BuildColliderAABB(id.id);
+
+        glm::vec4 color{1.0f, 0.2f, 0.2f, 1.0f};
+        if (collider.isTrigger)
+            color = {1.0f, 0.9f, 0.2f, 1.0f};
+        else if (collider.type == ColliderBodyType::Dynamic)
+            color = {0.2f, 1.0f, 0.2f, 1.0f};
+
+        renderer.DrawRectOutline(bounds.min, bounds.max, color, 2.0f);
+    }
+
+    auto tileMapView = m_Registry.view<IDComponent, ActiveComponent, TileMapComponent>();
+    for (entt::entity entity : tileMapView)
+    {
+        const auto& id = tileMapView.get<IDComponent>(entity);
+        const auto& active = tileMapView.get<ActiveComponent>(entity);
+        const auto& tileMap = tileMapView.get<TileMapComponent>(entity);
+
+        if (!active.active)
+            continue;
+
+        if (tileMapOnly && focusedTileMapID != 0 && id.id != focusedTileMapID)
+            continue;
+
+        for (const auto& layer : tileMap.layers)
+        {
+            if (!layer.visible)
+                continue;
+
+            for (uint32_t y = 0; y < tileMap.height; ++y)
+            {
+                for (uint32_t x = 0; x < tileMap.width; ++x)
+                {
+                    const int32_t tileID = layer.tiles[y * tileMap.width + x];
+                    if (tileID < 0)
+                        continue;
+
+                    const AABB2D bounds = BuildTileAABB(
+                        id.id,
+                        static_cast<int>(x),
+                        static_cast<int>(y)
+                    );
+
+                    renderer.DrawRectOutline(
+                        bounds.min,
+                        bounds.max,
+                        {0.2f, 0.8f, 1.0f, 1.0f},
+                        1.0f
+                    );
+                }
+            }
+        }
+    }
+}
+
 std::string Scene::GetGameObjectName(GameObjectID id) const
 {
     const entt::entity entity = FindEntityByID(id);

@@ -20,6 +20,12 @@ struct CameraCommand
     float zoomDelta = 0.0f;
 };
 
+struct AABB2D
+{
+    glm::vec2 min{0.0f, 0.0f};
+    glm::vec2 max{0.0f, 0.0f}; 
+};
+
 class IRenderer2D;
 class SceneSerializer;
 
@@ -95,7 +101,20 @@ public:
     bool SetWorldScale(GameObjectID id, const glm::vec2& scale);
     bool SetWorldPivot(GameObjectID id, const glm::vec2& pivot);
     bool SetWorldRotation(GameObjectID id, float rotationDegrees);
+    
+    bool OverlapsSolidBox(const glm::vec2& center, const glm::vec2& size, GameObjectID ignoredID = 0) const;
+    bool OverlapsSolidBox(const AABB2D& box, GameObjectID ignoredID = 0) const;
 
+    AABB2D BuildWorldAABB(GameObjectID id) const;
+    AABB2D BuildColliderAABB(GameObjectID id) const;
+    AABB2D BuildColliderAABB(GameObjectID id, const glm::vec2& overridePosition) const;
+    AABB2D BuildTileAABB(GameObjectID tileMapID, int tileX, int tileY) const;
+    bool Intersects(const AABB2D& a, const AABB2D& b) const;
+    glm::vec2 ResolveMovement(GameObjectID id, const glm::vec2& currentPosition, const glm::vec2& delta) const;
+    bool MoveWithCollision(GameObjectID id, const glm::vec2& delta);
+    
+    void RenderCollisionDebug(IRenderer2D& renderer, GameObjectID focusedTileMapID, bool tileMapOnly);
+    
     Camera2D& GetCamera() { return m_Camera; }
     const Camera2D& GetCamera() const { return m_Camera; }
 

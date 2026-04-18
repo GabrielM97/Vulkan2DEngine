@@ -11,6 +11,13 @@ class SceneEditorPanel
 {
 public:
     void Draw(Scene& scene, GameObjectID& selectedObjectID);
+    void Draw(Scene& scene);
+    
+    GameObjectID GetSelectedObjectID() const { return m_SelectedObjectID; }
+    void DrawTransformSection(Entity& entity);
+    void DrawSpriteSection(Entity& entity);
+    void DrawAnimationSection(Entity& entity);
+    void DrawBoxColliderSection(Entity& entity);
 
 private:
     void SelectObject(Scene& scene, GameObjectID& selectedObjectID, GameObjectID id);
@@ -18,7 +25,9 @@ private:
     void DrawHierarchyPanel(Scene& scene, GameObjectID& selectedObjectID);
     void DrawHierarchyNode(Scene& scene, GameObjectID& selectedObjectID, GameObjectID id);
     void DrawInspectorPanel(Scene& scene, GameObjectID& selectedObjectID);
-
+    void DrawCoreComponentSections(Entity& entity);
+    
+    GameObjectID m_SelectedObjectID = 0;
     GameObjectID m_InspectorObjectID = 0;
 
     std::array<char, 256> m_NameBuffer{};

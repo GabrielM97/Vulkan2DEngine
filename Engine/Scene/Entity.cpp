@@ -198,6 +198,22 @@ void Entity::SetWorldTransform(const Transform2D& transform) const
         m_Scene->SetWorldTransform(m_ID, transform);
 }
 
+glm::vec2 Entity::ResolveMovement(const glm::vec2& delta) const
+{
+    if (!IsValid())
+        return delta;
+
+    return m_Scene->ResolveMovement(m_ID, GetPosition(), delta);
+}
+
+bool Entity::MoveWithCollision(const glm::vec2& delta) const
+{
+    if (!IsValid())
+        return false;
+
+    return m_Scene->MoveWithCollision(m_ID, delta);
+}
+
 void Entity::SetLocalTransform(const LocalTransformComponent& transform) const
 {
     if (IsValid())
@@ -718,4 +734,78 @@ void Entity::SetTile(uint32_t layerIndex, int x, int y, int32_t tileID) const
         return;
 
     tileMap.layers[layerIndex].tiles[tileY * tileMap.width + tileX] = tileID;
+}
+
+bool Entity::HasBoxCollider() const
+{
+    return IsValid() && HasComponent<BoxColliderComponent>();
+}
+
+void Entity::EnsureBoxCollider() const
+{
+    if (!IsValid() || HasComponent<BoxColliderComponent>())
+        return;
+  
+    m_Registry->emplace<BoxColliderComponent>(m_Entity);
+}
+
+void Entity::RemoveBoxCollider() const
+{
+    if (IsValid() && HasComponent<BoxColliderComponent>())
+        m_Registry->remove<BoxColliderComponent>(m_Entity);
+}
+
+glm::vec2 Entity::GetBoxColliderSize() const
+{
+    return IsValid() && HasBoxCollider() ? m_Registry->get<BoxColliderComponent>(m_Entity).size : glm::vec2{0.0f, 0.0f};
+}
+
+void Entity::SetBoxColliderSize(const glm::vec2& size) const
+{
+    if (IsValid() && HasBoxCollider())
+        m_Registry->get<BoxColliderComponent>(m_Entity).size = size;
+}
+
+glm::vec2 Entity::GetBoxColliderOffset() const
+{
+    return IsValid() && HasBoxCollider() ? m_Registry->get<BoxColliderComponent>(m_Entity).offset : glm::vec2{0.0f, 0.0f};
+}
+
+void Entity::SetBoxColliderOffset(const glm::vec2& offset) const
+{
+    if (IsValid() && HasBoxCollider())
+        m_Registry->get<BoxColliderComponent>(m_Entity).offset = offset;
+}
+
+ColliderBodyType Entity::GetColliderBodyType() const
+{
+    return IsValid() && HasBoxCollider() ? m_Registry->get<BoxColliderComponent>(m_Entity).type : ColliderBodyType::Static;
+}
+
+void Entity::SetColliderBodyType(ColliderBodyType bodyType) const
+{
+    if (IsValid() && HasBoxCollider())
+        m_Registry->get<BoxColliderComponent>(m_Entity).type = bodyType;
+}
+
+bool Entity::IsColliderTrigger() const
+{
+    return IsValid() && HasBoxCollider() && m_Registry->get<BoxColliderComponent>(m_Entity).isTrigger;
+}
+
+void Entity::SetColliderTrigger(bool isTrigger) const
+{
+    if (IsValid() && HasBoxCollider())
+        m_Registry->get<BoxColliderComponent>(m_Entity).isTrigger = isTrigger;
+}
+
+bool Entity::IsBoxColliderEnabled() const
+{
+    return IsValid() && HasBoxCollider() && m_Registry->get<BoxColliderComponent>(m_Entity).enabled;
+}
+
+void Entity::SetBoxColliderEnabled(bool enabled) const
+{
+    if (IsValid() && HasBoxCollider())
+        m_Registry->get<BoxColliderComponent>(m_Entity).enabled = enabled;
 }
