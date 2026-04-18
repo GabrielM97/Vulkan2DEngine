@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <memory>
+#include <string>
 
 #include "Core/InputState.h"
 #include "Platform/Window.h"
@@ -29,9 +30,10 @@ protected:
     virtual void OnRender(VulkanRenderer& renderer) {}
     virtual void OnShutdown() {}
     virtual Scene* GetEditorScene() { return nullptr; }
-    virtual bool IsEditorPlaying() const { return false; }
-    virtual void OnEditorPlay() {}
-    virtual void OnEditorStop() {}
+    bool IsEditorPlaying() const { return m_IsEditorPlaying; }
+    virtual std::string GetPlayModeSnapshotPath() const { return {}; }
+    virtual void OnEnterPlayMode() {}
+    virtual void OnExitPlayMode() {}
 
     VulkanRenderer& GetRenderer() { return vulkanRenderer; }
     const InputState& GetInputState() const { return inputState; }
@@ -40,6 +42,9 @@ protected:
     const EditorLayer& GetEditorLayer() const { return *editorLayer; }
 
 private:
+    void EnterPlayMode();
+    void ExitPlayMode();
+
     std::unique_ptr<Window> window = nullptr;
     std::unique_ptr<EditorLayer> editorLayer = nullptr;
     VulkanRenderer vulkanRenderer;
@@ -48,4 +53,5 @@ private:
     
     bool isRunning = false;
     bool isShutdown = false;
+    bool m_IsEditorPlaying = false;
 };
