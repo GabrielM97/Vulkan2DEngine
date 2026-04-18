@@ -750,6 +750,30 @@ void Entity::SetTile(uint32_t layerIndex, int x, int y, int32_t tileID) const
     tileMap.layers[layerIndex].tiles[tileY * tileMap.width + tileX] = tileID;
 }
 
+bool Entity::IsTileLayerCollisionEnabled(uint32_t index) const
+{
+    if (!HasTileMap())
+        return false;
+    
+    const auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (index >= tileMap.layers.size())
+        return false;
+    
+    return tileMap.layers[index].collisionEnabled;
+}
+
+void Entity::SetTileLayerCollisionEnabled(uint32_t index, bool enabled) const
+{
+    if (!HasTileMap())
+        return;
+    
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (index >= tileMap.layers.size())
+        return;
+    
+    tileMap.layers[index].collisionEnabled = enabled;
+}
+
 bool Entity::HasBoxCollider() const
 {
     return IsValid() && HasComponent<BoxColliderComponent>();
