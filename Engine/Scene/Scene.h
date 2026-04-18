@@ -12,6 +12,7 @@
 #include "Entity.h"
 #include "SceneComponents.h"
 #include "SpriteAnimationSet.h"
+#include "TileSetAsset.h"
 
 struct CameraCommand
 {
@@ -129,6 +130,7 @@ private:
     void Clear();
 
     const SpriteAnimationSet* GetOrLoadAnimationSet(const std::string& path);
+    const TileSetAsset* GetOrLoadTileSetAsset(const std::string& path) const;
     void MarkTransformDirty(GameObjectID id);
     Transform2D ResolveWorldTransform(entt::entity entity);
     void RenderEntity(IRenderer2D& renderer, entt::entity entity);
@@ -148,6 +150,7 @@ private:
     std::unordered_map<GameObjectID, entt::entity> m_EntityByID;
     Camera2D m_Camera;
     std::unordered_map<std::string, SpriteAnimationSet> m_AnimationSetCache;
+    mutable std::unordered_map<std::string, TileSetAsset> m_TileSetAssetCache;
     GameObjectID m_NextGameObjectID = 1;
     bool m_IsPlaying = false;
 };

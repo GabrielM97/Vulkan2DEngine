@@ -125,6 +125,8 @@ public:
 
     std::string GetTileMapTexturePath() const;
     void SetTileMapTexturePath(const std::string& path) const;
+    std::string GetTileSetAssetPath() const;
+    void SetTileSetAssetPath(const std::string& path) const;
     std::string GetTileMapAssetPath() const;
     void SetTileMapAssetPath(const std::string& path) const;
     bool IsTileMapAssetBacked() const;
@@ -149,6 +151,8 @@ public:
     void RemoveTileLayer(uint32_t index) const;
     int32_t GetTile(uint32_t layerIndex, int x, int y) const;
     void SetTile(uint32_t layerIndex, int x, int y, int32_t tileID) const;
+    bool IsTileLayerCollisionEnabled(uint32_t index) const;
+    void SetTileLayerCollisionEnabled(uint32_t index, bool enabled) const;
     
     bool HasBoxCollider() const;
     void EnsureBoxCollider() const;

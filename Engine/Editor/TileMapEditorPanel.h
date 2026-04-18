@@ -30,12 +30,14 @@ public:
 private:
     void DrawAtlasPicker(Entity& entity, VulkanRenderer& renderer);
     void ApplyAtlusCellSize(Entity entity);
+    bool ApplyTileSetAsset(Entity entity);
     void DrawLayerControls(Entity entity);
     void DrawAssetControls(Scene& scene, Entity entity);
 
     GameObjectID m_SelectedObjectID = 0;
 
     std::array<char, 260> m_TileMapTexturePathBuffer{};
+    std::array<char, 260> m_TileSetAssetPathBuffer{};
     std::array<char, 260> m_TileMapAssetPathBuffer{};
     int m_TileMapWidthDraft = 16;
     int m_TileMapHeightDraft = 16;

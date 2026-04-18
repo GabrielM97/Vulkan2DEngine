@@ -487,6 +487,19 @@ void Entity::SetTileMapTexturePath(const std::string& path) const
     m_Registry->get<TileMapComponent>(m_Entity).tilesetTexturePath = path;
 }
 
+std::string Entity::GetTileSetAssetPath() const
+{
+    return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).tileSetAssetPath : std::string{};
+}
+
+void Entity::SetTileSetAssetPath(const std::string& path) const
+{
+    if (!HasTileMap())
+        return;
+
+    m_Registry->get<TileMapComponent>(m_Entity).tileSetAssetPath = path;
+}
+
 std::string Entity::GetTileMapAssetPath() const
 {
     return HasTileMap() ? m_Registry->get<TileMapComponent>(m_Entity).assetPath : std::string{};
@@ -681,6 +694,7 @@ void Entity::AddTileLayer(const std::string& name) const
     TileMapComponent::Layer layer;
     layer.name = name;
     layer.visible = true;
+    layer.collisionEnabled = false;
     layer.tiles.assign(static_cast<size_t>(tileMap.width) * static_cast<size_t>(tileMap.height), -1);
     tileMap.layers.push_back(std::move(layer));
     tileMap.activeLayerIndex = static_cast<uint32_t>(tileMap.layers.size() - 1);
@@ -734,6 +748,30 @@ void Entity::SetTile(uint32_t layerIndex, int x, int y, int32_t tileID) const
         return;
 
     tileMap.layers[layerIndex].tiles[tileY * tileMap.width + tileX] = tileID;
+}
+
+bool Entity::IsTileLayerCollisionEnabled(uint32_t index) const
+{
+    if (!HasTileMap())
+        return false;
+    
+    const auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (index >= tileMap.layers.size())
+        return false;
+    
+    return tileMap.layers[index].collisionEnabled;
+}
+
+void Entity::SetTileLayerCollisionEnabled(uint32_t index, bool enabled) const
+{
+    if (!HasTileMap())
+        return;
+    
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (index >= tileMap.layers.size())
+        return;
+    
+    tileMap.layers[index].collisionEnabled = enabled;
 }
 
 bool Entity::HasBoxCollider() const

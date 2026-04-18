@@ -9,6 +9,7 @@
 
 #include "Renderer/VulkanRenderer.h"
 #include "Scene/Scene.h"
+#include "Scene/TileSetAsset.h"
 #include "Scene/TileMapAssetSerializer.h"
 
 #ifdef _WIN32
@@ -30,39 +31,30 @@ namespace
         return stbi_info(path.c_str(), &outWidth, &outHeight, &channels) != 0;
     }
 
-#ifdef _WIN32
-    std::string OpenTilesetTexturePath()
+    bool TryLoadTileSetAsset(
+        const std::string& assetPath,
+        TileSetAsset& outAsset,
+        int& outCellWidth,
+        int& outCellHeight)
     {
-        char filePath[MAX_PATH] = {};
+        if (assetPath.empty() || !outAsset.LoadFromFile(assetPath))
+            return false;
 
-        std::filesystem::path BasePath = std::filesystem::current_path();
-        
-        OPENFILENAMEA dialog{};
-        dialog.lStructSize = sizeof(dialog);
-        dialog.lpstrFilter =
-            "Image Files\0*.png;*.jpg;*.jpeg;*.bmp;*.tga\0"
-            "All Files\0*.*\0";
-        dialog.lpstrFile = filePath;
-        dialog.nMaxFile = MAX_PATH;
-        dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
-        dialog.lpstrTitle = "Select Tileset Texture";
+        outCellWidth = 32;
+        outCellHeight = 32;
 
-        if (!GetOpenFileNameA(&dialog))
-            return {};
+        int textureWidth = 0;
+        int textureHeight = 0;
+        if (TryGetImageSize(outAsset.GetTexturePath(), textureWidth, textureHeight))
+        {
+            outCellWidth = std::max(1, textureWidth / std::max(1, static_cast<int>(outAsset.GetColumns())));
+            outCellHeight = std::max(1, textureHeight / std::max(1, static_cast<int>(outAsset.GetRows())));
+        }
 
-        std::filesystem::path selectedPath = std::filesystem::path(filePath);
-        std::error_code errorCode;
-        const std::filesystem::path relativePath =
-            std::filesystem::relative(selectedPath, BasePath, errorCode);
-
-        std::filesystem::current_path(BasePath);
-        
-        if (errorCode)
-            return selectedPath.generic_string();
-
-        return relativePath.generic_string();
+        return true;
     }
 
+#ifdef _WIN32
     std::string OpenTileMapAssetPath()
     {
         char filePath[MAX_PATH] = {};
@@ -79,6 +71,39 @@ namespace
         dialog.nMaxFile = MAX_PATH;
         dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
         dialog.lpstrTitle = "Open Tile Map Asset";
+
+        if (!GetOpenFileNameA(&dialog))
+            return {};
+
+        std::filesystem::path selectedPath = std::filesystem::path(filePath);
+        std::error_code errorCode;
+        const std::filesystem::path relativePath =
+            std::filesystem::relative(selectedPath, basePath, errorCode);
+
+        std::filesystem::current_path(basePath);
+
+        if (errorCode)
+            return selectedPath.generic_string();
+
+        return relativePath.generic_string();
+    }
+
+    std::string OpenTileSetAssetPath()
+    {
+        char filePath[MAX_PATH] = {};
+
+        std::filesystem::path basePath = std::filesystem::current_path();
+
+        OPENFILENAMEA dialog{};
+        dialog.lStructSize = sizeof(dialog);
+        dialog.lpstrFilter =
+            "Tile Set Assets\0*.tileset.json\0"
+            "JSON Files\0*.json\0"
+            "All Files\0*.*\0";
+        dialog.lpstrFile = filePath;
+        dialog.nMaxFile = MAX_PATH;
+        dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+        dialog.lpstrTitle = "Open Tile Set Asset";
 
         if (!GetOpenFileNameA(&dialog))
             return {};
@@ -142,6 +167,7 @@ void TileMapEditorPanel::SyncFromSelection(Scene& scene, GameObjectID selectedOb
     if (!scene.IsValidGameObject(m_SelectedObjectID))
     {
         m_TileMapTexturePathBuffer[0] = '\0';
+        m_TileSetAssetPathBuffer[0] = '\0';
         m_TileMapAssetPathBuffer[0] = '\0';
         m_TileMapWidthDraft = 16;
         m_TileMapHeightDraft = 16;
@@ -163,6 +189,7 @@ void TileMapEditorPanel::SyncFromSelection(Scene& scene, GameObjectID selectedOb
     if (!entity.HasTileMap())
     {
         m_TileMapTexturePathBuffer[0] = '\0';
+        m_TileSetAssetPathBuffer[0] = '\0';
         m_TileMapAssetPathBuffer[0] = '\0';
         m_TileMapWidthDraft = 16;
         m_TileMapHeightDraft = 16;
@@ -187,6 +214,12 @@ void TileMapEditorPanel::SyncFromSelection(Scene& scene, GameObjectID selectedOb
         entity.GetTileMapTexturePath().c_str()
     );
     std::snprintf(
+        m_TileSetAssetPathBuffer.data(),
+        m_TileSetAssetPathBuffer.size(),
+        "%s",
+        entity.GetTileSetAssetPath().c_str()
+    );
+    std::snprintf(
         m_TileMapAssetPathBuffer.data(),
         m_TileMapAssetPathBuffer.size(),
         "%s",
@@ -201,6 +234,24 @@ void TileMapEditorPanel::SyncFromSelection(Scene& scene, GameObjectID selectedOb
     const glm::ivec2 atlasCellSize = entity.GetTileAtlasCellSize();
     m_AtlasCellWidthDraft = atlasCellSize.x;
     m_AtlasCellHeightDraft = atlasCellSize.y;
+
+    TileSetAsset tileSetAsset;
+    int resolvedCellWidth = m_AtlasCellWidthDraft;
+    int resolvedCellHeight = m_AtlasCellHeightDraft;
+    if (TryLoadTileSetAsset(entity.GetTileSetAssetPath(), tileSetAsset, resolvedCellWidth, resolvedCellHeight))
+    {
+        std::snprintf(
+            m_TileMapTexturePathBuffer.data(),
+            m_TileMapTexturePathBuffer.size(),
+            "%s",
+            tileSetAsset.GetTexturePath().c_str()
+        );
+        m_TileMapColumnsDraft = static_cast<int>(tileSetAsset.GetColumns());
+        m_TileMapRowsDraft = static_cast<int>(tileSetAsset.GetRows());
+        m_AtlasCellWidthDraft = resolvedCellWidth;
+        m_AtlasCellHeightDraft = resolvedCellHeight;
+    }
+
     m_AtlasSelectionStart = {
         m_SelectedTileID % std::max(1, m_TileMapColumnsDraft),
         m_SelectedTileID / std::max(1, m_TileMapColumnsDraft)
@@ -253,10 +304,16 @@ int TileMapEditorPanel::GetSelectedTileIDAtOffset(glm::ivec2 offset, int atlasCo
 
 void TileMapEditorPanel::DrawAtlasPicker(Entity& entity, VulkanRenderer& renderer)
 {
-    const std::string texturePath = entity.GetTileMapTexturePath();
+    std::string texturePath = entity.GetTileMapTexturePath();
+    TileSetAsset tileSetAsset;
+    int ignoredCellWidth = 0;
+    int ignoredCellHeight = 0;
+    if (TryLoadTileSetAsset(entity.GetTileSetAssetPath(), tileSetAsset, ignoredCellWidth, ignoredCellHeight))
+        texturePath = tileSetAsset.GetTexturePath();
+
     if (texturePath.empty())
     {
-        ImGui::TextDisabled("No tileset texture selected.");
+        ImGui::TextDisabled("No tileset asset or texture selected.");
         return;
     }
 
@@ -389,6 +446,32 @@ void TileMapEditorPanel::ApplyAtlusCellSize(Entity entity)
     }
 }
 
+bool TileMapEditorPanel::ApplyTileSetAsset(Entity entity)
+{
+    TileSetAsset tileSetAsset;
+    int resolvedCellWidth = 32;
+    int resolvedCellHeight = 32;
+    if (!TryLoadTileSetAsset(m_TileSetAssetPathBuffer.data(), tileSetAsset, resolvedCellWidth, resolvedCellHeight))
+        return false;
+
+    entity.SetTileSetAssetPath(m_TileSetAssetPathBuffer.data());
+    entity.SetTileMapTexturePath(tileSetAsset.GetTexturePath());
+    entity.SetTileMapGrid(tileSetAsset.GetColumns(), tileSetAsset.GetRows());
+    entity.SetTileAtlasCellSize({resolvedCellWidth, resolvedCellHeight});
+
+    std::snprintf(
+        m_TileMapTexturePathBuffer.data(),
+        m_TileMapTexturePathBuffer.size(),
+        "%s",
+        tileSetAsset.GetTexturePath().c_str()
+    );
+    m_TileMapColumnsDraft = static_cast<int>(tileSetAsset.GetColumns());
+    m_TileMapRowsDraft = static_cast<int>(tileSetAsset.GetRows());
+    m_AtlasCellWidthDraft = resolvedCellWidth;
+    m_AtlasCellHeightDraft = resolvedCellHeight;
+    return true;
+}
+
 void TileMapEditorPanel::DrawLayerControls(Entity entity)
 {
     ImGui::SeparatorText("Layers");
@@ -404,6 +487,8 @@ void TileMapEditorPanel::DrawLayerControls(Entity entity)
     const uint32_t activeLayer = entity.GetActiveTileLayerIndex();
     m_ActiveLayerDraft = static_cast<int>(activeLayer);
 
+    ImGui::TextUnformatted("A = Active, V = Visible, C = Collision");
+    
     for (uint32_t layerIndex = 0; layerIndex < layerCount; ++layerIndex)
     {
         bool active = layerIndex == activeLayer;
@@ -415,6 +500,12 @@ void TileMapEditorPanel::DrawLayerControls(Entity entity)
         bool visible = entity.IsTileLayerVisible(layerIndex);
         if (ImGui::Checkbox(("##LayerVisible" + std::to_string(layerIndex)).c_str(), &visible))
             entity.SetTileLayerVisible(layerIndex, visible);
+
+        ImGui::SameLine();
+
+        bool collisionEnabled = entity.IsTileLayerCollisionEnabled(layerIndex);
+        if (ImGui::Checkbox(("##LayerCollision" + std::to_string(layerIndex)).c_str(), &collisionEnabled))
+            entity.SetTileLayerCollisionEnabled(layerIndex, collisionEnabled);
 
         ImGui::SameLine();
         ImGui::Text("%s", entity.GetTileLayerName(layerIndex).c_str());
@@ -537,11 +628,14 @@ void TileMapEditorPanel::Draw(Scene& scene, VulkanRenderer& renderer, GameObject
                 static_cast<uint32_t>(std::max(1, m_TileMapWidthDraft)),
                 static_cast<uint32_t>(std::max(1, m_TileMapHeightDraft))
             );
-            entity.SetTileMapGrid(
-                static_cast<uint32_t>(std::max(1, m_TileMapColumnsDraft)),
-                static_cast<uint32_t>(std::max(1, m_TileMapRowsDraft))
-            );
-            entity.SetTileMapTexturePath(m_TileMapTexturePathBuffer.data());
+            if (!ApplyTileSetAsset(entity))
+            {
+                entity.SetTileMapGrid(
+                    static_cast<uint32_t>(std::max(1, m_TileMapColumnsDraft)),
+                    static_cast<uint32_t>(std::max(1, m_TileMapRowsDraft))
+                );
+                entity.SetTileMapTexturePath(m_TileMapTexturePathBuffer.data());
+            }
             SyncFromSelection(scene, selectedObjectID);
         }
 
@@ -563,51 +657,34 @@ void TileMapEditorPanel::Draw(Scene& scene, VulkanRenderer& renderer, GameObject
     ImGui::SeparatorText("Map");
 
     if (ImGui::InputText(
-            "Tileset Texture Path",
-            m_TileMapTexturePathBuffer.data(),
-            m_TileMapTexturePathBuffer.size()))
+            "Tileset Asset Path",
+            m_TileSetAssetPathBuffer.data(),
+            m_TileSetAssetPathBuffer.size()))
     {
-        entity.SetTileMapTexturePath(m_TileMapTexturePathBuffer.data());
-
-        int textureWidth = 0;
-        int textureHeight = 0;
-        if (TryGetImageSize(entity.GetTileMapTexturePath(), textureWidth, textureHeight))
-        {
-            entity.SetTileAtlasCellSize({
-                std::max(1, textureWidth / static_cast<int>(entity.GetTileMapColumns())),
-                std::max(1, textureHeight / static_cast<int>(entity.GetTileMapRows()))
-            });
-        }
+        entity.SetTileSetAssetPath(m_TileSetAssetPathBuffer.data());
+        ApplyTileSetAsset(entity);
     }
 
 #ifdef _WIN32
     ImGui::SameLine();
-    if (ImGui::Button("Browse..."))
+    if (ImGui::Button("Browse Tileset Asset..."))
     {
-        const std::string pickedPath = OpenTilesetTexturePath();
+        const std::string pickedPath = OpenTileSetAssetPath();
         if (!pickedPath.empty())
         {
             std::snprintf(
-                m_TileMapTexturePathBuffer.data(),
-                m_TileMapTexturePathBuffer.size(),
+                m_TileSetAssetPathBuffer.data(),
+                m_TileSetAssetPathBuffer.size(),
                 "%s",
                 pickedPath.c_str()
             );
-            entity.SetTileMapTexturePath(m_TileMapTexturePathBuffer.data());
-            ApplyAtlusCellSize(entity);
-            
-            int textureWidth = 0;
-            int textureHeight = 0;
-            if (TryGetImageSize(entity.GetTileMapTexturePath(), textureWidth, textureHeight))
-            {
-                entity.SetTileAtlasCellSize({
-                    std::max(1, textureWidth / static_cast<int>(entity.GetTileMapColumns())),
-                    std::max(1, textureHeight / static_cast<int>(entity.GetTileMapRows()))
-                });
-            }
+            ApplyTileSetAsset(entity);
         }
     }
 #endif
+
+    if (m_TileMapTexturePathBuffer[0] != '\0')
+        ImGui::Text("Resolved Texture: %s", m_TileMapTexturePathBuffer.data());
 
     glm::vec2 tileSize = entity.GetTileSize();
     if (ImGui::DragFloat2("Tile Size", &tileSize.x, 1.0f, 1.0f, 4096.0f))
@@ -641,7 +718,7 @@ void TileMapEditorPanel::Draw(Scene& scene, VulkanRenderer& renderer, GameObject
 
     int textureWidth = 0;
     int textureHeight = 0;
-    if (TryGetImageSize(entity.GetTileMapTexturePath(), textureWidth, textureHeight))
+    if (TryGetImageSize(m_TileMapTexturePathBuffer.data(), textureWidth, textureHeight))
     {
         const bool widthEven = (textureWidth % std::max(1, m_AtlasCellWidthDraft)) == 0;
         const bool heightEven = (textureHeight % std::max(1, m_AtlasCellHeightDraft)) == 0;

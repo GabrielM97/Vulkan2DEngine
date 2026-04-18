@@ -84,6 +84,8 @@ set(SCENE_FOLDER_SRC
     Scene/SceneSerializer.h
     Scene/TileMapAssetSerializer.cpp
     Scene/TileMapAssetSerializer.h
+    Scene/TileSetAsset.cpp
+    Scene/TileSetAsset.h
     Scene/SpriteAnimation.cpp
     Scene/SpriteAnimation.h
     Scene/SpriteAnimationSet.cpp
@@ -111,6 +113,8 @@ set(EDITOR_FOLDER_SRC
     Editor/SceneViewportPanel.cpp
     Editor/TileMapEditorPanel.h
     Editor/TileMapEditorPanel.cpp
+    Editor/TileSetEditorPanel.h
+    Editor/TileSetEditorPanel.cpp
 )
 
 # --- Core ---

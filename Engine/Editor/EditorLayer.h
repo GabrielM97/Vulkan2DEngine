@@ -6,6 +6,7 @@
 #include <glm/vec2.hpp>
 
 #include "Editor/SceneViewportPanel.h"
+#include "Editor/TileSetEditorPanel.h"
 #include "Editor/TileMapEditorPanel.h"
 
 class Entity;
@@ -38,6 +39,7 @@ private:
     bool TryGetSelectionCorners(Entity entity, std::array<glm::vec2, 4>& outCorners) const;
     float GetTopBarHeight() const { return 40.0f; }
 
+    TileSetEditorPanel m_TileSetEditorPanel;
     TileMapEditorPanel m_TileMapEditorPanel;
     std::unique_ptr<SceneViewportPanel> m_SceneViewportPanel;
     std::unique_ptr<SceneEditorPanel> m_SceneEditorPanel;
