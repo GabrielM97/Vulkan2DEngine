@@ -1,11 +1,14 @@
 #pragma once
 
 #include <memory>
+#include <array>
 #include <imgui.h>
+#include <glm/vec2.hpp>
 
 #include "Editor/SceneViewportPanel.h"
 #include "Editor/TileMapEditorPanel.h"
 
+class Entity;
 class Scene;
 class SceneViewportPanel;
 class SceneEditorPanel;
@@ -30,7 +33,9 @@ public:
 private:
     void DrawDockspace();
     void DrawTopBar(bool isPlaying);
+    void DrawSelectedObjectOverlay(Scene& scene, bool isPlaying);
     void DrawTileStampPreview(Scene& scene, bool isPlaying);
+    bool TryGetSelectionCorners(Entity entity, std::array<glm::vec2, 4>& outCorners) const;
     float GetTopBarHeight() const { return 40.0f; }
 
     TileMapEditorPanel m_TileMapEditorPanel;

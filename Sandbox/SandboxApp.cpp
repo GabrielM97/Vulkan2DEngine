@@ -7,6 +7,7 @@
 
 #include "Component/Gameplay/PlayerMovementComponent.h"
 #include "Editor/EditorLayer.h"
+#include "Math/TransformMath2D.h"
 
 void SandboxApp::OnInit()
 {
@@ -102,13 +103,24 @@ bool SandboxApp::TryGetHoveredTile(Entity entity, glm::ivec2& outTile) const
     const glm::vec2 worldPosition = ScreenToWorld(mouseScreen, viewportState);
     const Transform2D mapTransform = entity.GetTransform();
     const glm::vec2 tileSize = entity.GetTileSize();
+    const glm::vec2 mapSize{
+        static_cast<float>(entity.GetTileMapWidth()) * tileSize.x,
+        static_cast<float>(entity.GetTileMapHeight()) * tileSize.y
+    };
 
     if (tileSize.x <= 0.0f || tileSize.y <= 0.0f)
         return false;
 
-    const glm::vec2 local = worldPosition - mapTransform.position;
-    const int tileX = static_cast<int>(std::floor(local.x / tileSize.x));
-    const int tileY = static_cast<int>(std::floor(local.y / tileSize.y));
+    if (!TransformMath2D::ContainsWorldPoint(worldPosition, mapTransform, mapSize))
+        return false;
+
+    const glm::vec2 local = TransformMath2D::WorldToLocalRectPoint(worldPosition, mapTransform, mapSize);
+    const glm::vec2 scaledTileSize = tileSize * mapTransform.scale;
+    if (scaledTileSize.x == 0.0f || scaledTileSize.y == 0.0f)
+        return false;
+
+    const int tileX = static_cast<int>(std::floor(local.x / scaledTileSize.x));
+    const int tileY = static_cast<int>(std::floor(local.y / scaledTileSize.y));
 
     if (tileX < 0 || tileY < 0)
         return false;
@@ -120,6 +132,83 @@ bool SandboxApp::TryGetHoveredTile(Entity entity, glm::ivec2& outTile) const
     }
 
     outTile = {tileX, tileY};
+    return true;
+}
+
+bool SandboxApp::TryGetSelectionShape(Entity entity, Transform2D& outTransform, glm::vec2& outSize) const
+{
+    if (!entity.IsValid() || !entity.IsActive())
+        return false;
+
+    outTransform = entity.GetTransform();
+
+    if (entity.HasTileMap())
+    {
+        const glm::vec2 tileSize = entity.GetTileSize();
+        const uint32_t mapWidth = entity.GetTileMapWidth();
+        const uint32_t mapHeight = entity.GetTileMapHeight();
+
+        if (tileSize.x <= 0.0f || tileSize.y <= 0.0f || mapWidth == 0 || mapHeight == 0)
+            return false;
+
+        const glm::vec2 size{
+            static_cast<float>(mapWidth) * tileSize.x,
+            static_cast<float>(mapHeight) * tileSize.y
+        };
+
+        outSize = size;
+        return true;
+    }
+
+    if (!entity.IsSpriteVisible())
+        return false;
+
+    const glm::vec2 size = entity.GetSpriteSize();
+    if (size.x == 0.0f || size.y == 0.0f)
+        return false;
+
+    outSize = size;
+    return true;
+}
+
+bool SandboxApp::TrySelectedGameObject(GameObjectID& outObjectID) const
+{
+    const SceneViewportState& viewportState = GetSceneViewportState();
+    if (!viewportState.visible)
+        return false;
+
+    const glm::vec2 mouseScreen = GetInputState().GetMouseScreenPosition();
+    const glm::vec2 worldPosition = ScreenToWorld(mouseScreen, viewportState);
+
+    bool found = false;
+    GameObjectID bestID = 0;
+    int bestLayer = std::numeric_limits<int>::min();
+
+    for (GameObjectID id : m_Scene.GetGameObjectIDs())
+    {
+        Entity entity = m_Scene.GetEntity(id);
+        Transform2D pickTransform{};
+        glm::vec2 pickSize{};
+        if (!TryGetSelectionShape(entity, pickTransform, pickSize))
+            continue;
+
+        if (!TransformMath2D::ContainsWorldPoint(worldPosition, pickTransform, pickSize))
+            continue;
+
+        const int layer = entity.GetSpriteLayer();
+    
+        if (!found || layer > bestLayer)
+        {
+            found = true;
+            bestID = id;
+            bestLayer = layer;
+        }
+    }
+
+    if (!found)
+        return false;
+
+    outObjectID = bestID;
     return true;
 }
 
@@ -366,6 +455,8 @@ void SandboxApp::OnUpdate(float deltaTime)
     if (!IsEditorPlaying() && input.CanUseEditorShortcuts() && IsRedoShortcutPressed())
         RedoTileStroke();
     
+    bool viewportInteractionConsumed = false;
+
     if (!IsEditorPlaying() && viewportState.visible && viewportState.hovered)
     {
         auto& tileMapPanel = GetEditorLayer().GetTileMapEditorPanel();
@@ -394,21 +485,29 @@ void SandboxApp::OnUpdate(float deltaTime)
 
             if (fillStroke)
             {
+                viewportInteractionConsumed = true;
                 BeginTileStroke(selected);
                 ApplyTileStrokeFill(selected, hoveredTile, tileMapPanel.IsEraseModeEnabled());
                 EndTileStroke();
             }
 
             if ((paintStroke || eraseStroke) && !m_TileStrokeActive)
+            {
+                viewportInteractionConsumed = true;
                 BeginTileStroke(selected);
+            }
 
             if (paintStroke)
             {
+                viewportInteractionConsumed = true;
                 ApplyTileStrokeStamp(selected, hoveredTile, false);
             }
-             
+              
             if (eraseStroke)
+            {
+                viewportInteractionConsumed = true;
                 ApplyTileStrokeStamp(selected, hoveredTile, true);
+            }
         }
         else
         {
@@ -425,6 +524,20 @@ void SandboxApp::OnUpdate(float deltaTime)
          input.WasMouseButtonReleased(GLFW_MOUSE_BUTTON_RIGHT)))
     {
         EndTileStroke();
+    }
+
+    if (!IsEditorPlaying() &&
+        viewportState.visible &&
+        viewportState.hovered &&
+        input.CanUseEditorViewportInput() &&
+        input.WasMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT) &&
+        !viewportInteractionConsumed)
+    {
+        GameObjectID selectedObjectID = 0;
+        if (TrySelectedGameObject(selectedObjectID))
+            GetEditorLayer().SetSelectedObjectID(m_Scene, selectedObjectID);
+        else
+            GetEditorLayer().SetSelectedObjectID(m_Scene, 0);
     }
 
     if (input.CanUseRuntimeViewportInput())
