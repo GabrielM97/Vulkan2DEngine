@@ -246,6 +246,40 @@ namespace
             static_cast<uint32_t>(tileMap.layers.size() - 1)
         );
     }
+    
+    std::string SerializeColliderBodyType(ColliderBodyType bodyType)
+    {
+        return bodyType == ColliderBodyType::Dynamic ? "Dynamic" : "Static";
+    }
+
+    ColliderBodyType DeserializeColliderBodyType(const std::string& value)
+    {
+        return value == "Dynamic" ? ColliderBodyType::Dynamic : ColliderBodyType::Static;
+    }
+
+    json SerializeBoxCollider(const BoxColliderComponent& collider)
+    {
+        return {
+                {"size", SerializeVec2(collider.size)},
+                {"offset", SerializeVec2(collider.offset)},
+                {"bodyType", SerializeColliderBodyType(collider.type)},
+                {"isTrigger", collider.isTrigger},
+                {"enabled", collider.enabled}
+        };
+    }
+
+    void DeserializeBoxCollider(const json& value, BoxColliderComponent& collider)
+    {
+        collider.size = value.contains("size")
+            ? DeserializeVec2(value.at("size"))
+            : glm::vec2{32.0f, 32.0f};
+        collider.offset = value.contains("offset")
+            ? DeserializeVec2(value.at("offset"))
+            : glm::vec2{0.0f, 0.0f};
+        collider.type = DeserializeColliderBodyType(value.value("bodyType", "Static"));
+        collider.isTrigger = value.value("isTrigger", false);
+        collider.enabled = value.value("enabled", true);
+    }
 }
 
 bool SceneSerializer::SaveToFile(const Scene& scene, const std::string& path)
@@ -293,6 +327,12 @@ bool SceneSerializer::SaveToFile(const Scene& scene, const std::string& path)
         {
             const auto& tileMap = scene.m_Registry.get<TileMapComponent>(entity);
             entityJson["tileMap"] = SerializeTileMap(tileMap);
+        }
+        
+        if (scene.m_Registry.all_of<BoxColliderComponent>(entity))
+        {
+            const auto& collider = scene.m_Registry.get<BoxColliderComponent>(entity);
+            entityJson["boxCollider"] = SerializeBoxCollider(collider);
         }
 
         Entity wrapped = scene.GetEntity(id);
@@ -397,6 +437,12 @@ bool SceneSerializer::LoadFromFile(Scene& scene, const std::string& path)
         {
             auto& tileMap = scene.m_Registry.emplace<TileMapComponent>(entity);
             DeserializeTileMap(entityJson.at("tileMap"), tileMap);
+        }
+        
+        if (entityJson.contains("boxCollider"))
+        {
+            auto& collider = scene.m_Registry.emplace<BoxColliderComponent>(entity);
+            DeserializeBoxCollider(entityJson.at("boxCollider"), collider);
         }
 
         Entity wrapped = scene.GetEntity(id);

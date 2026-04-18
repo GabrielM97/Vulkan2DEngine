@@ -70,4 +70,5 @@ private:
     TileEditStroke m_ActiveTileStroke;
     std::vector<TileEditStroke> m_UndoTileStrokes;
     std::vector<TileEditStroke> m_RedoTileStrokes;
+    bool m_ShowCollisionDebug = false;
 };

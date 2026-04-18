@@ -793,6 +793,74 @@ void VulkanRenderer::DrawSprite(const Transform2D& transform, const SpriteRender
     );
 }
 
+void VulkanRenderer::DrawRectOutline(
+    const glm::vec2& min,
+    const glm::vec2& max,
+    const glm::vec4& color,
+    float thickness)
+{
+    const float width = max.x - min.x;
+    const float height = max.y - min.y;
+    
+    if (width <= 0.0f || height <= 0.0f || thickness <= 0.0f)
+        return;
+
+    if (!m_HasFallbackTexture)
+    {
+        CreateFallbackTexture();
+    }
+    
+    const uint32_t textureIndex = m_FallbackTextureIndex;
+    const glm::vec2 uvMin{0.0f, 0.0f};
+    const glm::vec2 uvMax{1.0f, 1.0f};
+    const glm::vec2 pivot{0.0f, 0.0f};
+    
+    DrawQuad(
+        {min.x, min.y},
+        {width, thickness},
+        0.0f,
+        pivot,
+        uvMin,
+        uvMax,
+        color,
+        textureIndex
+    );
+
+    DrawQuad(
+        {min.x, max.y - thickness},
+        {width, thickness},
+        0.0f,
+        pivot,
+        uvMin,
+        uvMax,
+        color,
+        textureIndex
+    );
+
+    DrawQuad(
+        {min.x, min.y},
+        {thickness, height},
+        0.0f,
+        pivot,
+        uvMin,
+        uvMax,
+        color,
+        textureIndex
+    );
+
+    DrawQuad(
+        {max.x - thickness, min.y},
+        {thickness, height},
+        0.0f,
+        pivot,
+        uvMin,
+        uvMax,
+        color,
+        textureIndex
+    );
+}
+
+
 uint32_t VulkanRenderer::GetOrLoadTexture(const std::string& path)
 {
     auto it = m_TextureCache.find(path);

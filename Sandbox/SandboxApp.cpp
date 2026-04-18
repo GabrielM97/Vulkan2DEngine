@@ -1,7 +1,5 @@
 #include "SandboxApp.h"
 
-#include <iostream>
-#include <cstdint>
 #include <queue>
 #include <GLFW/glfw3.h>
 
@@ -17,26 +15,23 @@ void SandboxApp::OnInit()
 void SandboxApp::CreateDefaultScene()
 {
     m_Player = m_Scene.Place<Player>();
-    //m_Player.SetPosition(glm::vec2{300.0f, 100.0f});
+    Entity playerEntity = m_Scene.GetEntity(m_Player.GetID());
+    playerEntity.EnsureBoxCollider();
+    playerEntity.SetBoxColliderSize({64.f, 64.f});
+    playerEntity.SetColliderBodyType(ColliderBodyType::Dynamic);
     
-    Entity weapon = m_Scene.CreateEntity("Weapon", m_Player.GetID());
-    weapon.SetPosition({300.0f, 0.0f});
-    weapon.SetSpriteSize({16.0f, 16.0f});
-    weapon.SetSpriteTexturePath("Assets/Textures/texture.jpg");
-    weapon.SetSpriteLayer(1);
-
-    Entity weapon2 = m_Scene.CreateEntity("Weapon", m_Player.GetID());
-    weapon2.SetLocalPosition({-25.0f, 0.0f});
-    weapon2.SetSpriteSize({16.0f, 16.0f});
-    weapon2.SetSpriteTexturePath("Assets/Textures/texture.jpg");
-    weapon2.SetSpriteLayer(1);
+    Entity wall = m_Scene.CreateEntity("Wall");
+    wall.SetPosition({200.0f, 0.0f});
+    wall.SetSpriteSize({32.0f, 32.0f});
+    wall.SetSpriteTexturePath("Assets/Textures/texture.jpg");
+    wall.EnsureBoxCollider();
+    wall.SetBoxColliderSize({32.0f, 32.0f});
+    wall.SetColliderBodyType(ColliderBodyType::Static);
     
     Entity map = m_Scene.CreateEntity("Map");
-    map.EnsureTileMap();
-    map.ResizeTileMap(16, 16);
-    map.SetTileSize({32.0f, 32.0f});
-    map.SetTileMapGrid(8, 8);
-    map.SetTileMapTexturePath("Assets/Textures/texture.jpg");
+    map.AddComponent<TileMapComponent>();
+    
+    map.SetBoxColliderEnabled(false);
 }
 
 void SandboxApp::RefreshRuntimeHandles()
@@ -575,7 +570,11 @@ void SandboxApp::OnUpdate(float deltaTime)
             command.zoomDelta -= 1.0f;
         if (input.IsKeyDown(GLFW_KEY_E))
             command.zoomDelta += 1.0f;
+        
     }
+    
+    if (input.CanUseEditorShortcuts() && input.WasKeyPressed(GLFW_KEY_F10))
+        m_ShowCollisionDebug = !m_ShowCollisionDebug;
 
     if (input.CanUseEditorShortcuts() && input.WasKeyPressed(GLFW_KEY_F5))
         m_Scene.SaveToFile(m_SceneFilePath);
@@ -587,7 +586,11 @@ void SandboxApp::OnUpdate(float deltaTime)
     }
 
     if (m_EditorMode == EditorMode::Playing && m_Player.IsValid())
-        m_Player.Move(playerInput, deltaTime);
+    {
+        Entity playerEntity = m_Scene.GetEntity(m_Player.GetID());
+        const glm::vec2 moveDelta = playerInput * 150.0f * deltaTime;
+        playerEntity.MoveWithCollision(moveDelta);
+    }
 
     if (viewportState.visible)
     {
@@ -608,11 +611,22 @@ void SandboxApp::OnRender(VulkanRenderer& renderer)
     const TileMapEditorPanel& tileMapPanel = GetEditorLayer().GetTileMapEditorPanel();
     Entity selected = m_Scene.GetEntity(tileMapPanel.GetSelectedObjectID());
 
-    if (tileMapPanel.IsTileMapViewEnabled() && selected.IsValid() && selected.HasTileMap())
-    {
-        m_Scene.RenderTileMapOnly(renderer, selected.GetID());
-        return;
-    }
+    const bool tileMapOnly =
+        tileMapPanel.IsTileMapViewEnabled() &&
+        selected.IsValid() &&
+        selected.HasTileMap();
 
-    m_Scene.Render(renderer);
+    if (tileMapOnly)
+        m_Scene.RenderTileMapOnly(renderer, selected.GetID());
+    else
+        m_Scene.Render(renderer);
+
+    if (m_ShowCollisionDebug)
+    {
+        m_Scene.RenderCollisionDebug(
+            renderer,
+            tileMapOnly ? selected.GetID() : 0,
+            tileMapOnly
+        );
+    }
 }

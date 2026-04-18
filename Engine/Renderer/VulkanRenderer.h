@@ -51,6 +51,10 @@ public:
         m_ImGuiRenderCallback = std::move(callback);
     }
 
+    void DrawRectOutline(const glm::vec2& min,
+    const glm::vec2& max,
+    const glm::vec4& color,
+    float thickness) override;
     uint32_t GetOrLoadTexture(const std::string& path);
     const VulkanTexture* GetTexture(uint32_t index) const;
     ImTextureID GetOrCreateImGuiTextureID(const std::string& path);

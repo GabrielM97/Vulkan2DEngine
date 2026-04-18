@@ -101,6 +101,8 @@ set(OBJECT_FOLDER_SRC
 )
 
 set(EDITOR_FOLDER_SRC
+    Editor/CoreComponentInspectorRegistry.cpp
+    Editor/CoreComponentInspectorRegistry.h
     Editor/EditorLayer.cpp
     Editor/EditorLayer.h
     Editor/SceneEditorPanel.cpp
