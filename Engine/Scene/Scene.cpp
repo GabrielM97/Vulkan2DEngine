@@ -378,13 +378,14 @@ bool Scene::OverlapsSolidBox(const AABB2D& box, GameObjectID ignoredID) const
         const auto& id = tileMapView.get<IDComponent>(entity);
         const auto& active = tileMapView.get<ActiveComponent>(entity);
         const auto& tileMap = tileMapView.get<TileMapComponent>(entity);
+        const TileSetAsset* tileSetAsset = GetOrLoadTileSetAsset(tileMap.tileSetAssetPath);
 
         if (!active.active || id.id == ignoredID)
             continue;
 
         for (const auto& layer : tileMap.layers)
         {
-            if (!layer.visible)
+            if (!layer.collisionEnabled)
                 continue;
 
             for (uint32_t y = 0; y < tileMap.height; ++y)
@@ -394,6 +395,12 @@ bool Scene::OverlapsSolidBox(const AABB2D& box, GameObjectID ignoredID) const
                     const int32_t tileID = layer.tiles[y * tileMap.width + x];
                     if (tileID < 0)
                         continue;
+
+                    if (tileSetAsset != nullptr &&
+                        !tileSetAsset->IsTileSolid(static_cast<uint32_t>(tileID)))
+                    {
+                        continue;
+                    }
 
                     const AABB2D tileBounds = BuildTileAABB(
                         id.id,
@@ -584,7 +591,7 @@ void Scene::RenderCollisionDebug(IRenderer2D& renderer,
 
         for (const auto& layer : tileMap.layers)
         {
-            if (!layer.visible)
+            if (!layer.collisionEnabled)
                 continue;
 
             for (uint32_t y = 0; y < tileMap.height; ++y)
@@ -604,7 +611,7 @@ void Scene::RenderCollisionDebug(IRenderer2D& renderer,
                     renderer.DrawRectOutline(
                         bounds.min,
                         bounds.max,
-                        {0.2f, 0.8f, 1.0f, 1.0f},
+                        {0.0f, 0.0f, 1.0f, 1.0f},
                         1.0f
                     );
                 }
