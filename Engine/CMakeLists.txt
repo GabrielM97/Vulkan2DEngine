@@ -107,10 +107,14 @@ set(EDITOR_FOLDER_SRC
     Editor/CoreComponentInspectorRegistry.h
     Editor/EditorLayer.cpp
     Editor/EditorLayer.h
+    Editor/EditorSceneController.cpp
+    Editor/EditorSceneController.h
     Editor/SceneEditorPanel.cpp
     Editor/SceneEditorPanel.h
     Editor/SceneViewportPanel.h
     Editor/SceneViewportPanel.cpp
+    Editor/TileMapEditorController.h
+    Editor/TileMapEditorController.cpp
     Editor/TileMapEditorPanel.h
     Editor/TileMapEditorPanel.cpp
     Editor/TileSetEditorPanel.h

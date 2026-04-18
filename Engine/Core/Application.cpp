@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "Editor/EditorLayer.h"
+#include "Scene/Scene.h"
 
 Application::Application()
 {
@@ -84,10 +85,10 @@ void Application::Run()
         );
 
         if (editorLayer->ConsumePlayRequest())
-            OnEditorPlay();
+            EnterPlayMode();
 
         if (editorLayer->ConsumeStopRequest())
-            OnEditorStop();
+            ExitPlayMode();
 
         inputState.BeginFrame(
             window->GetNativeWindow(),
@@ -125,4 +126,48 @@ void Application::Shutdown()
 const SceneViewportState& Application::GetSceneViewportState() const
 {
     return editorLayer->GetSceneViewportState();
+}
+
+void Application::EnterPlayMode()
+{
+    if (m_IsEditorPlaying)
+        return;
+
+    Scene* scene = GetEditorScene();
+    if (scene == nullptr)
+        return;
+
+    const std::string snapshotPath = GetPlayModeSnapshotPath().empty()
+        ? "Assets/Scenes/.editor.playmode.json"
+        : GetPlayModeSnapshotPath();
+
+    if (!scene->SaveToFile(snapshotPath))
+        return;
+
+    m_IsEditorPlaying = true;
+    scene->BeginPlay();
+    OnEnterPlayMode();
+}
+
+void Application::ExitPlayMode()
+{
+    if (!m_IsEditorPlaying)
+        return;
+
+    Scene* scene = GetEditorScene();
+    if (scene == nullptr)
+    {
+        m_IsEditorPlaying = false;
+        return;
+    }
+
+    scene->EndPlay();
+
+    const std::string snapshotPath = GetPlayModeSnapshotPath().empty()
+        ? "Assets/Scenes/.editor.playmode.json"
+        : GetPlayModeSnapshotPath();
+
+    scene->LoadFromFile(snapshotPath);
+    m_IsEditorPlaying = false;
+    OnExitPlayMode();
 }
