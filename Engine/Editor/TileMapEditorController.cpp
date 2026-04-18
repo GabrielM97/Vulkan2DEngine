@@ -5,6 +5,7 @@
 
 #include <GLFW/glfw3.h>
 
+#include "Editor/EditorViewportMath.h"
 #include "Editor/TileMapEditorPanel.h"
 
 bool TileMapEditorController::TryGetHoveredTile(
@@ -18,7 +19,7 @@ bool TileMapEditorController::TryGetHoveredTile(
         return false;
 
     const glm::vec2 mouseScreen = input.GetMouseScreenPosition();
-    const glm::vec2 worldPosition = ScreenToWorld(scene, mouseScreen, viewportState);
+    const glm::vec2 worldPosition = EditorViewportMath::ScreenToWorld(scene, mouseScreen, viewportState);
     const Transform2D mapTransform = entity.GetTransform();
     const glm::vec2 tileSize = entity.GetTileSize();
 
@@ -40,25 +41,6 @@ bool TileMapEditorController::TryGetHoveredTile(
 
     outTile = {tileX, tileY};
     return true;
-}
-
-glm::vec2 TileMapEditorController::ScreenToWorld(
-    Scene& scene,
-    const glm::vec2& screenPosition,
-    const SceneViewportState& viewportState) const
-{
-    const glm::vec2 viewportMin{
-        viewportState.contentMin.x,
-        viewportState.contentMin.y
-    };
-
-    const glm::vec2 viewportLocal = screenPosition - viewportMin;
-
-    return scene.GetCamera().ScreenToWorld(
-        viewportLocal,
-        static_cast<float>(viewportState.width),
-        static_cast<float>(viewportState.height)
-    );
 }
 
 void TileMapEditorController::BeginTileStroke(Entity entity)
@@ -296,7 +278,7 @@ void TileMapEditorController::Update(
     if (allowEditing && input.CanUseEditorShortcuts() && IsRedoShortcutPressed(input))
         RedoTileStroke(scene);
 
-    if (allowEditing && viewportState.visible && viewportState.hovered)
+    if (allowEditing && viewportState.visible && viewportState.hovered && tileMapPanel.IsTileMapViewEnabled())
     {
         Entity selected = scene.GetEntity(tileMapPanel.GetSelectedObjectID());
 

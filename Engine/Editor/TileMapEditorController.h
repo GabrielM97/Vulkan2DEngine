@@ -46,10 +46,6 @@ private:
         const InputState& input,
         Entity entity,
         glm::ivec2& outTile) const;
-    glm::vec2 ScreenToWorld(
-        Scene& scene,
-        const glm::vec2& screenPosition,
-        const SceneViewportState& viewportState) const;
     void BeginTileStroke(Entity entity);
     void RecordTileStrokeEdit(Entity entity, uint32_t layerIndex, int tileX, int tileY, int32_t newValue);
     void ApplyTileStrokeStamp(TileMapEditorPanel& tileMapPanel, Entity entity, glm::ivec2 hoveredTile, bool erase);
