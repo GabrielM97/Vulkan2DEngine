@@ -65,6 +65,7 @@ struct TileMapComponent
     {
         std::string name = "Layer";
         bool visible = true;
+        bool collisionEnabled = false;
         std::vector<int32_t> tiles;
     };
 
@@ -75,6 +76,7 @@ struct TileMapComponent
     uint32_t columns = 1;
     uint32_t rows = 1;
     std::string tilesetTexturePath;
+    std::string tileSetAssetPath;
     std::string assetPath;
     std::vector<Layer> layers{{}};
     uint32_t activeLayerIndex = 0;

@@ -157,6 +157,7 @@ namespace
             layers.push_back({
                 {"name", layer.name},
                 {"visible", layer.visible},
+                {"collisionEnabled", layer.collisionEnabled},
                 {"tiles", layer.tiles}
             });
         }
@@ -169,6 +170,7 @@ namespace
                 {"columns", tileMap.columns},
                 {"rows", tileMap.rows},
                 {"tilesetTexturePath", tileMap.tilesetTexturePath},
+                {"tileSetAssetPath", tileMap.tileSetAssetPath},
                 {"assetPath", tileMap.assetPath},
                 {"activeLayerIndex", tileMap.activeLayerIndex},
                 {"layers", layers}
@@ -200,6 +202,7 @@ namespace
         tileMap.columns = std::max<uint32_t>(1, value.value("columns", 1u));
         tileMap.rows = std::max<uint32_t>(1, value.value("rows", 1u));
         tileMap.tilesetTexturePath = value.value("tilesetTexturePath", "");
+        tileMap.tileSetAssetPath = value.value("tileSetAssetPath", "");
         tileMap.assetPath = value.value("assetPath", "");
         const std::size_t expectedCount =
             static_cast<std::size_t>(tileMap.width) * static_cast<std::size_t>(tileMap.height);
@@ -213,6 +216,7 @@ namespace
                 TileMapComponent::Layer layer;
                 layer.name = layerValue.value("name", "Layer");
                 layer.visible = layerValue.value("visible", true);
+                layer.collisionEnabled = layerValue.value("collisionEnabled", false);
                 layer.tiles = layerValue.value("tiles", std::vector<int32_t>{});
 
                 if (layer.tiles.size() != expectedCount)

@@ -193,6 +193,7 @@ void Scene::Clear()
     m_Registry.clear();
     m_EntityByID.clear();
     m_AnimationSetCache.clear();
+    m_TileSetAssetCache.clear();
     m_NextGameObjectID = 1;
 }
 
@@ -274,12 +275,19 @@ void Scene::RenderEntity(IRenderer2D& renderer, entt::entity entity)
     if (m_Registry.all_of<TileMapComponent>(entity))
     {
         const auto& tileMap = m_Registry.get<TileMapComponent>(entity);
-        if (tileMap.width == 0 || tileMap.height == 0 || tileMap.tilesetTexturePath.empty() || tileMap.layers.empty())
+        const TileSetAsset* tileSetAsset = GetOrLoadTileSetAsset(tileMap.tileSetAssetPath);
+        const std::string texturePath =
+            (tileSetAsset != nullptr && !tileSetAsset->GetTexturePath().empty())
+            ? tileSetAsset->GetTexturePath()
+            : tileMap.tilesetTexturePath;
+        const uint32_t atlasColumns = tileSetAsset != nullptr ? tileSetAsset->GetColumns() : tileMap.columns;
+
+        if (tileMap.width == 0 || tileMap.height == 0 || texturePath.empty() || tileMap.layers.empty())
             return;
 
         const int cellWidth = std::max(1, tileMap.atlasCellSize.x);
         const int cellHeight = std::max(1, tileMap.atlasCellSize.y);
-        const int maxTileCount = static_cast<int>(tileMap.columns * tileMap.rows);
+        const int maxTileCount = static_cast<int>(atlasColumns * (tileSetAsset != nullptr ? tileSetAsset->GetRows() : tileMap.rows));
         const Transform2D mapTransform = GetWorldTransform(id.id);
 
         for (const auto& layer : tileMap.layers)
@@ -296,10 +304,10 @@ void Scene::RenderEntity(IRenderer2D& renderer, entt::entity entity)
                         continue;
 
                     SpriteRenderer tileSprite;
-                    tileSprite.SetTexturePath(tileMap.tilesetTexturePath);
+                    tileSprite.SetTexturePath(texturePath);
                     tileSprite.SetSourceRectFromGrid(
-                        tileID % static_cast<int>(tileMap.columns),
-                        tileID / static_cast<int>(tileMap.columns),
+                        tileID % static_cast<int>(atlasColumns),
+                        tileID / static_cast<int>(atlasColumns),
                         cellWidth,
                         cellHeight
                     );
@@ -370,13 +378,14 @@ bool Scene::OverlapsSolidBox(const AABB2D& box, GameObjectID ignoredID) const
         const auto& id = tileMapView.get<IDComponent>(entity);
         const auto& active = tileMapView.get<ActiveComponent>(entity);
         const auto& tileMap = tileMapView.get<TileMapComponent>(entity);
+        const TileSetAsset* tileSetAsset = GetOrLoadTileSetAsset(tileMap.tileSetAssetPath);
 
         if (!active.active || id.id == ignoredID)
             continue;
 
         for (const auto& layer : tileMap.layers)
         {
-            if (!layer.visible)
+            if (!layer.collisionEnabled)
                 continue;
 
             for (uint32_t y = 0; y < tileMap.height; ++y)
@@ -386,6 +395,12 @@ bool Scene::OverlapsSolidBox(const AABB2D& box, GameObjectID ignoredID) const
                     const int32_t tileID = layer.tiles[y * tileMap.width + x];
                     if (tileID < 0)
                         continue;
+
+                    if (tileSetAsset != nullptr &&
+                        !tileSetAsset->IsTileSolid(static_cast<uint32_t>(tileID)))
+                    {
+                        continue;
+                    }
 
                     const AABB2D tileBounds = BuildTileAABB(
                         id.id,
@@ -576,7 +591,7 @@ void Scene::RenderCollisionDebug(IRenderer2D& renderer,
 
         for (const auto& layer : tileMap.layers)
         {
-            if (!layer.visible)
+            if (!layer.collisionEnabled)
                 continue;
 
             for (uint32_t y = 0; y < tileMap.height; ++y)
@@ -596,7 +611,7 @@ void Scene::RenderCollisionDebug(IRenderer2D& renderer,
                     renderer.DrawRectOutline(
                         bounds.min,
                         bounds.max,
-                        {0.2f, 0.8f, 1.0f, 1.0f},
+                        {0.0f, 0.0f, 1.0f, 1.0f},
                         1.0f
                     );
                 }
@@ -994,6 +1009,23 @@ const SpriteAnimationSet* Scene::GetOrLoadAnimationSet(const std::string& path)
     }
 
     auto [insertedIt, inserted] = m_AnimationSetCache.emplace(path, std::move(animationSet));
+    return &insertedIt->second;
+}
+
+const TileSetAsset* Scene::GetOrLoadTileSetAsset(const std::string& path) const
+{
+    if (path.empty())
+        return nullptr;
+
+    auto it = m_TileSetAssetCache.find(path);
+    if (it != m_TileSetAssetCache.end())
+        return &it->second;
+
+    TileSetAsset asset;
+    if (!asset.LoadFromFile(path))
+        return nullptr;
+
+    auto [insertedIt, inserted] = m_TileSetAssetCache.emplace(path, std::move(asset));
     return &insertedIt->second;
 }
 

@@ -31,6 +31,7 @@ void EditorLayer::Draw(Scene* scene, VulkanRenderer& renderer, ImTextureID scene
     m_SceneEditorPanel->Draw(*scene, m_SelectedObjectID);
     m_TileMapEditorPanel.Draw(*scene, renderer, m_SelectedObjectID);
     DrawSelectedObjectOverlay(*scene, isPlaying);
+    m_TileSetEditorPanel.Draw(renderer);
     DrawTileStampPreview(*scene, isPlaying);
 }
 
