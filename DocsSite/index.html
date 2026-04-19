@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulkan2DRenderer Docs</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="page-shell">
+    <header class="hero">
+        <div class="hero-copy">
+            <p class="eyebrow">Engine Documentation Portal</p>
+            <h1>Systems, classes, and functions in one launchable site</h1>
+            <p class="hero-text">
+                This browser turns the markdown docs into a navigable reference for the engine.
+                Use the systems board to move across engine areas, then drill into headers and functions.
+            </p>
+        </div>
+        <div class="hero-stats">
+            <article class="stat-card">
+                <span class="stat-label">Systems</span>
+                <strong id="systemCount">0</strong>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Classes</span>
+                <strong id="classCount">0</strong>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Functions</span>
+                <strong id="functionCount">0</strong>
+            </article>
+        </div>
+    </header>
+
+    <main class="content-grid">
+        <section class="panel systems-panel">
+            <div class="panel-head">
+                <h2>Systems</h2>
+                <p>Major engine areas and their responsibilities.</p>
+            </div>
+            <div id="systemsGrid" class="systems-grid"></div>
+        </section>
+
+        <section class="panel explorer-panel">
+            <div class="panel-head panel-head-row">
+                <div>
+                    <h2>Explorer</h2>
+                    <p>Browse classes and functions inside the selected system.</p>
+                </div>
+                <label class="search-box">
+                    <span>Search</span>
+                    <input id="searchInput" type="search" placeholder="Filter classes or functions">
+                </label>
+            </div>
+
+            <div class="explorer-layout">
+                <aside class="navigator-column">
+                    <div class="subpanel">
+                        <div class="subpanel-head">
+                            <h3 id="selectedSystemName">Classes</h3>
+                            <span id="selectedSystemMeta" class="subtle-pill">0 entries</span>
+                        </div>
+                        <div id="classList" class="class-list"></div>
+                    </div>
+                </aside>
+
+                <section class="detail-column">
+                    <div class="subpanel class-overview">
+                        <div class="subpanel-head">
+                            <div>
+                                <h3 id="classTitle">Select a class</h3>
+                                <p id="classPath" class="class-path">Choose a system card to begin.</p>
+                            </div>
+                            <div class="resource-links">
+                                <a href="../Docs/EngineDocumentation.md" target="_blank" rel="noreferrer">Overview Doc</a>
+                                <a href="../Docs/HeaderReference.md" target="_blank" rel="noreferrer">Header Reference</a>
+                                <a href="../Docs/EngineFunctionReference.md" target="_blank" rel="noreferrer">Function Reference</a>
+                            </div>
+                        </div>
+                        <div id="classBadges" class="badge-row"></div>
+                        <div id="classSummary" class="summary-block"></div>
+                    </div>
+
+                    <div class="subpanel functions-subpanel">
+                        <div class="subpanel-head">
+                            <h3>Functions</h3>
+                            <span id="functionMeta" class="subtle-pill">0 functions</span>
+                        </div>
+                        <div id="functionCards" class="function-cards"></div>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+</div>
+
+<template id="systemCardTemplate">
+    <button class="system-card" type="button">
+        <span class="system-kicker"></span>
+        <strong class="system-name"></strong>
+        <p class="system-description"></p>
+        <div class="system-stats"></div>
+    </button>
+</template>
+
+<template id="classItemTemplate">
+    <button class="class-item" type="button">
+        <div class="class-item-top">
+            <strong class="class-item-name"></strong>
+            <span class="class-item-count"></span>
+        </div>
+        <span class="class-item-path"></span>
+    </button>
+</template>
+
+<template id="functionCardTemplate">
+    <article class="function-card">
+        <div class="function-card-head">
+            <code class="function-signature"></code>
+        </div>
+        <div class="function-body"></div>
+    </article>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>

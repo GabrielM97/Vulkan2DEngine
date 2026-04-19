@@ -1,5 +1,19 @@
 # Vulkan2DEngine
 
+Documentation:
+
+- `Docs/EngineDocumentation.md` for architecture, workflows, and examples
+- `Docs/HeaderReference.md` for the header-by-header API reference
+- `Docs/EngineFunctionReference.md` for the categorized function-by-function breakdown
+- `Docs/EngineFunctionReference.rtf` for a Word-compatible version
+- `Docs/Generate-EngineFunctionReference.ps1` to regenerate the standardized function reference from the current headers
+
+Docs website:
+
+- `DocsSite/index.html` is the static documentation app
+- `DocsSite/launch-docs.bat` launches the local docs website on Windows
+- `DocsSite/launch-docs.ps1` runs the local HTTP server directly
+
 ## Setup
 1. Install the Vulkan SDK and make sure `VULKAN_SDK` is set.
 2. Install or clone `vcpkg` and set `VCPKG_ROOT`.

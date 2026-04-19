@@ -1,0 +1,62 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Consolas;}{\f1 Arial;}}
+\fs24
+\b Vulkan2DRenderer Function Reference\b0\par
+\par
+This is a Word-compatible summary of the engine function reference. The full detailed version is in Docs/EngineFunctionReference.md.\par
+\par
+\b What This Covers\b0\par
+- Core application loop functions\par
+- Input and windowing functions\par
+- Scene, entity, transform, collision, animation, tile map, and serialization functions\par
+- Object and actor wrapper functions\par
+- Renderer and Vulkan helper functions\par
+- Editor panel and controller functions\par
+- Sandbox application functions\par
+\par
+\b Key Files\b0\par
+- Docs/EngineFunctionReference.md: full categorized function-by-function breakdown\par
+- Docs/EngineDocumentation.md: engine overview, workflows, and examples\par
+- Docs/HeaderReference.md: header-by-header reference\par
+\par
+\b Core\b0\par
+Application::Init initializes the window, renderer, and ImGui, then calls OnInit.\par
+Application::Run executes the main loop, updates editor state, snapshots input, and renders each frame.\par
+Application::Shutdown tears down ImGui and Vulkan resources safely.\par
+Application::EnterPlayMode saves a scene snapshot and starts Scene::BeginPlay.\par
+Application::ExitPlayMode ends play mode and reloads the snapshot.\par
+InputState::BeginFrame samples keyboard, mouse, and viewport routing state.\par
+InputState key and mouse query functions expose held, pressed, and released states.\par
+\par
+\b Scene And Gameplay\b0\par
+Scene::CreateEntity creates a game object with the default engine-managed components.\par
+Scene::Place and Scene::Spawn create typed objects from Actor or Object wrappers.\par
+Scene::Update advances sprite animation and destroys pending objects.\par
+Scene::Render renders all visible active objects.\par
+Scene::SaveToFile and Scene::LoadFromFile serialize the scene to JSON.\par
+Scene transform functions manage local and world transform state.\par
+Scene collision functions build AABBs, test overlaps, resolve movement, and render debug bounds.\par
+Entity functions expose name, active state, parent-child hierarchy, transforms, sprite state, animation state, tile map editing, collider editing, and custom components.\par
+\par
+\b Rendering\b0\par
+VulkanRenderer::Init creates persistent Vulkan state, swapchain resources, batching resources, and fallback textures.\par
+VulkanRenderer::DrawSprite submits sprite data to the quad batcher.\par
+VulkanRenderer::BeginFrame and EndFrame bracket scene submission and presentation.\par
+VulkanRenderer::EnsureSceneViewportTarget manages the offscreen editor viewport render target.\par
+VulkanTexture, VulkanVertexBuffer, VulkanIndexBuffer, VulkanUniformBuffer, VulkanQuadInstanceBuffer, VulkanSwapChain, VulkanRenderPass, VulkanFramebuffer, VulkanPipeline, VulkanCommandBuffer, VulkanSync, and VulkanViewportRenderTarget provide the low-level Vulkan resource functions.\par
+\par
+\b Editor\b0\par
+EditorLayer::Draw renders the dockspace, top bar, scene viewport, inspector, tile map editor, tileset editor, and overlays.\par
+EditorSceneController::Update handles camera movement, selection, save and reload shortcuts, and debug toggles.\par
+SceneEditorPanel draws the hierarchy and inspector, including built-in transform, sprite, animation, collider, and reflected component editing.\par
+TileMapEditorPanel and TileMapEditorController manage atlas selection, painting, fill, erasing, layer edits, hovered tiles, and undo or redo.\par
+TileSetEditorPanel manages tileset texture paths, atlas grid setup, and per-tile solid flags.\par
+\par
+\b Sandbox\b0\par
+SandboxApp::OnInit builds the sample scene.\par
+SandboxApp::OnUpdate drives editor controllers, runtime input, and scene updates while playing.\par
+SandboxApp::OnRender delegates rendering through EditorSceneController.\par
+\par
+\b Recommendation\b0\par
+Open Docs/EngineFunctionReference.md when you want the full per-function breakdown. Open this RTF in Microsoft Word if you want a Word-native deliverable to edit, annotate, or export as DOCX.\par
+}
