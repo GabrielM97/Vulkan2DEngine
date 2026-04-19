@@ -75,6 +75,7 @@ set(RENDERER_FOLDER_SRC
 set(SCENE_FOLDER_SRC
     Scene/Camera2D.cpp
     Scene/Camera2D.h
+    Scene/CollisionTypes.h
     Scene/Entity.cpp
     Scene/Entity.h
     Scene/Scene.cpp

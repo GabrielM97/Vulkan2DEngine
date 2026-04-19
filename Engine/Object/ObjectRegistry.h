@@ -11,6 +11,13 @@ struct ObjectLifecycleHooks
 {
     std::function<void(Entity)> beginPlay;
     std::function<void(Entity)> endPlay;
+    std::function<void(Entity, const OverlapResult&)> collisionEnter;
+    std::function<void(Entity, const OverlapResult&)> collisionStay;
+    std::function<void(Entity, const OverlapResult&)> collisionExit;
+    std::function<void(Entity, const OverlapResult&)> collisionBlocked;
+    std::function<void(Entity, const OverlapResult&)> triggerEnter;
+    std::function<void(Entity, const OverlapResult&)> triggerStay;
+    std::function<void(Entity, const OverlapResult&)> triggerExit;
 };
 
 class ObjectRegistry
@@ -58,6 +65,34 @@ struct ObjectAutoRegistrar
                 [](Entity entity)
                 {
                     TObject(entity).EndPlay();
+                },
+                [](Entity entity, const OverlapResult& overlap)
+                {
+                    TObject(entity).OnCollisionEnter(overlap);
+                },
+                [](Entity entity, const OverlapResult& overlap)
+                {
+                    TObject(entity).OnCollisionStay(overlap);
+                },
+                [](Entity entity, const OverlapResult& overlap)
+                {
+                    TObject(entity).OnCollisionExit(overlap);
+                },
+                [](Entity entity, const OverlapResult& overlap)
+                {
+                    TObject(entity).OnCollisionBlocked(overlap);
+                },
+                [](Entity entity, const OverlapResult& overlap)
+                {
+                    TObject(entity).OnTriggerEnter(overlap);
+                },
+                [](Entity entity, const OverlapResult& overlap)
+                {
+                    TObject(entity).OnTriggerStay(overlap);
+                },
+                [](Entity entity, const OverlapResult& overlap)
+                {
+                    TObject(entity).OnTriggerExit(overlap);
                 }
             }
         );

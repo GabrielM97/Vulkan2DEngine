@@ -4,7 +4,7 @@
 `Vulkan2DRenderer` is a small 2D game engine built around a few clear layers:
 
 - `Application` owns the window, renderer, ImGui frame lifecycle, and editor play/edit transitions.
-- `Scene` owns game objects, transforms, serialization, rendering submission, animation updates, and simple AABB collision checks.
+- `Scene` owns game objects, transforms, serialization, rendering submission, animation updates, AABB collision queries, movement resolution, and collision event dispatch.
 - `Entity` is the low-level handle used to manipulate a game object and its components.
 - `Object` and `Actor` wrap `Entity` into typed gameplay classes such as `Player`.
 - `EditorLayer` provides the in-engine viewport, hierarchy, inspector, tile map tools, and play/stop controls.
@@ -18,7 +18,7 @@ The current engine is already set up for simple sprite-based games with:
 - CSV-driven sprite animation
 - tile map authoring with multiple layers
 - tileset assets with per-tile collision flags
-- box collider based movement blocking
+- box colliders with blocking, trigger, and overlap-only modes
 - JSON scene save/load
 - reflected scene components shown in the editor inspector
 
@@ -35,7 +35,7 @@ Typical setup:
 cmake --preset windows-debug
 cmake --build --preset build-debug
 ```
-f
+
 The root `CMakeLists.txt` also:
 
 - builds the `Engine` static libraries
@@ -122,6 +122,12 @@ If you want object-style gameplay code instead of raw entity manipulation:
 - register lifecycle hooks with `REGISTER_SCENE_OBJECT(Type)`
 
 When the scene enters play mode, `Scene::BeginPlay()` looks up object lifecycle hooks in `ObjectRegistry` using the stored `ObjectTypeComponent`.
+
+Typed objects can also react to play-mode collision callbacks by overriding:
+
+- `OnCollisionBlocked(...)`
+- `OnCollisionEnter/Stay/Exit(...)`
+- `OnTriggerEnter/Stay/Exit(...)`
 
 ### Scene Components And Reflection
 Custom inspector-visible components derive from `SceneComponent`.
@@ -297,7 +303,10 @@ Tile map features:
 - visibility flags per layer
 - collision-enabled layers
 - optional external tile map asset path
+- asset-backed save/load and save-back workflow
 - optional external tileset asset path
+- tile-map-only viewport editing mode
+- atlas selection, multi-tile stamping, fill, and undo/redo
 
 ### Tileset Assets
 `TileSetAsset` stores:
@@ -313,9 +322,11 @@ Collision is intentionally simple:
 
 - axis-aligned box colliders only
 - static and dynamic body types
+- explicit movement-blocking flag
 - trigger flag
 - solid overlap tests against static colliders and collision-enabled tile layers
 - axis-separated movement resolution
+- overlap query and play-mode collision event support
 
 Setup example:
 
@@ -324,6 +335,7 @@ entity.EnsureBoxCollider();
 entity.SetBoxColliderSize({32.0f, 32.0f});
 entity.SetBoxColliderOffset({0.0f, 0.0f});
 entity.SetColliderBodyType(ColliderBodyType::Dynamic);
+entity.SetColliderBlocksMovement(true);
 ```
 
 Move with collision:
@@ -335,9 +347,14 @@ entity.MoveWithCollision(input * 150.0f * deltaTime);
 
 Current implementation notes:
 
-- overlap checks block against `Static` colliders
-- triggers are ignored for blocking
+- blocking checks only use enabled, non-trigger colliders with movement blocking enabled
+- triggers are ignored for blocking and report through trigger events instead
+- non-blocking non-trigger colliders can participate in overlap events without stopping movement
 - tile collisions use layer collision flags and optional tileset solidity data
+- play mode distinguishes:
+  - `OnCollisionBlocked(...)` for attempted movement into solids
+  - `OnTriggerEnter/Stay/Exit(...)` for trigger volumes
+  - `OnCollisionEnter/Stay/Exit(...)` for genuine non-trigger overlap state
 - no physics impulses, gravity, or continuous collision detection are present yet
 
 ### Saving And Loading Scenes
@@ -422,9 +439,10 @@ Editor controls:
 - erasing
 - fill mode
 - tile layer management
-- tile map asset save/load
+- tile map asset save/load and asset-backed save-back workflow
 - undo/redo for tile painting strokes
 - tile-map-only viewport rendering
+- atlas scaling and multi-tile selection
 
 ### Tileset Tooling
 `TileSetEditorPanel` edits a `TileSetAsset` directly:
@@ -528,6 +546,28 @@ Create it with:
 ```cpp
 Coin coin = m_Scene.Place<Coin>();
 ```
+
+## Collision Event Model
+The engine now exposes three collision-style channels during play:
+
+- blocking contact
+  - movement tried to enter a solid and was rejected
+  - use `OnCollisionBlocked(...)`
+- trigger overlap
+  - use `OnTriggerEnter/Stay/Exit(...)`
+- non-trigger overlap
+  - use `OnCollisionEnter/Stay/Exit(...)`
+
+That makes the intended collider setups:
+
+- blocking solid
+  - `Trigger = false`
+  - `Blocks Movement = true`
+- trigger volume
+  - `Trigger = true`
+- overlap-only collider
+  - `Trigger = false`
+  - `Blocks Movement = false`
 
 ## Serialization Formats
 ### Scene JSON

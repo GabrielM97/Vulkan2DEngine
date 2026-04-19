@@ -1391,6 +1391,46 @@ entity.ResolveMovement({0.0f, 0.0f});
 entity.MoveWithCollision({0.0f, 0.0f});
 ```
 
+`std::vector<OverlapResult> GetCollisionOverlaps() const`
+- What it does: Returns the current non-trigger overlaps for this entity's collider.
+- Notes: This is a public member in `Engine/Scene/Entity.h`. Use it when gameplay code wants collider-local access instead of querying `Scene` directly.
+- Example use:
+```cpp
+auto overlaps = entity.GetCollisionOverlaps();
+```
+
+`std::vector<OverlapResult> GetTriggerOverlaps() const`
+- What it does: Returns the current trigger overlaps for this entity's collider.
+- Notes: This is a public member in `Engine/Scene/Entity.h`. Use it when reacting to trigger volumes or polling trigger state.
+- Example use:
+```cpp
+auto triggers = entity.GetTriggerOverlaps();
+```
+
+`std::vector<OverlapResult> GetBlockingHits(const glm::vec2& delta) const`
+- What it does: Returns the solid hits that would block this entity if it tried to move by the given delta.
+- Notes: This is a public member in `Engine/Scene/Entity.h`. Use it when you need to inspect what movement would be blocked by.
+- Example use:
+```cpp
+auto hits = entity.GetBlockingHits({16.0f, 0.0f});
+```
+
+`bool IsColliding() const`
+- What it does: Answers whether the entity currently has any non-trigger overlap results.
+- Notes: This is a public member in `Engine/Scene/Entity.h`. It does not mean movement is blocked; for blocked movement use `GetBlockingHits(...)` or `OnCollisionBlocked(...)`.
+- Example use:
+```cpp
+if (entity.IsColliding()) {     // React to the returned state here. }
+```
+
+`bool IsOverlappingTrigger() const`
+- What it does: Answers whether the entity currently overlaps any trigger collider.
+- Notes: This is a public member in `Engine/Scene/Entity.h`. Use it for quick trigger-state polling.
+- Example use:
+```cpp
+if (entity.IsOverlappingTrigger()) {     // React to the returned state here. }
+```
+
 `LocalTransformComponent GetLocalTransform() const`
 - What it does: Returns data from `Entity` without requiring the caller to reach into its internal state directly.
 - Notes: This is a public member in `Engine/Scene/Entity.h`. Use it when `Entity` is the right owner for this operation.
@@ -2047,6 +2087,22 @@ if (entity.IsColliderTrigger()) {     // React to the returned state here. }
 entity.SetColliderTrigger(true);
 ```
 
+`bool DoesColliderBlockMovement() const`
+- What it does: Answers whether this collider currently participates in solid movement blocking.
+- Notes: This is a public member in `Engine/Scene/Entity.h`. Use it to distinguish blockers from overlap-only colliders.
+- Example use:
+```cpp
+if (entity.DoesColliderBlockMovement()) {     // React to the returned state here. }
+```
+
+`void SetColliderBlocksMovement(bool blocksMovement) const`
+- What it does: Updates whether this collider blocks movement while remaining non-trigger.
+- Notes: This is a public member in `Engine/Scene/Entity.h`. Use `false` for overlap-only non-trigger colliders.
+- Example use:
+```cpp
+entity.SetColliderBlocksMovement(false);
+```
+
 `bool IsBoxColliderEnabled() const`
 - What it does: Answers a yes or no question about the current state of `Entity`.
 - Notes: This is a public member in `Engine/Scene/Entity.h`. Use it when `Entity` is the right owner for this operation.
@@ -2638,6 +2694,30 @@ scene.OverlapsSolidBox({0.0f, 0.0f}, {0.0f, 0.0f}, 0);
 - Example use:
 ```cpp
 scene.OverlapsSolidBox({}, 0);
+```
+
+`std::vector<OverlapResult> QueryCollisionOverlaps(GameObjectID id) const`
+- What it does: Returns the current non-trigger overlaps for the given entity's collider.
+- Notes: This is a public member in `Engine/Scene/Scene.h`. Use it when you need overlap detail instead of a blocking yes/no answer.
+- Example use:
+```cpp
+auto overlaps = scene.QueryCollisionOverlaps(0);
+```
+
+`std::vector<OverlapResult> QueryTriggerOverlaps(GameObjectID id) const`
+- What it does: Returns the current trigger overlaps for the given entity's collider.
+- Notes: This is a public member in `Engine/Scene/Scene.h`. Use it for trigger-aware gameplay systems and debugging.
+- Example use:
+```cpp
+auto overlaps = scene.QueryTriggerOverlaps(0);
+```
+
+`std::vector<OverlapResult> QueryBlockingHits(GameObjectID id, const glm::vec2& delta) const`
+- What it does: Returns the blocking solids that would reject movement by the given delta.
+- Notes: This is a public member in `Engine/Scene/Scene.h`. Use it when you need to know what would block a move before applying it.
+- Example use:
+```cpp
+auto hits = scene.QueryBlockingHits(0, {16.0f, 0.0f});
 ```
 
 `AABB2D BuildWorldAABB(GameObjectID id) const`

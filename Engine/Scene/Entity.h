@@ -3,9 +3,11 @@
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <vector>
 #include <entt/entity/entity.hpp>
 #include <entt/entity/registry.hpp>
 
+#include "CollisionTypes.h"
 #include "SceneComponents.h"
 
 class Scene;
@@ -74,6 +76,11 @@ public:
     void SetWorldTransform(const Transform2D& transform) const;
     glm::vec2 ResolveMovement(const glm::vec2& delta) const;
     bool MoveWithCollision(const glm::vec2& delta) const;
+    std::vector<OverlapResult> GetCollisionOverlaps() const;
+    std::vector<OverlapResult> GetTriggerOverlaps() const;
+    std::vector<OverlapResult> GetBlockingHits(const glm::vec2& delta) const;
+    bool IsColliding() const;
+    bool IsOverlappingTrigger() const;
 
     LocalTransformComponent GetLocalTransform() const;
     void SetLocalTransform(const LocalTransformComponent& transform) const;
@@ -138,6 +145,7 @@ public:
     void SetTileMapData(const TileMapComponent& tileMap) const;
 
     void ResizeTileMap(uint32_t width, uint32_t height) const;
+    glm::vec2 GetTileWorldPosition(int x, int y) const;
     int32_t GetTile(int x, int y) const;
     void SetTile(int x, int y, int32_t tileID) const;
     uint32_t GetTileLayerCount() const;
@@ -153,6 +161,8 @@ public:
     void SetTile(uint32_t layerIndex, int x, int y, int32_t tileID) const;
     bool IsTileLayerCollisionEnabled(uint32_t index) const;
     void SetTileLayerCollisionEnabled(uint32_t index, bool enabled) const;
+    bool DoesTileLayerBlockMovement(uint32_t index) const;
+    void SetTileLayerBlocksMovement(uint32_t index, bool enabled) const;
     
     bool HasBoxCollider() const;
     void EnsureBoxCollider() const;
@@ -169,6 +179,8 @@ public:
 
     bool IsColliderTrigger() const;
     void SetColliderTrigger(bool isTrigger) const;
+    bool DoesColliderBlockMovement() const;
+    void SetColliderBlocksMovement(bool blocksMovement) const;
 
     bool IsBoxColliderEnabled() const;
     void SetBoxColliderEnabled(bool enabled) const;
@@ -189,6 +201,8 @@ public:
     void RemoveComponent() const;
     
     const std::vector<ComponentTypeID>& GetTrackedComponentIDs() const;
+    
+    const Scene* GetScene() const { return m_Scene; }
 
 private:
     void RegisterTrackedComponent(ComponentTypeID componentID) const;

@@ -642,6 +642,10 @@ void SceneEditorPanel::DrawBoxColliderSection(Entity& entity)
     if (ImGui::Checkbox("Collider Enabled", &enabled))
         entity.SetBoxColliderEnabled(enabled);
 
+    bool blocksMovement = entity.DoesColliderBlockMovement();
+    if (ImGui::Checkbox("Blocks Movement", &blocksMovement))
+        entity.SetColliderBlocksMovement(blocksMovement);
+
     bool isTrigger = entity.IsColliderTrigger();
     if (ImGui::Checkbox("Trigger", &isTrigger))
         entity.SetColliderTrigger(isTrigger);

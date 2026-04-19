@@ -9,6 +9,8 @@ class PlayerMovementComponent : public SceneComponent
 public:
     PROPERTY_FIELD(float, moveSpeed, EditAnywhere | Save, 250.0f);
     float runtimeVelocity = 0.0f;
+    glm::vec2 MoveDirection = {1.0f, 1.0f};
+
 
     REGISTER_SCENE_COMPONENT(PlayerMovementComponent, 1, "PlayerMovementComponent")
 };

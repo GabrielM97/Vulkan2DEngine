@@ -214,6 +214,40 @@ bool Entity::MoveWithCollision(const glm::vec2& delta) const
     return m_Scene->MoveWithCollision(m_ID, delta);
 }
 
+std::vector<OverlapResult> Entity::GetCollisionOverlaps() const
+{
+    if (!IsValid())
+        return {};
+
+    return m_Scene->QueryCollisionOverlaps(m_ID);
+}
+
+std::vector<OverlapResult> Entity::GetTriggerOverlaps() const
+{
+    if (!IsValid())
+        return {};
+
+    return m_Scene->QueryTriggerOverlaps(m_ID);
+}
+
+std::vector<OverlapResult> Entity::GetBlockingHits(const glm::vec2& delta) const
+{
+    if (!IsValid())
+        return {};
+
+    return m_Scene->QueryBlockingHits(m_ID, delta);
+}
+
+bool Entity::IsColliding() const
+{
+    return !GetCollisionOverlaps().empty();
+}
+
+bool Entity::IsOverlappingTrigger() const
+{
+    return !GetTriggerOverlaps().empty();
+}
+
 void Entity::SetLocalTransform(const LocalTransformComponent& transform) const
 {
     if (IsValid())
@@ -589,6 +623,14 @@ void Entity::ResizeTileMap(uint32_t width, uint32_t height) const
     tileMap.height = height;
 }
 
+glm::vec2 Entity::GetTileWorldPosition(int x, int y) const
+{
+    if (!HasTileMap())
+        return {};
+
+    return m_Scene->GetTileWorldPosition(m_ID, x, y);
+}
+
 int32_t Entity::GetTile(int x, int y) const
 {
     if (!HasTileMap())
@@ -695,6 +737,7 @@ void Entity::AddTileLayer(const std::string& name) const
     layer.name = name;
     layer.visible = true;
     layer.collisionEnabled = false;
+    layer.blocksMovement = true;
     layer.tiles.assign(static_cast<size_t>(tileMap.width) * static_cast<size_t>(tileMap.height), -1);
     tileMap.layers.push_back(std::move(layer));
     tileMap.activeLayerIndex = static_cast<uint32_t>(tileMap.layers.size() - 1);
@@ -774,6 +817,30 @@ void Entity::SetTileLayerCollisionEnabled(uint32_t index, bool enabled) const
     tileMap.layers[index].collisionEnabled = enabled;
 }
 
+bool Entity::DoesTileLayerBlockMovement(uint32_t index) const
+{
+    if (!HasTileMap())
+        return false;
+
+    const auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (index >= tileMap.layers.size())
+        return false;
+
+    return tileMap.layers[index].blocksMovement;
+}
+
+void Entity::SetTileLayerBlocksMovement(uint32_t index, bool enabled) const
+{
+    if (!HasTileMap())
+        return;
+
+    auto& tileMap = m_Registry->get<TileMapComponent>(m_Entity);
+    if (index >= tileMap.layers.size())
+        return;
+
+    tileMap.layers[index].blocksMovement = enabled;
+}
+
 bool Entity::HasBoxCollider() const
 {
     return IsValid() && HasComponent<BoxColliderComponent>();
@@ -835,6 +902,19 @@ void Entity::SetColliderTrigger(bool isTrigger) const
 {
     if (IsValid() && HasBoxCollider())
         m_Registry->get<BoxColliderComponent>(m_Entity).isTrigger = isTrigger;
+}
+
+bool Entity::DoesColliderBlockMovement() const
+{
+    return IsValid() &&
+           HasBoxCollider() &&
+           m_Registry->get<BoxColliderComponent>(m_Entity).blocksMovement;
+}
+
+void Entity::SetColliderBlocksMovement(bool blocksMovement) const
+{
+    if (IsValid() && HasBoxCollider())
+        m_Registry->get<BoxColliderComponent>(m_Entity).blocksMovement = blocksMovement;
 }
 
 bool Entity::IsBoxColliderEnabled() const

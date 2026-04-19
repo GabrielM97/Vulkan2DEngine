@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "Scene/CollisionTypes.h"
 #include "Scene/Entity.h"
 
 class Object
@@ -15,6 +16,13 @@ public:
     
     virtual ~Object() = default;
     virtual const char* GetTypeName() const = 0;
+    virtual void OnCollisionEnter(const OverlapResult&) {}
+    virtual void OnCollisionStay(const OverlapResult&) {}
+    virtual void OnCollisionExit(const OverlapResult&) {}
+    virtual void OnCollisionBlocked(const OverlapResult&) {}
+    virtual void OnTriggerEnter(const OverlapResult&) {}
+    virtual void OnTriggerStay(const OverlapResult&) {}
+    virtual void OnTriggerExit(const OverlapResult&) {}
 
     GameObjectID GetID() const { return m_Entity.GetID(); }
     bool IsValid() const { return m_Entity.IsValid(); }
@@ -29,6 +37,8 @@ public:
     
     Entity& GetEntity() { return m_Entity; }
     const Entity& GetEntity() const { return m_Entity; }
+    
+    const Scene* GetScene() const { return m_Entity.GetScene(); }
 
 private:
     Entity m_Entity;

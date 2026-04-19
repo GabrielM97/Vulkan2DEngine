@@ -1,0 +1,309 @@
+{
+    "assetType": "TileSet",
+    "columns": 10,
+    "rows": 10,
+    "texturePath": "Dungeon_Tileset.png",
+    "tiles": [
+        {
+            "solid": true
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": true
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        }
+    ],
+    "version": 1
+}

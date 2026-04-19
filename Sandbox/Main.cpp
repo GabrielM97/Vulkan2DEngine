@@ -1,10 +1,10 @@
 ﻿#include <iostream>
 
-#include "SandboxApp.h"
+#include "PongApp.h"
 
 int main()
 {
-    SandboxApp app;
+    PongApp app;
 
     if (!app.Init())
     {

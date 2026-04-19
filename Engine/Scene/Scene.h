@@ -9,6 +9,7 @@
 #include <entt/entt.hpp>
 
 #include "Camera2D.h"
+#include "CollisionTypes.h"
 #include "Entity.h"
 #include "SceneComponents.h"
 #include "SpriteAnimationSet.h"
@@ -19,12 +20,6 @@ struct CameraCommand
     float moveX = 0.0f;
     float moveY = 0.0f;
     float zoomDelta = 0.0f;
-};
-
-struct AABB2D
-{
-    glm::vec2 min{0.0f, 0.0f};
-    glm::vec2 max{0.0f, 0.0f}; 
 };
 
 class IRenderer2D;
@@ -103,12 +98,18 @@ public:
     bool SetWorldPivot(GameObjectID id, const glm::vec2& pivot);
     bool SetWorldRotation(GameObjectID id, float rotationDegrees);
     
+    std::vector<OverlapResult> QuerySolidOverlaps(const glm::vec2& center, const glm::vec2& size, GameObjectID ignoredID = 0) const;
+    std::vector<OverlapResult> QuerySolidOverlaps(const AABB2D& box, GameObjectID ignoredID = 0) const;
+    std::vector<OverlapResult> QueryCollisionOverlaps(GameObjectID id) const;
+    std::vector<OverlapResult> QueryTriggerOverlaps(GameObjectID id) const;
+    std::vector<OverlapResult> QueryBlockingHits(GameObjectID id, const glm::vec2& delta) const;
     bool OverlapsSolidBox(const glm::vec2& center, const glm::vec2& size, GameObjectID ignoredID = 0) const;
     bool OverlapsSolidBox(const AABB2D& box, GameObjectID ignoredID = 0) const;
 
     AABB2D BuildWorldAABB(GameObjectID id) const;
     AABB2D BuildColliderAABB(GameObjectID id) const;
     AABB2D BuildColliderAABB(GameObjectID id, const glm::vec2& overridePosition) const;
+    glm::vec2 GetTileWorldPosition(GameObjectID tileMapID, int tileX, int tileY) const;
     AABB2D BuildTileAABB(GameObjectID tileMapID, int tileX, int tileY) const;
     bool Intersects(const AABB2D& a, const AABB2D& b) const;
     glm::vec2 ResolveMovement(GameObjectID id, const glm::vec2& currentPosition, const glm::vec2& delta) const;
@@ -142,6 +143,9 @@ private:
     void ConnectRegistrySignals();
     void OnLocalTransformUpdated(entt::registry& registry, entt::entity entity);
     void ResolveRequiredComponents(entt::entity entity);
+    void UpdateCollisionEvents();
+    void DispatchCollisionEvent(GameObjectID id, const OverlapResult& overlap, bool isTrigger, int phase) const;
+    void DispatchCollisionBlockedEvent(GameObjectID id, const OverlapResult& overlap) const;
 
     template<typename TObject, typename... Args>
     TObject CreateObject(bool beginPlayIfAlreadyPlaying, Args&&... args);
@@ -151,6 +155,8 @@ private:
     Camera2D m_Camera;
     std::unordered_map<std::string, SpriteAnimationSet> m_AnimationSetCache;
     mutable std::unordered_map<std::string, TileSetAsset> m_TileSetAssetCache;
+    std::unordered_map<GameObjectID, std::vector<OverlapResult>> m_PreviousCollisionOverlaps;
+    std::unordered_map<GameObjectID, std::vector<OverlapResult>> m_PreviousTriggerOverlaps;
     GameObjectID m_NextGameObjectID = 1;
     bool m_IsPlaying = false;
 };

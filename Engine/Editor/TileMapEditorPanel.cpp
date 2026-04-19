@@ -487,7 +487,7 @@ void TileMapEditorPanel::DrawLayerControls(Entity entity)
     const uint32_t activeLayer = entity.GetActiveTileLayerIndex();
     m_ActiveLayerDraft = static_cast<int>(activeLayer);
 
-    ImGui::TextUnformatted("A = Active, V = Visible, C = Collision");
+    ImGui::TextUnformatted("A = Active, V = Visible, C = Collision, B = Blocking");
     
     for (uint32_t layerIndex = 0; layerIndex < layerCount; ++layerIndex)
     {
@@ -506,6 +506,12 @@ void TileMapEditorPanel::DrawLayerControls(Entity entity)
         bool collisionEnabled = entity.IsTileLayerCollisionEnabled(layerIndex);
         if (ImGui::Checkbox(("##LayerCollision" + std::to_string(layerIndex)).c_str(), &collisionEnabled))
             entity.SetTileLayerCollisionEnabled(layerIndex, collisionEnabled);
+
+        ImGui::SameLine();
+
+        bool blocksMovement = entity.DoesTileLayerBlockMovement(layerIndex);
+        if (ImGui::Checkbox(("##LayerBlocking" + std::to_string(layerIndex)).c_str(), &blocksMovement))
+            entity.SetTileLayerBlocksMovement(layerIndex, blocksMovement);
 
         ImGui::SameLine();
         ImGui::Text("%s", entity.GetTileLayerName(layerIndex).c_str());

@@ -158,6 +158,7 @@ namespace
                 {"name", layer.name},
                 {"visible", layer.visible},
                 {"collisionEnabled", layer.collisionEnabled},
+                {"blocksMovement", layer.blocksMovement},
                 {"tiles", layer.tiles}
             });
         }
@@ -217,6 +218,7 @@ namespace
                 layer.name = layerValue.value("name", "Layer");
                 layer.visible = layerValue.value("visible", true);
                 layer.collisionEnabled = layerValue.value("collisionEnabled", false);
+                layer.blocksMovement = layerValue.value("blocksMovement", true);
                 layer.tiles = layerValue.value("tiles", std::vector<int32_t>{});
 
                 if (layer.tiles.size() != expectedCount)
@@ -230,6 +232,7 @@ namespace
             TileMapComponent::Layer layer;
             layer.name = "Layer 0";
             layer.visible = true;
+            layer.blocksMovement = true;
             layer.tiles = value.value("tiles", std::vector<int32_t>{});
             if (layer.tiles.size() != expectedCount)
                 layer.tiles.assign(expectedCount, -1);
@@ -241,6 +244,7 @@ namespace
             TileMapComponent::Layer layer;
             layer.name = "Layer 0";
             layer.visible = true;
+            layer.blocksMovement = true;
             layer.tiles.assign(expectedCount, -1);
             tileMap.layers.push_back(std::move(layer));
         }
@@ -267,6 +271,7 @@ namespace
                 {"size", SerializeVec2(collider.size)},
                 {"offset", SerializeVec2(collider.offset)},
                 {"bodyType", SerializeColliderBodyType(collider.type)},
+                {"blocksMovement", collider.blocksMovement},
                 {"isTrigger", collider.isTrigger},
                 {"enabled", collider.enabled}
         };
@@ -281,6 +286,7 @@ namespace
             ? DeserializeVec2(value.at("offset"))
             : glm::vec2{0.0f, 0.0f};
         collider.type = DeserializeColliderBodyType(value.value("bodyType", "Static"));
+        collider.blocksMovement = value.value("blocksMovement", true);
         collider.isTrigger = value.value("isTrigger", false);
         collider.enabled = value.value("enabled", true);
     }

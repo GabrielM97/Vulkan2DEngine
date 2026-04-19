@@ -66,6 +66,7 @@ struct TileMapComponent
         std::string name = "Layer";
         bool visible = true;
         bool collisionEnabled = false;
+        bool blocksMovement = true;
         std::vector<int32_t> tiles;
     };
 
@@ -93,6 +94,7 @@ struct BoxColliderComponent
     glm::vec2 size = {1.0f, 1.0f};
     glm::vec2 offset = {0.0f, 0.0f};
     ColliderBodyType type = ColliderBodyType::Static;
+    bool blocksMovement = true;
     bool isTrigger = false;
     bool enabled = true;
     

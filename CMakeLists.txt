@@ -58,8 +58,12 @@ add_subdirectory(Engine)
 # --- Sandbox executable ---
 set(SANDBOX_SRC
     ${CMAKE_SOURCE_DIR}/Sandbox/Main.cpp
-    ${CMAKE_SOURCE_DIR}/Sandbox/SandboxApp.cpp
-    ${CMAKE_SOURCE_DIR}/Sandbox/SandboxApp.h
+    #${CMAKE_SOURCE_DIR}/Sandbox/SandboxApp.cpp
+    #${CMAKE_SOURCE_DIR}/Sandbox/SandboxApp.h 
+    Sandbox/PongApp.h
+    Sandbox/PongApp.cpp
+        Sandbox/Pong/Ball.h
+        Sandbox/Pong/Ball.cpp
 )
 
 add_executable(Sandbox ${SANDBOX_SRC})

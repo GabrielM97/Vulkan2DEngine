@@ -6,9 +6,10 @@
 #include "Editor/EditorSceneController.h"
 #include "Editor/TileMapEditorController.h"
 #include "Object/Player.h"
+#include "Pong/Ball.h"
 #include "Scene/Scene.h"
 
-class SandboxApp : public Application
+class PongApp : public Application
 {
 protected:
     void OnInit() override;
@@ -24,7 +25,7 @@ private:
     void RefreshRuntimeHandles();
 
     Scene m_Scene;
-    Player m_Player;
+    Ball m_ball;
     std::string m_SceneFilePath = "Assets/Scenes/SandboxScene.json";
     EditorSceneController m_EditorSceneController;
     TileMapEditorController m_TileMapEditorController;

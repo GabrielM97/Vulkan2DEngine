@@ -153,9 +153,21 @@ Includes:
 - identity, naming, activation, hierarchy, and transform components
 - `TileMapComponent`
 - `BoxColliderComponent`
+- tile-map layers, asset paths, and per-layer collision flags
+- collider blocking, trigger, enabled, size, and offset data
 - aliases tying `Transform2D`, `SpriteRenderer`, and `SpriteAnimation` into component storage
 
 This header is the core schema of the scene registry.
+
+### `Engine/Scene/CollisionTypes.h`
+Declares the shared collision query data types used by scene queries and object callbacks.
+
+Includes:
+
+- `AABB2D`
+- `OverlapResult`
+
+Use this when you need a common overlap/hit description outside of `Scene` implementation code.
 
 ### `Engine/Scene/Entity.h`
 Declares the high-level handle for a single game object.
@@ -165,6 +177,7 @@ Key responsibilities:
 - wraps a scene pointer, registry pointer, raw `entt::entity`, and stable object ID
 - exposes world and local transform helpers
 - exposes sprite, animation, tile map, and collider helpers
+- exposes collision query helpers for overlaps, triggers, and blocking hits
 - exposes generic templated component add/get/remove methods
 - tracks custom component IDs for serialization and editor support
 
@@ -182,7 +195,7 @@ Major responsibilities:
 - manage the camera
 - save and load scenes
 - manage custom object creation and lifecycle
-- perform simple collision queries and collision-aware movement
+- perform collision queries, collision-aware movement, and play-mode collision event dispatch
 
 Notable public APIs:
 
@@ -297,6 +310,7 @@ Purpose:
 
 - object type auto-registration
 - `BeginPlay` / `EndPlay` invocation from scene play transitions
+- collision, trigger, and blocked-movement callback dispatch for typed objects
 
 Key macro:
 
@@ -310,7 +324,7 @@ It demonstrates:
 - deriving from `Actor`
 - static type naming
 - object registration
-- `Initialize`, `BeginPlay`, and custom gameplay methods
+- `Initialize`, `BeginPlay`, and collision callback override points
 
 ## Renderer
 ### `Engine/Renderer/IRenderer2D.h`
@@ -467,6 +481,7 @@ Capabilities:
 - tile map asset load/save controls
 - layer controls
 - tile-map-only view toggling
+- atlas scaling and multi-tile selection
 
 ### `Engine/Editor/TileMapEditorController.h`
 Declares the runtime logic for tile painting interactions.
@@ -477,6 +492,7 @@ Responsibilities:
 - tile stroke tracking
 - undo/redo
 - stamp and fill application
+- viewport footprint preview and tile-map editing flow
 
 ### `Engine/Editor/TileSetEditorPanel.h`
 Declares the UI used to edit and save tileset assets.

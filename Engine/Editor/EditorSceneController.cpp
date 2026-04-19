@@ -51,7 +51,7 @@ bool EditorSceneController::TryPickGameObject(
     const SceneViewportState& viewportState,
     GameObjectID& outObjectID) const
 {
-    if (!viewportState.visible)
+    if (!viewportState.visible || !viewportState.hovered)
         return false;
 
     const glm::vec2 mouseScreen = input.GetMouseScreenPosition();
@@ -98,6 +98,12 @@ bool EditorSceneController::Update(
 {
     CameraCommand command{};
     bool sceneReloaded = false;
+    const TileMapEditorPanel& tileMapPanel = editorLayer.GetTileMapEditorPanel();
+    const Entity tileMapSelection = scene.GetEntity(tileMapPanel.GetSelectedObjectID());
+    const bool tileMapEditingActive =
+        tileMapPanel.IsTileMapViewEnabled() &&
+        tileMapSelection.IsValid() &&
+        tileMapSelection.HasTileMap();
 
     if (input.CanUseEditorViewportInput())
     {
@@ -125,7 +131,10 @@ bool EditorSceneController::Update(
     if (input.CanUseEditorShortcuts() && input.WasKeyPressed(GLFW_KEY_F9))
         sceneReloaded = scene.LoadFromFile(m_SceneFilePath);
 
-    if (!isPlaying && input.CanUseEditorViewportInput() && input.WasMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT))
+    if (!isPlaying &&
+        !tileMapEditingActive &&
+        input.CanUseEditorViewportInput() &&
+        input.WasMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT))
     {
         GameObjectID pickedID = 0;
         if (TryPickGameObject(scene, input, viewportState, pickedID))

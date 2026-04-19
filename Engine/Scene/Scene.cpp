@@ -10,6 +10,34 @@
 #include "SpriteAnimation.h"
 #include "Component/SceneComponentRegistry.h"
 
+namespace
+{
+    enum class OverlapEventPhase
+    {
+        Enter,
+        Stay,
+        Exit
+    };
+
+    bool OverlapEquals(const OverlapResult& a, const OverlapResult& b)
+    {
+        return
+            a.type == b.type &&
+            a.objectID == b.objectID &&
+            a.tileLayerIndex == b.tileLayerIndex &&
+            a.tileCoordinates == b.tileCoordinates;
+    }
+
+    bool ContainsOverlap(const std::vector<OverlapResult>& overlaps, const OverlapResult& target)
+    {
+        return std::any_of(
+            overlaps.begin(),
+            overlaps.end(),
+            [&](const OverlapResult& overlap) { return OverlapEquals(overlap, target); }
+        );
+    }
+}
+
 Scene::Scene()
 {
     ConnectRegistrySignals();
@@ -21,6 +49,8 @@ void Scene::BeginPlay()
         return;
 
     m_IsPlaying = true;
+    m_PreviousCollisionOverlaps.clear();
+    m_PreviousTriggerOverlaps.clear();
 
     auto view = m_Registry.view<IDComponent, ObjectTypeComponent>();
     for (entt::entity entity : view)
@@ -61,6 +91,8 @@ void Scene::EndPlay()
     }
 
     m_IsPlaying = false;
+    m_PreviousCollisionOverlaps.clear();
+    m_PreviousTriggerOverlaps.clear();
 }
 
 void Scene::ConnectRegistrySignals()
@@ -240,6 +272,9 @@ void Scene::Update(float deltaTime)
         animation.Update(deltaTime, sprite, animationSet);
     }
 
+    if (m_IsPlaying)
+        UpdateCollisionEvents();
+
     DestroyPendingGameObjects();
 }
 
@@ -345,20 +380,33 @@ void Scene::UpdateCamera(const CameraCommand& command, float deltaTime, float vi
 
 bool Scene::OverlapsSolidBox(const glm::vec2& center, const glm::vec2& size, GameObjectID ignoredID) const
 {
-    const glm::vec2 halfSize = size * 0.5f;
-    return OverlapsSolidBox({center - halfSize, center + halfSize}, ignoredID);
+    return !QuerySolidOverlaps(center, size, ignoredID).empty();
 }
 
 bool Scene::OverlapsSolidBox(const AABB2D& box, GameObjectID ignoredID) const
 {
-    auto entityView = m_Registry.view<IDComponent, ActiveComponent, BoxColliderComponent>();
+    return !QuerySolidOverlaps(box, ignoredID).empty();
+}
+
+std::vector<OverlapResult> Scene::QuerySolidOverlaps(const glm::vec2& center, const glm::vec2& size, GameObjectID ignoredID) const
+{
+    const glm::vec2 halfSize = size * 0.5f;
+    return QuerySolidOverlaps({center - halfSize, center + halfSize}, ignoredID);
+}
+
+std::vector<OverlapResult> Scene::QuerySolidOverlaps(const AABB2D& box, GameObjectID ignoredID) const
+{
+    std::vector<OverlapResult> results;
+
+    auto entityView = m_Registry.view<IDComponent, ActiveComponent, BoxColliderComponent, Transform2D>();
     for (entt::entity entity : entityView)
     {
         const auto& id = entityView.get<IDComponent>(entity);
         const auto& active = entityView.get<ActiveComponent>(entity);   
         const auto& collider = entityView.get<BoxColliderComponent>(entity);
+        const auto& colliderTransform = entityView.get<Transform2D>(entity);
         
-        if (!active.active || !collider.enabled || collider.isTrigger)
+        if (!active.active || !collider.enabled || collider.isTrigger || !collider.blocksMovement)
             continue;
 
         if (id.id == ignoredID)
@@ -369,23 +417,33 @@ bool Scene::OverlapsSolidBox(const AABB2D& box, GameObjectID ignoredID) const
         
         const AABB2D colliderBounds = BuildColliderAABB(id.id);
         if (Intersects(box, colliderBounds))
-            return true;
+        {
+            results.push_back({
+                OverlapResult::Type::Entity,
+                id.id,
+                0,
+                {-1, -1},
+                {colliderTransform.position}
+            });
+        }
     }
     
-    auto tileMapView = m_Registry.view<IDComponent, ActiveComponent, TileMapComponent>();
+    auto tileMapView = m_Registry.view<IDComponent, ActiveComponent, TileMapComponent, Transform2D>();
     for (entt::entity entity : tileMapView)
     {
         const auto& id = tileMapView.get<IDComponent>(entity);
         const auto& active = tileMapView.get<ActiveComponent>(entity);
         const auto& tileMap = tileMapView.get<TileMapComponent>(entity);
+        const auto& tileMapTransform = tileMapView.get<Transform2D>(entity);
         const TileSetAsset* tileSetAsset = GetOrLoadTileSetAsset(tileMap.tileSetAssetPath);
 
         if (!active.active || id.id == ignoredID)
             continue;
 
-        for (const auto& layer : tileMap.layers)
+        for (uint32_t layerIndex = 0; layerIndex < tileMap.layers.size(); ++layerIndex)
         {
-            if (!layer.collisionEnabled)
+            const auto& layer = tileMap.layers[layerIndex];
+            if (!layer.collisionEnabled || !layer.blocksMovement)
                 continue;
 
             for (uint32_t y = 0; y < tileMap.height; ++y)
@@ -409,13 +467,179 @@ bool Scene::OverlapsSolidBox(const AABB2D& box, GameObjectID ignoredID) const
                     );
 
                     if (Intersects(box, tileBounds))
-                        return true;
+                    {
+                        results.push_back({
+                            OverlapResult::Type::Tile,
+                            id.id,
+                            layerIndex,
+                            {static_cast<int>(x), static_cast<int>(y)}
+                        });
+                    }
                 }
             }
         }
     }
 
-    return false;
+    return results;
+}
+
+std::vector<OverlapResult> Scene::QueryCollisionOverlaps(GameObjectID id) const
+{
+    const Entity entity = GetEntity(id);
+    if (!entity.IsValid() || !entity.HasBoxCollider() || !entity.IsBoxColliderEnabled() || entity.IsColliderTrigger())
+        return {};
+
+    const AABB2D box = BuildColliderAABB(id);
+    std::vector<OverlapResult> results;
+
+    auto entityView = m_Registry.view<IDComponent, ActiveComponent, BoxColliderComponent>();
+    for (entt::entity other : entityView)
+    {
+        const auto& otherID = entityView.get<IDComponent>(other);
+        const auto& otherActive = entityView.get<ActiveComponent>(other);
+        const auto& otherCollider = entityView.get<BoxColliderComponent>(other);
+
+        if (otherID.id == id)
+            continue;
+
+        if (!otherActive.active || !otherCollider.enabled || otherCollider.isTrigger)
+            continue;
+
+        if (Intersects(box, BuildColliderAABB(otherID.id)))
+        {
+            results.push_back({
+                OverlapResult::Type::Entity,
+                otherID.id,
+                0,
+                {-1, -1}
+            });
+        }
+    }
+
+    auto tileMapView = m_Registry.view<IDComponent, ActiveComponent, TileMapComponent>();
+    for (entt::entity tileMapEntity : tileMapView)
+    {
+        const auto& tileMapID = tileMapView.get<IDComponent>(tileMapEntity);
+        const auto& tileMapActive = tileMapView.get<ActiveComponent>(tileMapEntity);
+        const auto& tileMap = tileMapView.get<TileMapComponent>(tileMapEntity);
+        const TileSetAsset* tileSetAsset = GetOrLoadTileSetAsset(tileMap.tileSetAssetPath);
+
+        if (!tileMapActive.active || tileMapID.id == id)
+            continue;
+
+        for (uint32_t layerIndex = 0; layerIndex < tileMap.layers.size(); ++layerIndex)
+        {
+            const auto& layer = tileMap.layers[layerIndex];
+            if (!layer.collisionEnabled)
+                continue;
+
+            for (uint32_t y = 0; y < tileMap.height; ++y)
+            {
+                for (uint32_t x = 0; x < tileMap.width; ++x)
+                {
+                    const int32_t tileID = layer.tiles[y * tileMap.width + x];
+                    if (tileID < 0)
+                        continue;
+
+                    if (tileSetAsset != nullptr &&
+                        !tileSetAsset->IsTileSolid(static_cast<uint32_t>(tileID)))
+                    {
+                        continue;
+                    }
+
+                    if (Intersects(box, BuildTileAABB(tileMapID.id, static_cast<int>(x), static_cast<int>(y))))
+                    {
+                        results.push_back({
+                            OverlapResult::Type::Tile,
+                            tileMapID.id,
+                            layerIndex,
+                            {static_cast<int>(x), static_cast<int>(y)}
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    return results;
+}
+
+std::vector<OverlapResult> Scene::QueryTriggerOverlaps(GameObjectID id) const
+{
+    const Entity entity = GetEntity(id);
+    if (!entity.IsValid() || !entity.HasBoxCollider() || !entity.IsBoxColliderEnabled())
+        return {};
+
+    const AABB2D box = BuildColliderAABB(id);
+    const bool selfIsTrigger = entity.IsColliderTrigger();
+    std::vector<OverlapResult> results;
+
+    auto entityView = m_Registry.view<IDComponent, ActiveComponent, BoxColliderComponent>();
+    for (entt::entity other : entityView)
+    {
+        const auto& otherID = entityView.get<IDComponent>(other);
+        const auto& otherActive = entityView.get<ActiveComponent>(other);
+        const auto& otherCollider = entityView.get<BoxColliderComponent>(other);
+
+        if (otherID.id == id)
+            continue;
+
+        if (!otherActive.active || !otherCollider.enabled)
+            continue;
+
+        if (!selfIsTrigger && !otherCollider.isTrigger)
+            continue;
+
+        if (Intersects(box, BuildColliderAABB(otherID.id)))
+        {
+            results.push_back({
+                OverlapResult::Type::Entity,
+                otherID.id,
+                0,
+                {-1, -1}
+            });
+        }
+    }
+
+    return results;
+}
+
+std::vector<OverlapResult> Scene::QueryBlockingHits(GameObjectID id, const glm::vec2& delta) const
+{
+    const Entity entity = GetEntity(id);
+    if (!entity.IsValid() || !entity.HasBoxCollider() || !entity.IsBoxColliderEnabled())
+        return {};
+
+    const glm::vec2 currentPosition = entity.GetPosition();
+    glm::vec2 resolved = currentPosition;
+    std::vector<OverlapResult> results;
+
+    if (delta.x != 0.0f)
+    {
+        const glm::vec2 proposed = resolved + glm::vec2{delta.x, 0.0f};
+        const std::vector<OverlapResult> overlaps = QuerySolidOverlaps(BuildColliderAABB(id, proposed), id);
+        for (const OverlapResult& overlap : overlaps)
+        {
+            if (!ContainsOverlap(results, overlap))
+                results.push_back(overlap);
+        }
+
+        if (overlaps.empty())
+            resolved.x = proposed.x;
+    }
+
+    if (delta.y != 0.0f)
+    {
+        const glm::vec2 proposed = resolved + glm::vec2{0.0f, delta.y};
+        const std::vector<OverlapResult> overlaps = QuerySolidOverlaps(BuildColliderAABB(id, proposed), id);
+        for (const OverlapResult& overlap : overlaps)
+        {
+            if (!ContainsOverlap(results, overlap))
+                results.push_back(overlap);
+        }
+    }
+
+    return results;
 }
 
 AABB2D Scene::BuildWorldAABB(GameObjectID id) const
@@ -473,7 +697,7 @@ AABB2D Scene::BuildColliderAABB(GameObjectID id, const glm::vec2& overridePositi
     };
 }
 
-AABB2D Scene::BuildTileAABB(GameObjectID tileMapID, int tileX, int tileY) const
+glm::vec2 Scene::GetTileWorldPosition(GameObjectID tileMapID, int tileX, int tileY) const
 {
     const Entity tileMap = GetEntity(tileMapID);
     if (!tileMap.IsValid() || !tileMap.HasTileMap())
@@ -481,10 +705,20 @@ AABB2D Scene::BuildTileAABB(GameObjectID tileMapID, int tileX, int tileY) const
 
     const Transform2D transform = GetWorldTransform(tileMapID);
     const glm::vec2 tileSize = tileMap.GetTileSize();
-    const glm::vec2 min = transform.position + glm::vec2{
+    return transform.position + glm::vec2{
         static_cast<float>(tileX) * tileSize.x,
         static_cast<float>(tileY) * tileSize.y
     };
+}
+
+AABB2D Scene::BuildTileAABB(GameObjectID tileMapID, int tileX, int tileY) const
+{
+    const Entity tileMap = GetEntity(tileMapID);
+    if (!tileMap.IsValid() || !tileMap.HasTileMap())
+        return {};
+
+    const glm::vec2 tileSize = tileMap.GetTileSize();
+    const glm::vec2 min = GetTileWorldPosition(tileMapID, tileX, tileY);
 
     return {
         min,
@@ -513,18 +747,28 @@ glm::vec2 Scene::ResolveMovement(GameObjectID id, const glm::vec2& currentPositi
     {
         const glm::vec2 proposed = resolved + glm::vec2{delta.x, 0.0f};
         const AABB2D bounds = BuildColliderAABB(id, proposed);
-
-        if (!OverlapsSolidBox(bounds, id))
+        const std::vector<OverlapResult> overlaps = QuerySolidOverlaps(bounds, id);
+        if (overlaps.empty())
             resolved.x = proposed.x;
+        else
+        {
+            for (const OverlapResult& overlap : overlaps)
+                DispatchCollisionBlockedEvent(id, overlap);
+        }
     }
 
     if (delta.y != 0.0f)
     {
         const glm::vec2 proposed = resolved + glm::vec2{0.0f, delta.y};
         const AABB2D bounds = BuildColliderAABB(id, proposed);
-
-        if (!OverlapsSolidBox(bounds, id))
+        const std::vector<OverlapResult> overlaps = QuerySolidOverlaps(bounds, id);
+        if (overlaps.empty())
             resolved.y = proposed.y;
+        else
+        {
+            for (const OverlapResult& overlap : overlaps)
+                DispatchCollisionBlockedEvent(id, overlap);
+        }
     }
 
     return resolved;
@@ -544,6 +788,145 @@ bool Scene::MoveWithCollision(GameObjectID id, const glm::vec2& delta)
 
     entity.SetPosition(resolvedPosition);
     return true;
+}
+
+void Scene::UpdateCollisionEvents()
+{
+    std::unordered_map<GameObjectID, std::vector<OverlapResult>> currentCollisionOverlaps;
+    std::unordered_map<GameObjectID, std::vector<OverlapResult>> currentTriggerOverlaps;
+
+    auto colliderView = m_Registry.view<IDComponent, ActiveComponent, BoxColliderComponent>();
+    for (entt::entity entity : colliderView)
+    {
+        const auto& id = colliderView.get<IDComponent>(entity);
+        const auto& active = colliderView.get<ActiveComponent>(entity);
+        const auto& collider = colliderView.get<BoxColliderComponent>(entity);
+
+        if (!active.active || !collider.enabled)
+            continue;
+
+        if (!collider.isTrigger)
+            currentCollisionOverlaps[id.id] = QueryCollisionOverlaps(id.id);
+
+        currentTriggerOverlaps[id.id] = QueryTriggerOverlaps(id.id);
+    }
+
+    for (const auto& [id, current] : currentCollisionOverlaps)
+    {
+        const std::vector<OverlapResult>& previous = m_PreviousCollisionOverlaps[id];
+
+        for (const OverlapResult& overlap : current)
+        {
+            DispatchCollisionEvent(
+                id,
+                overlap,
+                false,
+                ContainsOverlap(previous, overlap) ? static_cast<int>(OverlapEventPhase::Stay) : static_cast<int>(OverlapEventPhase::Enter)
+            );
+        }
+
+        for (const OverlapResult& overlap : previous)
+        {
+            if (!ContainsOverlap(current, overlap))
+                DispatchCollisionEvent(id, overlap, false, static_cast<int>(OverlapEventPhase::Exit));
+        }
+    }
+
+    for (const auto& [id, previous] : m_PreviousCollisionOverlaps)
+    {
+        if (currentCollisionOverlaps.contains(id))
+            continue;
+
+        for (const OverlapResult& overlap : previous)
+            DispatchCollisionEvent(id, overlap, false, static_cast<int>(OverlapEventPhase::Exit));
+    }
+
+    for (const auto& [id, current] : currentTriggerOverlaps)
+    {
+        const std::vector<OverlapResult>& previous = m_PreviousTriggerOverlaps[id];
+
+        for (const OverlapResult& overlap : current)
+        {
+            DispatchCollisionEvent(
+                id,
+                overlap,
+                true,
+                ContainsOverlap(previous, overlap) ? static_cast<int>(OverlapEventPhase::Stay) : static_cast<int>(OverlapEventPhase::Enter)
+            );
+        }
+
+        for (const OverlapResult& overlap : previous)
+        {
+            if (!ContainsOverlap(current, overlap))
+                DispatchCollisionEvent(id, overlap, true, static_cast<int>(OverlapEventPhase::Exit));
+        }
+    }
+
+    for (const auto& [id, previous] : m_PreviousTriggerOverlaps)
+    {
+        if (currentTriggerOverlaps.contains(id))
+            continue;
+
+        for (const OverlapResult& overlap : previous)
+            DispatchCollisionEvent(id, overlap, true, static_cast<int>(OverlapEventPhase::Exit));
+    }
+
+    m_PreviousCollisionOverlaps = std::move(currentCollisionOverlaps);
+    m_PreviousTriggerOverlaps = std::move(currentTriggerOverlaps);
+}
+
+void Scene::DispatchCollisionEvent(GameObjectID id, const OverlapResult& overlap, bool isTrigger, int phase) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return;
+
+    const auto& objectType = m_Registry.get<ObjectTypeComponent>(entity);
+    if (objectType.typeName.empty())
+        return;
+
+    const ObjectLifecycleHooks* hooks = ObjectRegistry::Get().Find(objectType.typeName);
+    if (hooks == nullptr)
+        return;
+
+    Entity wrapped(const_cast<Scene*>(this), const_cast<entt::registry*>(&m_Registry), entity, id);
+    const OverlapEventPhase eventPhase = static_cast<OverlapEventPhase>(phase);
+
+    if (isTrigger)
+    {
+        if (eventPhase == OverlapEventPhase::Enter && hooks->triggerEnter)
+            hooks->triggerEnter(wrapped, overlap);
+        else if (eventPhase == OverlapEventPhase::Stay && hooks->triggerStay)
+            hooks->triggerStay(wrapped, overlap);
+        else if (eventPhase == OverlapEventPhase::Exit && hooks->triggerExit)
+            hooks->triggerExit(wrapped, overlap);
+        return;
+    }
+
+    if (eventPhase == OverlapEventPhase::Enter && hooks->collisionEnter)
+        hooks->collisionEnter(wrapped, overlap);
+    else if (eventPhase == OverlapEventPhase::Stay && hooks->collisionStay)
+        hooks->collisionStay(wrapped, overlap);
+    else if (eventPhase == OverlapEventPhase::Exit && hooks->collisionExit)
+        hooks->collisionExit(wrapped, overlap);
+}
+
+void Scene::DispatchCollisionBlockedEvent(GameObjectID id, const OverlapResult& overlap) const
+{
+    const entt::entity entity = FindEntityByID(id);
+    if (entity == entt::null)
+        return;
+
+    const auto& objectType = m_Registry.get<ObjectTypeComponent>(entity);
+    if (objectType.typeName.empty())
+        return;
+
+    const ObjectLifecycleHooks* hooks = ObjectRegistry::Get().Find(objectType.typeName);
+    if (hooks == nullptr || !hooks->collisionBlocked)
+        return;
+
+    Entity wrapped(const_cast<Scene*>(this), const_cast<entt::registry*>(&m_Registry), entity, id);
+    hooks->collisionBlocked(wrapped, overlap);
 }
 
 void Scene::RenderCollisionDebug(IRenderer2D& renderer,
