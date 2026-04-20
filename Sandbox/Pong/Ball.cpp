@@ -5,8 +5,8 @@
 
 void Ball::Initialize()
 {
-    GetEntity().AddComponent<PlayerMovementComponent>();
-    
+    auto& movemnt = GetEntity().AddComponent<PlayerMovementComponent>();
+    movemnt.moveSpeed = 550.0f;
     ConfigureSprite(
      "Assets/Textures/Sprite-0001.png",
      {32.0f, 32.0f},
@@ -34,13 +34,17 @@ void Ball::update(float deltaTime)
 
 void Ball::OnCollisionEnter(const OverlapResult& overlap_result)
 {
+    
+    Actor::OnCollisionEnter(overlap_result);
+    
+    auto& movement = GetEntity().GetComponent<PlayerMovementComponent>();
+    
     if (overlap_result.IsTile())
     {
         glm::vec2 hitpos = GetScene()->GetTileWorldPosition(overlap_result.objectID, overlap_result.tileCoordinates.x, overlap_result.tileCoordinates.y);
         const auto tiledata = GetScene()->GetEntity(overlap_result.objectID).GetTileMapData();
         float width = tiledata.width * tiledata.tileSize.x - tiledata.tileSize.x;
         float height = tiledata.height * tiledata.tileSize.y - tiledata.tileSize.y;
-        auto& movement = GetEntity().GetComponent<PlayerMovementComponent>();
         
         if (hitpos.x <= 0.f )
         {
@@ -58,9 +62,22 @@ void Ball::OnCollisionEnter(const OverlapResult& overlap_result)
         {
             movement.MoveDirection.y = -1.0f;
         }
+        
+        return;
     }
     
-    Actor::OnCollisionEnter(overlap_result);
+    Transform2D transform = GetScene()->GetEntity(overlap_result.objectID).GetWorldTransform();
+
+    if (transform.position.x < 480.f)
+    {
+        movement.MoveDirection.x = 1.0f;
+        movement.moveSpeed += 50.f; 
+    }
+    else
+    {
+        movement.MoveDirection.x = -1.0f;
+    }
+    
 }
 
 void Ball::OnCollisionExit(const OverlapResult& overlap_result)

@@ -19,12 +19,14 @@ void PongApp::CreateDefaultScene()
     ballEntity.SetBoxColliderSize({32.f, 32.f});
     ballEntity.SetColliderBodyType(ColliderBodyType::Dynamic);
     
+    m_padel = m_Scene.Place<Padel>();
+    m_padel2 = m_Scene.Place<Padel>();
+    m_padel2.SetName("Padel 2");
     
     Entity map = m_Scene.CreateEntity("Map");
     map.AddComponent<TileMapComponent>();
     map.SetBoxColliderEnabled(false);
     map.ResizeTileMap(32, 16);
-    
 }
 
 void PongApp::RefreshRuntimeHandles()
@@ -35,7 +37,25 @@ void PongApp::RefreshRuntimeHandles()
     }
     else
     {
-        m_ball = {};
+        m_ball = m_Scene.Place<Ball>();
+    }
+    
+    if (m_Scene.IsValidGameObject(m_padel.GetID()))
+    {
+        m_padel = Padel(m_Scene.GetEntity(m_padel.GetID()));
+    }
+    else
+    {
+        m_padel = m_Scene.Place<Padel>();
+    }
+    
+    if (m_Scene.IsValidGameObject(m_padel2.GetID()))
+    {
+        m_padel2 = Padel(m_Scene.GetEntity(m_padel2.GetID()));
+    }
+    else
+    {
+        m_padel2 = m_Scene.Place<Padel>();
     }
 }
 
@@ -74,31 +94,38 @@ void PongApp::OnUpdate(float deltaTime)
         !IsEditorPlaying()
     );
 
-    // if (input.CanUseRuntimeViewportInput())
-    // {
-    //     if (input.IsKeyDown(GLFW_KEY_A))
-    //     {
-    //         playerInput.x -= 1.0f;
-    //     }
-    //     if (input.IsKeyDown(GLFW_KEY_D))
-    //     {
-    //         playerInput.x += 1.0f;
-    //     }
-    //     if (input.IsKeyDown(GLFW_KEY_W))
-    //     {
-    //         playerInput.y -= 1.0f;
-    //     }
-    //     if (input.IsKeyDown(GLFW_KEY_S))
-    //     {
-    //         playerInput.y += 1.0f;
-    //     }
-    // }
+    PlayerMovementComponent& padelInput = m_Scene.GetEntity(m_padel.GetID()).GetComponent<PlayerMovementComponent>();
+    PlayerMovementComponent& padel2Input = m_Scene.GetEntity(m_padel2.GetID()).GetComponent<PlayerMovementComponent>();
+    
+    if (input.CanUseRuntimeViewportInput())
+    {
+      
+        if (input.IsKeyDown(GLFW_KEY_W))
+        {
+            padelInput.MoveDirection.y = -1.0f;
+        }
+        if (input.IsKeyDown(GLFW_KEY_S))
+        {
+            padelInput.MoveDirection.y = 1.0f;
+        }
+        
+        if (input.IsKeyDown(GLFW_KEY_UP))
+        {
+            padel2Input.MoveDirection.y = -1.0f;
+        }
+        if (input.IsKeyDown(GLFW_KEY_DOWN))
+        {
+            padel2Input.MoveDirection.y = 1.0f;
+        }
+    }
 
     
     if (IsEditorPlaying())
     {
-        m_Scene.Update(deltaTime);
         m_ball.update(deltaTime);
+        m_padel.update(deltaTime);
+        m_padel2.update(deltaTime);
+        m_Scene.Update(deltaTime);
     }
        
 }

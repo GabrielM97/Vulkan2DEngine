@@ -7,6 +7,7 @@
 #include "Editor/TileMapEditorController.h"
 #include "Object/Player.h"
 #include "Pong/Ball.h"
+#include "Pong/Padel.h"
 #include "Scene/Scene.h"
 
 class PongApp : public Application
@@ -26,6 +27,8 @@ private:
 
     Scene m_Scene;
     Ball m_ball;
+    Padel m_padel;
+    Padel m_padel2;
     std::string m_SceneFilePath = "Assets/Scenes/SandboxScene.json";
     EditorSceneController m_EditorSceneController;
     TileMapEditorController m_TileMapEditorController;

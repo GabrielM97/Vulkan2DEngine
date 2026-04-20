@@ -5,22 +5,16 @@
     "texturePath": "Dungeon_Tileset.png",
     "tiles": [
         {
-            "solid": true
+            "solid": false
         },
         {
-            "solid": true
+            "solid": false
         },
         {
-            "solid": true
+            "solid": false
         },
         {
-            "solid": true
-        },
-        {
-            "solid": true
-        },
-        {
-            "solid": true
+            "solid": false
         },
         {
             "solid": false
@@ -35,7 +29,16 @@
             "solid": false
         },
         {
-            "solid": true
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
         },
         {
             "solid": false
@@ -50,9 +53,6 @@
             "solid": false
         },
         {
-            "solid": true
-        },
-        {
             "solid": false
         },
         {
@@ -60,27 +60,6 @@
         },
         {
             "solid": false
-        },
-        {
-            "solid": false
-        },
-        {
-            "solid": true
-        },
-        {
-            "solid": false
-        },
-        {
-            "solid": false
-        },
-        {
-            "solid": false
-        },
-        {
-            "solid": false
-        },
-        {
-            "solid": true
         },
         {
             "solid": false
@@ -110,7 +89,16 @@
             "solid": false
         },
         {
-            "solid": true
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
         },
         {
             "solid": false
@@ -125,22 +113,34 @@
             "solid": false
         },
         {
-            "solid": true
+            "solid": false
         },
         {
-            "solid": true
+            "solid": false
         },
         {
-            "solid": true
+            "solid": false
         },
         {
-            "solid": true
+            "solid": false
         },
         {
-            "solid": true
+            "solid": false
         },
         {
-            "solid": true
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
+        },
+        {
+            "solid": false
         },
         {
             "solid": false

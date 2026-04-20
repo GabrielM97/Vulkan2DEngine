@@ -64,6 +64,8 @@ set(SANDBOX_SRC
     Sandbox/PongApp.cpp
         Sandbox/Pong/Ball.h
         Sandbox/Pong/Ball.cpp
+        Sandbox/Pong/Padel.h
+        Sandbox/Pong/Padel.cpp
 )
 
 add_executable(Sandbox ${SANDBOX_SRC})
